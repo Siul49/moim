@@ -9,6 +9,17 @@ jobs:
   check-template:
     runs-on: ubuntu-latest
     steps:
+      - name: 🏷️ 브랜치 네이밍 컨벤션 검사
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "현재 PR 브랜치: $BRANCH_NAME"
+          # convention.md 에 명시된 정규식: 타입/이슈번호-기능명 (예: feature/12-login)
+          if [[ ! $BRANCH_NAME =~ ^(feature|fix|design|refactor|docs|chore)/[0-9]+-[a-zA-Z0-9_-]+$ ]]; then
+            echo "❌ 브랜치 이름 규칙 위반! '타입/이슈번호-기능명' (예: feature/12-kakao-login) 형식을 지켜주세요."
+            exit 1
+          fi
+          echo "✅ 브랜치 규칙 통과!"
+
       - name: 체크리스트 달성도 검사
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -43,9 +54,12 @@ jobs:
       - name: 📦 의존성 설치
         run: npm ci
 
-      - name: 🔍 린트 검사
+      - name: 🔍 코드 린트(ESLint) 검사
         run: npm run lint
 
+      - name: 💬 커밋 메시지 규칙(Commitlint) 검사
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+        
       - name: 🧪 테스트 실행
         run: npm run test
 
