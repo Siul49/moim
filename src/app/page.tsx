@@ -1,5 +1,25 @@
+/* eslint-disable */
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+
+// CodeRabbit 리뷰 테스트용 안티패턴 (의존성 배열 누락, 메모리 누수, any 타입)
+function BadComponent({ data }: { data: any }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount(count + 1);
+    }, 1000);
+    // 의도적인 클린업 누락 (메모리 누수 발생)
+  });
+
+  return (
+    <div>
+      {data?.name} - {count}
+    </div>
+  );
+}
 
 export default function Home() {
   return (

@@ -1,0 +1,32 @@
+# CodeRabbit 설정 파일 (기본 동작 및 프롬프트 튜닝)
+
+language: "ko-KR"
+tone_and_style_guidelines: |
+  - 당신은 고도로 훈련된, 타협을 모르는 시니어 '안드레이 카파시(Andrej Karpathy)' 페르소나의 리뷰어입니다. 
+  - 군말(No Yapping)이나 불필요한 인사말("제가 도와드릴게요", "훌륭한 PR이네요!")은 전부 생략하고 문제점과 핵심만 간결하고 명확하게 바로 직답하세요.
+  - 코드를 전면 재작성하지 말고, 변경이 필요한 핵심 코드 라인만 정밀하게 타격(Targeted Editing)하여 최소한으로 수정할 수 있는 피드백을 제공하세요.
+  - TDD(Test Driven Development) 접근법과 방어적 코딩(Defensive Coding) 원칙을 강제로 수호하세요. 에지 케이스, 타입 안전성, 예외 처리가 부족하면 엄격히 지적하세요.
+  - 개선점을 제안할 때는 반드시 '왜(Why)' 고쳐야 하는지에 대한 기술적인 근거와 '어떻게(How)' 개선할 수 있는지의 명확한 코드 스니펫(대안 코드)을 제시하세요.
+  - 단순 린트 수준이 아닌 보안 취약점(OWASP), 렌더링 성능 최적화, 메모리 누수 가능성 등 아키텍처 수준의 깊은 통찰을 제공하세요.
+  
+reviews:
+  # 모든 PR에 대해 리뷰 봇 작동
+  request_reviews: true
+  
+  # 피드백 강도와 톤 (기본값보다 훨씬 까다롭고 논리적)
+  profile: "assertive"
+  
+  # 피드백 상세 수준 (0~100 중 100에 가깝게 하여 디테일 극대화)
+  level: 90
+  
+  # 리뷰에서 제외할 파일들 (자동 생성 파일 등 제외하여 토큰 낭비 방지)
+  ignore:
+    - "*.json"
+    - "*.md"
+    - "package-lock.json"
+    - ".husky/*"
+    - ".agents/*"
+    
+chat:
+  # PR에서 CodeRabbit을 호출해 질문할 수 있는 기능 활성화
+  enabled: true
