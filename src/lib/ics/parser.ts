@@ -46,13 +46,13 @@ function parseIcsDate(
     const tzid = tzidMatch[1];
     const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(9, 11)}:${value.slice(11, 13)}:${value.slice(13, 15)}`;
     try {
-      // Intl.DateTimeFormat을 이용해 타임존을 UTC로 변환
-      const tempDate = new Date(iso);
+      // iso 문자열을 UTC 기준으로 파싱한 뒤 타임존 오프셋을 적용
+      const tempDate = new Date(iso + "Z");
       const utcDate = convertTzToUtc(tempDate, tzid);
       return { date: utcDate, isAllDay: false };
     } catch {
-      // 타임존 변환 실패 시 로컬 시간으로 폴백
-      return { date: new Date(iso), isAllDay: false };
+      // 타임존 변환 실패 시 UTC로 취급
+      return { date: new Date(iso + "Z"), isAllDay: false };
     }
   }
 
