@@ -1,0 +1,206 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# ──────────────────────────────────────────────────
+# CodeRabbit 설정 — MOIM 프로젝트
+# ──────────────────────────────────────────────────
+
+language: "ko-KR"
+tone_instructions: "한국어만 사용. 타협 없는 시니어 리뷰어. 인사말 없이 핵심 직답. 최소 정밀 수정만. TDD·방어적 코딩 강제. Why+How+코드스니펫 필수."
+
+early_access: true
+
+# ──────────────────────────────────────────────────
+# 리뷰 설정
+# ──────────────────────────────────────────────────
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  changed_files_summary: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  poem: false
+  estimate_code_review_effort: true
+
+  # ── 라벨링 ──
+  suggested_labels: true
+  auto_apply_labels: false
+  labeling_instructions:
+    - label: "bug"
+      instructions: "버그 수정 PR에 적용"
+    - label: "feature"
+      instructions: "새로운 기능 추가 PR에 적용"
+    - label: "refactor"
+      instructions: "기능 변경 없이 코드 구조 개선 PR에 적용"
+    - label: "test"
+      instructions: "테스트 코드만 추가/수정한 PR에 적용"
+
+  # ── 자동 리뷰 ──
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 8
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "DRAFT"
+    drafts: false
+    base_branches:
+      - "main"
+      - "dev"
+
+  # ── 파일 필터 ──
+  path_filters:
+    - "!**/*.json"
+    - "!**/*.md"
+    - "!package-lock.json"
+    - "!pnpm-lock.yaml"
+    - "!.husky/**"
+    - "!.agents/**"
+    - "!**/*.svg"
+    - "!**/*.ico"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!public/**"
+
+  # ── 경로별 리뷰 지침 ──
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        모든 리뷰 출력(워크스루, 요약, 코멘트, 체크리스트)을 한국어로만 작성하세요. 영어 금지.
+        코드 스니펫 내 변수명/함수명은 원본 유지, 설명은 반드시 한국어.
+        전면 재작성 금지 — 핵심 라인만 정밀 타격하여 최소 수정 피드백.
+        개선 제안 시 반드시 Why(기술적 근거) + How(코드 스니펫) 포함.
+
+    - path: "src/lib/**"
+      instructions: |
+        비즈니스 로직 계층입니다.
+        순수 함수 위주로 작성되었는지 검증하세요.
+        외부 의존성(Supabase, API 등)이 직접 호출되면 의존성 역전 원칙 위반 여부를 지적하세요.
+        에지 케이스, 타입 안전성, 예외 처리가 부족하면 엄격히 지적하세요.
+        보안 취약점(OWASP Top 10), 메모리 누수 가능성에 주의하세요.
+
+    - path: "src/app/**"
+      instructions: |
+        Next.js App Router 페이지/레이아웃 계층입니다.
+        서버 컴포넌트와 클라이언트 컴포넌트 경계가 올바른지 확인하세요.
+        'use client' 지시문이 불필요하게 상위에 있으면 지적하세요.
+        데이터 페칭이 서버 컴포넌트에서 이루어지는지 확인하세요.
+        렌더링 성능(불필요한 리렌더, 번들 크기)에 주의하세요.
+
+    - path: "src/components/**"
+      instructions: |
+        공유 UI 컴포넌트 계층입니다.
+        컴포넌트가 단일 책임 원칙(SRP)을 따르는지 확인하세요.
+        Props 타입이 명확하게 정의되어 있는지 검증하세요.
+        접근성(a11y) 속성(aria-label, role 등)이 적절한지 확인하세요.
+        shadcn/ui 기반이므로 불필요한 커스텀 구현이 있으면 지적하세요.
+
+    - path: "**/__tests__/**"
+      instructions: |
+        테스트 파일입니다.
+        AAA 패턴(Arrange-Act-Assert)을 따르는지 확인하세요.
+        테스트 설명(describe/it)이 행동(behavior)을 명확히 기술하는지 확인하세요.
+        경계값, 에러 케이스, 빈 입력 등 엣지 케이스 커버리지를 평가하세요.
+        테스트가 구현 세부사항이 아닌 공개 인터페이스를 검증하는지 확인하세요.
+        모킹이 과도하면 통합 테스트 전환을 권고하세요.
+
+    - path: "src/types/**"
+      instructions: |
+        공유 타입 정의 계층입니다.
+        타입이 도메인 모델을 정확히 반영하는지 확인하세요.
+        any, unknown 남용이 없는지 검증하세요.
+        discriminated union 등 타입 안전 패턴 활용을 권장하세요.
+
+  # ── 정적 분석 도구 ──
+  tools:
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    github-checks:
+      enabled: true
+      timeout_ms: 120000
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    languagetool:
+      enabled: false
+
+  # ── Finishing Touches ──
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+
+  # ── Pre-merge 체크 ──
+  pre_merge_checks:
+    title:
+      mode: "warning"
+      requirements: "PR 제목은 'feat:', 'fix:', 'refactor:', 'docs:', 'chore:', 'test:', 'design:' 중 하나로 시작해야 합니다."
+    description:
+      mode: "warning"
+    issue_assessment:
+      mode: "warning"
+
+  # ── Slop Detection ──
+  slop_detection:
+    enabled: true
+    label: "ai-slop"
+
+# ──────────────────────────────────────────────────
+# 지식 기반 (프로젝트 컨텍스트 강화)
+# ──────────────────────────────────────────────────
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "ARCHITECTURE.md"
+      - "convention.md"
+
+# ──────────────────────────────────────────────────
+# 코드 생성 (테스트/독스트링 자동 생성 지침)
+# ──────────────────────────────────────────────────
+code_generation:
+  docstrings:
+    language: "ko-KR"
+  unit_tests:
+    path_instructions:
+      - path: "src/lib/**"
+        instructions: |
+          Vitest를 사용하세요. describe/it 블록의 설명은 한국어로 작성하세요.
+          AAA 패턴(Arrange-Act-Assert)을 따르세요.
+          경계값, 에러 케이스, 빈 입력을 반드시 포함하세요.
+          외부 의존성은 vi.mock()으로 격리하세요.
+
+# ──────────────────────────────────────────────────
+# 이슈 풍부화
+# ──────────────────────────────────────────────────
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  planning:
+    enabled: true
+
+# ──────────────────────────────────────────────────
+# 채팅
+# ──────────────────────────────────────────────────
+chat:
+  auto_reply: true

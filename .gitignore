@@ -41,6 +41,5 @@ next-env.d.ts
 # AI & Local configs
 .agents/*
 !.agents/docs/
-.coderabbit.yaml
 *.pdf
 *.docx
