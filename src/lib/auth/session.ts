@@ -1,4 +1,4 @@
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export interface Session {
   userId: string; // auth.users.id (= profiles.id for authenticated users)

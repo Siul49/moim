@@ -4,7 +4,7 @@ import { requireSession, UnauthorizedError } from "@/lib/auth/session";
 import { encrypt, serializeEncrypted, maskEmail } from "@/lib/crypto";
 import { discoverCalDAV } from "@/lib/caldav/discovery";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import type { CalendarInfo } from "@/types/icloud";
 
 export const dynamic = "force-dynamic";

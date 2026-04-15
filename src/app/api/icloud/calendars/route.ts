@@ -3,7 +3,7 @@ import { requireSession, UnauthorizedError } from "@/lib/auth/session";
 import { decrypt, deserializeEncrypted, maskEmail } from "@/lib/crypto";
 import { discoverCalDAV } from "@/lib/caldav/discovery";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
 
 export const dynamic = "force-dynamic";

@@ -5,7 +5,7 @@ import { decrypt, deserializeEncrypted, maskEmail } from "@/lib/crypto";
 import { createEvent } from "@/lib/caldav/create";
 import { buildIcs } from "@/lib/ics/builder";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
 
 export const dynamic = "force-dynamic";
