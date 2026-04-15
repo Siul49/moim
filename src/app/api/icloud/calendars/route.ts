@@ -6,6 +6,8 @@ import { CalDAVError } from "@/lib/caldav/client";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   // ── 1. 인증 검증 ──────────────────────────────────────────
   let session;

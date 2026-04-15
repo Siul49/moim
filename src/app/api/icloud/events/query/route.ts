@@ -8,6 +8,8 @@ import { CalDAVError } from "@/lib/caldav/client";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
 
+export const dynamic = "force-dynamic";
+
 const QuerySchema = z.object({
   calendarId: z.string().uuid("calendarId는 UUID 형식이어야 합니다."),
   startDate: z

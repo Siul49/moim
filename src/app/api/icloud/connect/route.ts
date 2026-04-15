@@ -7,6 +7,8 @@ import { CalDAVError } from "@/lib/caldav/client";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { CalendarInfo } from "@/types/icloud";
 
+export const dynamic = "force-dynamic";
+
 const ConnectSchema = z.object({
   appleId: z.string().email("올바른 Apple ID 이메일 형식이어야 합니다."),
   appPassword: z
