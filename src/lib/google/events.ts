@@ -33,25 +33,23 @@ export async function queryEvents(
   }
 
   const data = await response.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items: any[] = data.items ?? [];
 
-  return (
-    (data.items ?? [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((item: any) => item.status !== "cancelled")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map(
-        (item: any): GoogleEvent => ({
-          id: item.id,
-          summary: item.summary ?? "(제목 없음)",
-          description: item.description,
-          location: item.location,
-          start: item.start,
-          end: item.end,
-          status: item.status,
-          htmlLink: item.htmlLink,
-        }),
-      )
-  );
+  return items
+    .filter((item) => item.status !== "cancelled")
+    .map(
+      (item): GoogleEvent => ({
+        id: item.id,
+        summary: item.summary ?? "(제목 없음)",
+        description: item.description,
+        location: item.location,
+        start: item.start,
+        end: item.end,
+        status: item.status,
+        htmlLink: item.htmlLink,
+      }),
+    );
 }
 
 /**
