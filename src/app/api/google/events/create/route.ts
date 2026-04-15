@@ -3,24 +3,22 @@ import { z } from "zod";
 import { getValidTokens } from "@/lib/google/auth";
 import { createEvent } from "@/lib/google/events";
 
+export const dynamic = "force-dynamic";
+
 const CreateEventSchema = z.object({
   calendarId: z.string().min(1, "calendarId는 필수입니다."),
   summary: z
     .string()
     .min(1, "제목은 1자 이상이어야 합니다.")
     .max(255, "제목은 255자 이하여야 합니다."),
-  startDateTime: z
-    .string()
-    .datetime({
-      offset: true,
-      message: "startDateTime은 ISO 8601 형식이어야 합니다.",
-    }),
-  endDateTime: z
-    .string()
-    .datetime({
-      offset: true,
-      message: "endDateTime은 ISO 8601 형식이어야 합니다.",
-    }),
+  startDateTime: z.string().datetime({
+    offset: true,
+    message: "startDateTime은 ISO 8601 형식이어야 합니다.",
+  }),
+  endDateTime: z.string().datetime({
+    offset: true,
+    message: "endDateTime은 ISO 8601 형식이어야 합니다.",
+  }),
   location: z.string().max(500).optional(),
   description: z.string().max(8000).optional(),
   timeZone: z.string().optional(),

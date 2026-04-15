@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getValidTokens } from "@/lib/google/auth";
 import { listCalendars } from "@/lib/google/calendars";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/google/calendars
  * 연결된 Google 계정의 캘린더 목록을 반환한다.

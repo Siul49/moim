@@ -5,6 +5,8 @@ import {
   saveTokensToCookie,
 } from "@/lib/google/auth";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/google/callback
  * Google OAuth 콜백. authorization code를 토큰으로 교환한 뒤 쿠키에 저장한다.

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getValidTokens } from "@/lib/google/auth";
 import { queryEvents } from "@/lib/google/events";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/google/events/query?calendarId=...&startDate=...&endDate=...
  * 특정 캘린더의 기간별 일정을 조회한다.
