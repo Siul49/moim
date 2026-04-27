@@ -1,0 +1,3490 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOIM — 스마트 스케줄러</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* Design System — Light Purple */
+            --primary-50: #fbfbfe;
+            --primary-100: #f4f3fb;
+            --primary-200: #e5e3f5;
+            --primary-300: #d1cced;
+            --primary-400: #b5ace3;
+            --primary-500: #9385d4;
+            --primary-600: #7b6ac4;
+
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5;
+            --gray-300: #d4d4d4;
+            --gray-400: #a3a3a3;
+            --gray-500: #737373;
+            --gray-600: #525252;
+            --gray-700: #404040;
+            --gray-800: #262626;
+            --gray-900: #171717;
+
+            --success-light: #dcfce7;
+            --success-main: #22c55e;
+            --error-light: #fee2e2;
+            --error-main: #ef4444;
+            --warning-light: #fef9c3;
+            --warning-main: #eab308;
+
+            --bg-body: #fafafa;
+            --bg-surface: #ffffff;
+            --text-heading: #171717;
+            --text-body: #404040;
+            --text-muted: #737373;
+
+            --border: #e5e5e5;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+
+            --font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-body);
+            color: var(--text-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* ── Screen management ─────────────────── */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* ── NAV ───────────────────────────────── */
+        .nav {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--primary-500);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo span {
+            color: var(--text-heading);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            background: var(--primary-100);
+            color: var(--primary-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── BUTTONS ───────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: var(--primary-500);
+            color: white;
+            box-shadow: 0 4px 12px rgba(147, 133, 212, 0.35);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-600);
+            box-shadow: 0 6px 16px rgba(147, 133, 212, 0.45);
+        }
+
+        .btn-secondary {
+            background: var(--primary-50);
+            color: var(--primary-600);
+            border: 1px solid var(--primary-200);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-100);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--text-body);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-300);
+            color: var(--primary-600);
+            background: var(--primary-50);
+        }
+
+        .btn-kakao {
+            background: #FEE500;
+            color: #3A1D1D;
+        }
+
+        .btn-kakao:hover {
+            background: #F5DB00;
+            box-shadow: 0 6px 14px rgba(254, 229, 0, 0.4);
+        }
+
+        .btn-google {
+            background: white;
+            color: var(--text-body);
+            border: 1px solid var(--border);
+        }
+
+        .btn-lg {
+            padding: 13px 26px;
+            font-size: 15px;
+            border-radius: var(--radius-md);
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ── CARD ──────────────────────────────── */
+        .card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-200);
+        }
+
+        /* ── LAYOUT ────────────────────────────── */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            flex: 1;
+        }
+
+        .container-wide {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            flex: 1;
+        }
+
+        /* ── FORM ──────────────────────────────── */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: var(--font);
+            color: var(--text-heading);
+            background: var(--bg-surface);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .form-input:hover {
+            border-color: var(--gray-300);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-400);
+            box-shadow: 0 0 0 3px var(--primary-100);
+        }
+
+        .form-input::placeholder {
+            color: var(--gray-400);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* ── SECTION HEADER ────────────────────── */
+        .section-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 4px;
+        }
+
+        .section-sub {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+        }
+
+        /* ── STEP INDICATOR ────────────────────── */
+        .steps {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            padding-top: 4px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .step-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            z-index: 1;
+            background: var(--gray-100);
+            color: var(--gray-400);
+            transition: all 0.2s;
+        }
+
+        .step-dot.done {
+            background: var(--primary-500);
+            color: white;
+        }
+
+        .step-dot.current {
+            background: var(--primary-500);
+            color: white;
+            box-shadow: 0 0 0 4px var(--primary-100);
+        }
+
+        .step-label {
+            font-size: 11px;
+            color: var(--gray-400);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .step-label.done,
+        .step-label.current {
+            color: var(--primary-500);
+            font-weight: 600;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: var(--gray-200);
+            margin-top: 13px;
+        }
+
+        .step-line.done {
+            background: var(--primary-500);
+        }
+
+        /* ── PROGRESS ──────────────────────────── */
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 7px;
+            color: var(--text-heading);
+        }
+
+        .progress-label span:last-child {
+            color: var(--primary-500);
+        }
+
+        .progress-track {
+            height: 8px;
+            background: var(--gray-100);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-500);
+            border-radius: var(--radius-full);
+            transition: width 0.6s ease;
+        }
+
+        /* ── TOGGLE ────────────────────────────── */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .toggle-row+.toggle-row {
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .toggle-info .toggle-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .toggle-info .toggle-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .toggle-switch {
+            width: 42px;
+            height: 24px;
+            border-radius: var(--radius-full);
+            background: var(--gray-200);
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+            border: none;
+            outline: none;
+        }
+
+        .toggle-switch.on {
+            background: var(--primary-500);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: left 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-switch.on::after {
+            left: 21px;
+        }
+
+        /* ── UPLOAD ZONE ───────────────────────── */
+        .upload-zone {
+            border: 1.5px dashed var(--gray-300);
+            border-radius: var(--radius-lg);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-400);
+            background: var(--primary-50);
+        }
+
+        .upload-zone.done {
+            border-color: var(--success-main);
+            background: var(--success-light);
+            border-style: solid;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary-500);
+            background: var(--primary-100);
+            transform: scale(1.01);
+        }
+
+        .capture-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .capture-item.analyzing {
+            border-color: var(--primary-300);
+            background: var(--primary-50);
+        }
+
+        .capture-item.done {
+            border-color: var(--success-main);
+            background: var(--success-light);
+        }
+
+        .capture-item.error {
+            border-color: var(--error-main);
+            background: var(--error-light);
+        }
+
+        .capture-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .capture-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .capture-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-heading);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .capture-status {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .capture-status.ok {
+            color: var(--success-main);
+            font-weight: 600;
+        }
+
+        .capture-status.err {
+            color: var(--error-main);
+        }
+
+        .capture-tag {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            background: var(--primary-100);
+            color: var(--primary-600);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .capture-tag.done {
+            background: var(--success-light);
+            color: #166534;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .analyzing-dot::after {
+            content: '...';
+            animation: pulse-dot 1.2s infinite;
+        }
+
+        .upload-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .upload-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .upload-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* ── DIVIDER ───────────────────────────── */
+        .divider {
+            height: 1px;
+            background: var(--gray-100);
+            margin: 18px 0;
+        }
+
+        /* ── TAGS / CHIPS ──────────────────────── */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-purple {
+            background: var(--primary-100);
+            color: var(--primary-600);
+        }
+
+        .tag-green {
+            background: var(--success-light);
+            color: #15803d;
+        }
+
+        .tag-yellow {
+            background: var(--warning-light);
+            color: #92400e;
+        }
+
+        .tag-gray {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .chip-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .chip {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-body);
+            transition: all 0.15s;
+        }
+
+        .chip:hover {
+            border-color: var(--primary-300);
+            color: var(--primary-600);
+            background: var(--primary-50);
+        }
+
+        .chip.on {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+        }
+
+        /* ── DATE CHIPS ────────────────────────── */
+        .date-chip {
+            flex: 1;
+            min-width: 44px;
+            padding: 8px 0;
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-body);
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .date-chip:hover {
+            border-color: var(--primary-300);
+            background: var(--primary-50);
+        }
+
+        .date-chip.on {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+        }
+
+        .date-chip .day-num {
+            font-size: 10px;
+            opacity: 0.75;
+            margin-top: 1px;
+        }
+
+        /* ── PARTICIPANT ───────────────────────── */
+        .p-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            background: var(--gray-50);
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .p-item:hover {
+            border-color: var(--primary-200);
+            background: var(--primary-50);
+        }
+
+        .p-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .p-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .p-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .status-pill {
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .pill-done {
+            background: var(--success-light);
+            color: #15803d;
+        }
+
+        .pill-wait {
+            background: var(--gray-100);
+            color: var(--gray-500);
+        }
+
+        /* ── TIME GRID ─────────────────────────── */
+        .grid-wrap {
+            overflow-x: auto;
+        }
+
+        .time-grid {
+            user-select: none;
+            min-width: 280px;
+        }
+
+        .grid-header {
+            display: flex;
+        }
+
+        .grid-time-col {
+            width: 44px;
+            flex-shrink: 0;
+        }
+
+        .day-col-header {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 5px 2px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .grid-row {
+            display: flex;
+            align-items: stretch;
+        }
+
+        .time-label {
+            width: 44px;
+            flex-shrink: 0;
+            font-size: 11px;
+            color: var(--gray-400);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            height: 26px;
+        }
+
+        .t-cell {
+            flex: 1;
+            height: 26px;
+            border: 0.5px solid var(--gray-200);
+            cursor: pointer;
+            background: white;
+            transition: background 0.08s;
+        }
+
+        .t-cell:hover {
+            background: var(--primary-100);
+        }
+
+        .t-cell.sel {
+            background: var(--primary-500);
+        }
+
+        /* Heatmap */
+        .t-cell.h0 {
+            background: #fafafa;
+        }
+
+        .t-cell.h1 {
+            background: #e5e3f5;
+        }
+
+        .t-cell.h2 {
+            background: #b5ace3;
+        }
+
+        .t-cell.h3 {
+            background: #9385d4;
+        }
+
+        .t-cell.h4 {
+            background: #7b6ac4;
+        }
+
+        .t-cell.h4.star {
+            outline: 2px solid #22c55e;
+            outline-offset: -2px;
+        }
+
+        /* ── TABS ──────────────────────────────── */
+        .tabs {
+            display: flex;
+            background: var(--gray-100);
+            border-radius: var(--radius-md);
+            padding: 3px;
+            margin-bottom: 18px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font);
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .tab-btn.on {
+            background: white;
+            color: var(--primary-600);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ── NOTICE ────────────────────────────── */
+        .notice {
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            line-height: 1.55;
+        }
+
+        .notice-purple {
+            background: var(--primary-100);
+            color: var(--primary-600);
+            border: 1px solid var(--primary-200);
+        }
+
+        .notice-green {
+            background: var(--success-light);
+            color: #15803d;
+        }
+
+        /* ── TIME OPTION ───────────────────────── */
+        .time-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            margin-bottom: 10px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .time-option:hover {
+            border-color: var(--primary-300);
+            background: var(--primary-50);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .time-option.on {
+            border-color: var(--primary-500);
+            background: var(--primary-50);
+        }
+
+        .t-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: var(--radius-full);
+            border: 2px solid var(--gray-300);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .time-option.on .t-radio {
+            border-color: var(--primary-500);
+            background: var(--primary-500);
+        }
+
+        .time-option.on .t-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .t-info {
+            flex: 1;
+        }
+
+        .t-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .t-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .t-badge {
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--primary-500);
+            color: white;
+        }
+
+        /* ── MAP PLACEHOLDER ───────────────────── */
+        .map-box {
+            background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+            border-radius: var(--radius-lg);
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid var(--primary-200);
+        }
+
+        .midpoint-badge {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-500);
+            color: white;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(147, 133, 212, 0.4);
+        }
+
+        .map-pin {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .pin-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .pin-label {
+            font-size: 10px;
+            font-weight: 700;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: var(--shadow-md);
+            white-space: nowrap;
+        }
+
+        .midpoint-dot {
+            position: absolute;
+            top: 50%;
+            left: 42%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--primary-500);
+            box-shadow: 0 2px 8px rgba(147, 133, 212, 0.5);
+        }
+
+        /* ── PLACE CARD ────────────────────────── */
+        .place-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .place-card:hover {
+            border-color: var(--primary-300);
+            background: var(--primary-50);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .place-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .place-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .place-detail {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .place-dist {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-600);
+            white-space: nowrap;
+        }
+
+        /* ── SHARE CARD ────────────────────────── */
+        .share-card {
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(147, 133, 212, 0.35);
+        }
+
+        .share-link {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-md);
+            padding: 11px 14px;
+            font-size: 13px;
+            word-break: break-all;
+            margin: 14px 0;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .share-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ── RESULT HEADER ─────────────────────── */
+        .result-header {
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            padding: 36px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .result-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .result-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .result-pill {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+            margin: 3px;
+        }
+
+        /* ── BOTTOM BAR ────────────────────────── */
+        .bottom-bar {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            border-top: 1px solid var(--gray-100);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .bottom-bar .btn {
+            width: 100%;
+            max-width: 448px;
+        }
+
+        /* ── ANIMATIONS ────────────────────────── */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.45;
+            }
+        }
+
+        .pulse {
+            animation: pulse 1.4s infinite;
+        }
+
+        /* ── CALENDAR SETUP — connect card ──────── */
+        .connect-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            background: white;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .connect-card:hover {
+            border-color: var(--primary-300);
+            box-shadow: var(--shadow-md);
+        }
+
+        .connect-card.done {
+            border-color: var(--success-main);
+            background: var(--success-light);
+        }
+
+        .cc-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cc-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .cc-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .cc-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .cc-action {
+            margin-left: auto;
+        }
+
+        /* ── TOAST ─────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: 76px;
+            left: 50%;
+            transform: translateX(-50%) translateY(12px);
+            background: var(--gray-800);
+            color: white;
+            padding: 11px 20px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.28s;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+        }
+
+        /* Scrollbar hidden on mobile */
+        .grid-wrap::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .grid-wrap::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 2px;
+        }
+
+        /* ── MAIN DASHBOARD CALENDAR ───────────── */
+        .cal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ── Timetable ─────────────────────────── */
+        .tt-range-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+        }
+
+        .tt-date-input {
+            border: none;
+            outline: none;
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-heading);
+            background: transparent;
+            cursor: pointer;
+            width: 118px;
+        }
+
+        .tt-range-sep {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .tt-shift-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--gray-400);
+            padding: 0 4px;
+            line-height: 1;
+            transition: color .15s;
+        }
+
+        .tt-shift-btn:hover {
+            color: var(--primary-500);
+        }
+
+        .tt-scroll {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: white;
+        }
+
+        .tt-inner {
+            min-width: max-content;
+        }
+
+        .tt-header-row {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .tt-time-header {
+            width: 42px;
+            flex-shrink: 0;
+        }
+
+        .tt-day-header {
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            padding: 8px 4px 6px;
+            border-left: 1px solid var(--gray-100);
+        }
+
+        .tt-day-header .dow {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .tt-day-header .date-num {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-heading);
+            line-height: 1.2;
+        }
+
+        .tt-day-header.tt-today .dow {
+            color: var(--primary-500);
+        }
+
+        .tt-day-header.tt-today .date-num {
+            color: white;
+            background: var(--primary-500);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .tt-body {
+            display: flex;
+        }
+
+        .tt-time-col {
+            width: 42px;
+            flex-shrink: 0;
+        }
+
+        .tt-time-slot {
+            height: 36px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding: 3px 6px 0 0;
+            font-size: 10px;
+            color: var(--gray-400);
+            border-top: 1px solid var(--gray-100);
+            box-sizing: border-box;
+        }
+
+        .tt-day-col {
+            flex: 1;
+            min-width: 100px;
+            position: relative;
+            border-left: 1px solid var(--gray-100);
+        }
+
+        .tt-slot-row {
+            height: 36px;
+            border-top: 1px solid var(--gray-100);
+            box-sizing: border-box;
+        }
+
+
+        .tt-block {
+            position: absolute;
+            left: 3px;
+            right: 3px;
+            border-radius: 5px;
+            padding: 3px 5px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.3;
+            overflow: hidden;
+            z-index: 5;
+            border-left-width: 3px;
+            border-left-style: solid;
+            cursor: default;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .cal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .cal-month {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .cal-nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            background: var(--primary-100);
+            color: var(--primary-600);
+        }
+
+        .cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .cal-day {
+            aspect-ratio: 1/1;
+            border-radius: var(--radius-full);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-body);
+            position: relative;
+            transition: all 0.15s;
+            gap: 2px;
+        }
+
+        .cal-day:hover:not(.empty):not(.today):not(.selected) {
+            background: var(--primary-50);
+            color: var(--primary-600);
+            transform: translateY(-1px);
+        }
+
+        .cal-day.empty {
+            cursor: default;
+            color: var(--gray-300);
+        }
+
+        .cal-day.today {
+            background: var(--primary-500);
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 3px 8px rgba(147, 133, 212, 0.4);
+        }
+
+        .cal-day.selected:not(.today) {
+            background: var(--primary-100);
+            color: var(--primary-600);
+            font-weight: 700;
+        }
+
+        .cal-day.other-month {
+            color: var(--gray-300);
+        }
+
+        .dot-row {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .ev-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-purple {
+            background: var(--primary-500);
+        }
+
+        .dot-green {
+            background: #F21616;
+        }
+
+        .dot-orange {
+            background: #FBBC05;
+        }
+
+        .cal-day.today .dot-purple,
+        .cal-day.today .dot-green {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        /* ── EVENT LIST ────────────────────────── */
+        .ev-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .ev-item:hover {
+            border-color: var(--primary-200);
+            background: var(--primary-50);
+            transform: translateX(2px);
+        }
+
+        .ev-stripe {
+            width: 4px;
+            border-radius: 2px;
+            align-self: stretch;
+            flex-shrink: 0;
+        }
+
+        .ev-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .ev-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .ev-source {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        /* ── FAB ────────────────────────────────── */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-full);
+            background: var(--primary-500);
+            color: white;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(147, 133, 212, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 50;
+        }
+
+        .fab:hover {
+            background: var(--primary-600);
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 10px 28px rgba(147, 133, 212, 0.55);
+        }
+
+        .fab:active {
+            transform: scale(0.96);
+        }
+
+        .fab-label {
+            position: fixed;
+            bottom: 34px;
+            right: 88px;
+            background: var(--gray-800);
+            color: white;
+            padding: 7px 14px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ── CAL LEGEND ────────────────────────── */
+        .cal-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ── PROFILE ─────────────────────────────*/
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            padding: 28px 20px 24px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar-lg {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 800;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .profile-email {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .cal-source-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+        }
+
+        .cal-source-row+.cal-source-row {
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .cal-source-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .cal-source-info {
+            flex: 1;
+        }
+
+        .cal-source-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .cal-source-status {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .status-connected {
+            color: var(--success-main);
+            font-weight: 600;
+        }
+
+        .status-none {
+            color: var(--gray-400);
+        }
+
+        /* ── MINI-CAL (profile) ─────────────────── */
+        .mini-cal {
+            font-size: 11px;
+        }
+
+        .mini-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-top: 6px;
+        }
+
+        .mini-day {
+            aspect-ratio: 1/1;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: default;
+        }
+
+        .mini-day.has-p {
+            background: #fef9c3;
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .mini-day.has-g {
+            background: #fde8e8;
+            color: #a81010;
+            font-weight: 600;
+        }
+
+        .mini-day.has-pg {
+            background: #fef08a;
+            color: #92400e;
+            font-weight: 700;
+        }
+
+        .mini-day.today-m {
+            outline: 2px solid var(--primary-500);
+            border-radius: var(--radius-sm);
+        }
+
+        .mini-day.blank {
+            visibility: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ════════════════════════════════════════
+     S1  LANDING
+════════════════════════════════════════ -->
+    <div id="s-landing" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+        </nav>
+
+        <div class="animate-in"
+            style="flex:1;display:flex;flex-direction:column;align-items:center;padding:48px 32px 40px;max-width:100%">
+
+            <!-- 로고 + 태그라인 -->
+            <div style="text-align:center;margin-bottom:32px">
+                <div style="font-size:34px;font-weight:800;color:var(--text-heading);line-height:1.2;margin-bottom:8px">
+                    <span
+                        style="background:linear-gradient(135deg,var(--primary-500),var(--primary-600));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">MOIM</span>
+                </div>
+                <div style="color:var(--text-muted);font-size:14px">캘린더 연동 한 번으로 모두의 빈 시간을 자동으로</div>
+            </div>
+
+
+            <!-- 아이디 / 비밀번호 로그인 -->
+            <div style="width:400px;max-width:calc(100vw - 64px)">
+                <div style="margin-bottom:12px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:6px">아이디</div>
+                    <input class="form-input" type="text" placeholder="아이디를 입력하세요" id="login-id">
+                </div>
+                <div style="margin-bottom:16px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:6px">비밀번호</div>
+                    <input class="form-input" type="password" placeholder="비밀번호를 입력하세요" id="login-pw">
+                </div>
+                <button class="btn btn-primary btn-full btn-lg" onclick="loginEmail()">로그인</button>
+
+                <div
+                    style="display:flex;justify-content:center;gap:20px;margin-top:14px;font-size:13px;color:var(--text-muted)">
+                    <span style="cursor:pointer;transition:color 0.15s"
+                        onmouseover="this.style.color='var(--primary-600)'"
+                        onmouseout="this.style.color='var(--text-muted)'">아이디 찾기</span>
+                    <span style="color:var(--gray-300)">|</span>
+                    <span style="cursor:pointer;transition:color 0.15s"
+                        onmouseover="this.style.color='var(--primary-600)'"
+                        onmouseout="this.style.color='var(--text-muted)'">비밀번호 찾기</span>
+                    <span style="color:var(--gray-300)">|</span>
+                    <span style="cursor:pointer;transition:color 0.15s"
+                        onmouseover="this.style.color='var(--primary-600)'"
+                        onmouseout="this.style.color='var(--text-muted)'">회원가입</span>
+                </div>
+
+                <!-- 구분선 -->
+                <div
+                    style="display:flex;align-items:center;gap:12px;margin:22px 0;color:var(--gray-400);font-size:13px">
+                    <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+                    또는
+                    <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+                </div>
+
+                <!-- 소셜 로그인 -->
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <button class="btn btn-kakao btn-full" style="padding:12px 20px;font-size:14px"
+                        onclick="loggedIn=true;go('s-calendar-setup')">
+                        💬 카카오로 로그인
+                    </button>
+                    <button class="btn btn-google btn-full" style="padding:12px 20px;font-size:14px"
+                        onclick="loggedIn=true;go('s-calendar-setup')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0">
+                            <path fill="#4285F4"
+                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853"
+                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05"
+                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+                            <path fill="#EA4335"
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        구글로 로그인
+                    </button>
+                    <button class="btn btn-full"
+                        style="padding:12px 20px;font-size:14px;background:#03C75A;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font);font-weight:600;transition:all 0.25s;display:inline-flex;align-items:center;justify-content:center;gap:6px"
+                        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(3,199,90,0.35)'"
+                        onmouseout="this.style.transform='';this.style.boxShadow=''"
+                        onclick="loggedIn=true;go('s-calendar-setup')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="flex-shrink:0">
+                            <path
+                                d="M16.98 0a4 4 0 0 1 3.8 3.11L22 9.04v.24a4.1 4.1 0 0 1-4.08 4.12H5.96A4.11 4.11 0 0 1 2 9.28v-.24L3.22 3.1A4 4 0 0 1 7.02 0h9.96zM12 16.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-5.5 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm11 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                        </svg>
+                        네이버로 로그인
+                    </button>
+                    <button class="btn btn-full"
+                        style="padding:12px 20px;font-size:14px;background:#000;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font);font-weight:600;transition:all 0.25s;display:inline-flex;align-items:center;justify-content:center;gap:6px"
+                        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.25)'"
+                        onmouseout="this.style.transform='';this.style.boxShadow=''"
+                        onclick="loggedIn=true;go('s-calendar-setup')">
+                        <svg width="16" height="18" viewBox="0 0 814 1000" fill="white" style="flex-shrink:0">
+                            <path
+                                d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-37.2-150.3-82.4c-80.1-82.4-145.5-209.9-145.5-331.2 0-194.2 126.9-297.4 251.9-297.4 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" />
+                        </svg>
+                        Apple로 로그인
+                    </button>
+                </div>
+
+                <!-- 초대 링크 참여 -->
+                <div style="text-align:center;margin-top:20px">
+                    <span style="font-size:13px;color:var(--text-muted)">로그인 없이 참여하려면 </span>
+                    <span style="font-size:13px;color:var(--primary-600);font-weight:600;cursor:pointer"
+                        onclick="go('s-participant')">초대 링크로 참여 →</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S2  캘린더 연동 (로그인 직후 1회)
+════════════════════════════════════════ -->
+    <div id="s-calendar-setup" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:100px">
+            <div style="margin-top:8px">
+                <div style="font-size:12px;color:var(--primary-500);font-weight:600;margin-bottom:6px">STEP 1 / 2 — 시작 전
+                    1회 설정</div>
+                <div class="section-title">내 일정 연동하기</div>
+                <div class="section-sub">연동하면 다음엔 자동으로 반영돼요. 한 번만 설정하면 끝!</div>
+            </div>
+
+            <!-- Apple Calendar -->
+            <div class="connect-card" id="cc-apple" onclick="connectApple()">
+                <div class="cc-header">
+                    <div class="cc-icon">🍎</div>
+                    <div>
+                        <div class="cc-title">애플 캘린더</div>
+                        <div class="cc-sub">iPhone · iPad 캘린더와 연동해요</div>
+                    </div>
+                    <div class="cc-action">
+                        <span class="btn btn-secondary btn-sm" id="btn-apple-cal">연동하기</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Calendar -->
+            <div class="connect-card" id="cc-google" onclick="connectGoogle()">
+                <div class="cc-header">
+                    <div class="cc-icon">🗓️</div>
+                    <div>
+                        <div class="cc-title">구글 캘린더</div>
+                        <div class="cc-sub">개인 일정을 자동으로 차단해드려요</div>
+                    </div>
+                    <div class="cc-action">
+                        <span class="btn btn-secondary btn-sm" id="btn-google-cal">연동하기</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Samsung Calendar -->
+            <div class="connect-card" id="cc-samsung" onclick="connectSamsung()">
+                <div class="cc-header">
+                    <div class="cc-icon">📅</div>
+                    <div>
+                        <div class="cc-title">삼성 캘린더</div>
+                        <div class="cc-sub">Galaxy 기본 캘린더 앱과 연동해요</div>
+                    </div>
+                    <div class="cc-action">
+                        <span class="btn btn-secondary btn-sm" id="btn-samsung-cal">연동하기</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Everytime -->
+            <div class="connect-card" id="cc-everytime" onclick="connectEverytime()">
+                <div class="cc-header">
+                    <div class="cc-icon">📱</div>
+                    <div>
+                        <div class="cc-title">에브리타임 시간표</div>
+                        <div class="cc-sub">에브리타임 시간표와 연동해요</div>
+                    </div>
+                    <div class="cc-action">
+                        <span class="btn btn-secondary btn-sm" id="btn-et-cal">연동하기</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+
+
+            <!-- Everytime upload zone (숨김 → 카드 클릭 시 펼쳐짐) -->
+            <div id="et-upload-wrap" style="display:none;margin-top:-6px;margin-bottom:10px">
+                <div class="upload-zone" id="et-upload" onclick="uploadET()"
+                    style="border-top-left-radius:0;border-top-right-radius:0;border-top:none">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-title">시간표 스크린샷 업로드</div>
+                    <div class="upload-sub">에브리타임 앱에서 캡처한 이미지를 올려주세요</div>
+                </div>
+                <div class="form-hint" style="margin-top:6px">💡 AI가 색칠된 블록 위치만 감지해요. 과목명은 저장되지 않아요</div>
+            </div>
+
+            <!-- ── 스케줄 캡처 업로드 ──────────────────────── -->
+            <div class="divider" style="margin:20px 0 16px"></div>
+            <div style="margin-bottom:12px">
+                <div class="section-title" style="font-size:15px">📸 스케줄 캡처 업로드</div>
+                <div class="section-sub" style="margin-top:4px">종이 시간표, 앱 화면 등 어떤 형식이든 찍어서 올리면<br>AI가 자동으로 일정을 분석해 반영해요
+                </div>
+            </div>
+
+            <!-- 업로드 영역 -->
+            <div class="upload-zone" id="capture-zone" onclick="triggerCaptureInput()" style="position:relative">
+                <input type="file" id="capture-input" accept="image/*" multiple style="display:none"
+                    onchange="handleCaptureFiles(this.files)">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-title">사진 선택 또는 드래그</div>
+                <div class="upload-sub">PNG · JPG · 스크린샷 모두 가능 · 여러 장 한 번에 OK</div>
+            </div>
+
+            <!-- 분석 결과 목록 -->
+            <div id="capture-results" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+
+            <!-- .ics -->
+            <div class="divider" style="margin:20px 0 16px"></div>
+            <div class="form-group">
+                <div class="form-label">.ics 파일 업로드 <span class="tag tag-gray">네이버·다음 캘린더</span></div>
+                <div class="upload-zone" onclick="showToast('.ics 파일을 업로드했어요!')">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-title">.ics 파일 선택</div>
+                    <div class="upload-sub">캘린더 앱 → 내보내기 → 업로드</div>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-group">
+                <div class="form-label">내 위치 <span class="tag tag-purple">중간지점 계산</span></div>
+                <input class="form-input" type="text" id="host-loc" placeholder="예: 서울 성북구 돈암동" value="서울 성북구 돈암동">
+                <div class="form-hint">📍 모임 확정 후 모두에게 딱 맞는 중간 장소를 추천해드려요</div>
+            </div>
+
+            <div class="notice notice-purple">
+                <span>🔒</span>
+                <span>캘린더 <b>내용</b>은 서버에 저장되지 않아요. 가능/불가능 여부만 추출합니다.</span>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="btn btn-primary" onclick="loggedIn=true;go('s-main')">완료</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S-MAIN  메인 대시보드
+════════════════════════════════════════ -->
+    <div id="s-main" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar" onclick="go('s-profile')" title="프로필 / 내 캘린더">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:90px;max-width:960px">
+
+            <!-- 날짜 범위 선택 -->
+            <div class="tt-range-bar" style="margin-top:16px">
+                <button class="tt-shift-btn" onclick="shiftRange(-1)">‹</button>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px">
+                    <input type="date" id="tt-start" class="tt-date-input" value="2026-04-13" onchange="updateRange()">
+                    <span class="tt-range-sep">~</span>
+                    <input type="date" id="tt-end" class="tt-date-input" value="2026-04-19" onchange="updateRange()">
+                </div>
+                <button class="tt-shift-btn" onclick="shiftRange(1)">›</button>
+            </div>
+
+            <!-- 범례 -->
+            <div class="cal-legend" style="margin:10px 0 8px">
+                <div class="legend-item">
+                    <div class="legend-dot dot-orange"></div>내 일정
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot dot-green"></div>에브리타임
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot dot-purple"></div>모임
+                </div>
+            </div>
+
+            <!-- 타임테이블 -->
+            <div class="tt-scroll">
+                <div class="tt-inner" id="tt-grid"></div>
+            </div>
+
+            <div class="divider" style="margin:20px 0 14px"></div>
+
+            <!-- 내 모임 현황 -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:10px">🗂 내 모임</div>
+
+            <div class="ev-item" onclick="go('s-status')">
+                <div class="ev-stripe" style="background:var(--warning-main)"></div>
+                <div>
+                    <div class="ev-name">조별과제 회의</div>
+                    <div class="ev-time">4월 16일 (수) 오후 2:00 · 3명/4명 응답</div>
+                    <div class="ev-source">진행 중</div>
+                </div>
+                <span class="tag tag-yellow">대기 중</span>
+            </div>
+            <div class="ev-item" onclick="showToast('완료된 모임이에요!')">
+                <div class="ev-stripe" style="background:var(--success-main)"></div>
+                <div>
+                    <div class="ev-name">알고리즘 스터디 킥오프</div>
+                    <div class="ev-time">4월 10일 (목) 오후 4:00</div>
+                    <div class="ev-source">완료 · 홍대입구 스터디카페</div>
+                </div>
+                <span class="tag tag-green">완료</span>
+            </div>
+        </div>
+
+        <!-- FAB: 모임 만들기 -->
+        <div class="fab-label">모임 만들기</div>
+        <button class="fab" onclick="go('s-host-create')" title="모임 만들기">＋</button>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S3  모임 만들기
+════════════════════════════════════════ -->
+    <div id="s-host-create" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar" onclick="go('s-profile')">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:100px">
+            <!-- Steps -->
+            <div class="steps" style="margin-top:10px">
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">캘린더 연동</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot current">2</div>
+                    <div class="step-label current">모임 설정</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-dot">3</div>
+                    <div class="step-label">날짜 선택</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-dot">4</div>
+                    <div class="step-label">공유</div>
+                </div>
+            </div>
+
+            <div class="section-title">모임 만들기</div>
+            <div class="section-sub">어떤 모임을 잡을까요?</div>
+
+            <div class="form-group">
+                <div class="form-label">모임 이름 *</div>
+                <input class="form-input" type="text" placeholder="예: 알고리즘 스터디 1회차" value="조별과제 회의">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="form-label">예상 소요시간</div>
+                    <select class="form-input">
+                        <option>30분</option>
+                        <option selected>1시간</option>
+                        <option>1시간 30분</option>
+                        <option>2시간</option>
+                        <option>3시간</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">참여 인원</div>
+                    <select class="form-input">
+                        <option>2명</option>
+                        <option>3명</option>
+                        <option selected>4명</option>
+                        <option>5명</option>
+                        <option>6명+</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-label">모임 목적</div>
+                <div class="chip-wrap">
+                    <div class="chip on" onclick="this.classList.toggle('on')">📚 조별과제</div>
+                    <div class="chip" onclick="this.classList.toggle('on')">🎯 스터디</div>
+                    <div class="chip" onclick="this.classList.toggle('on')">🎵 동아리</div>
+                    <div class="chip" onclick="this.classList.toggle('on')">🍽️ 밥약</div>
+                    <div class="chip" onclick="this.classList.toggle('on')">🎮 놀기</div>
+                    <div class="chip" onclick="this.classList.toggle('on')">💼 기타</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="notice notice-purple">
+                <span>✨</span>
+                <span>캘린더가 이미 연동되어 있어서, <b>막힌 시간이 자동으로 반영</b>됩니다. 따로 입력할 필요 없어요!</span>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="btn btn-primary" onclick="go('s-host-dates')">다음</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S4  날짜 선택
+════════════════════════════════════════ -->
+    <div id="s-host-dates" class="screen" style="overflow-y:auto">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar" onclick="go('s-profile')">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:100px">
+            <div class="steps" style="margin-top:10px">
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">캘린더 연동</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">모임 설정</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot current">3</div>
+                    <div class="step-label current">날짜 선택</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-dot">4</div>
+                    <div class="step-label">공유</div>
+                </div>
+            </div>
+
+            <div class="section-title">후보 날짜 선택</div>
+            <div class="section-sub">참여자들이 응답할 날짜 범위를 선택해주세요</div>
+
+            <div class="form-group">
+                <div class="form-label">이번 주 후보 날짜</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <div class="date-chip" onclick="this.classList.toggle('on')">월<div class="day-num">4/14</div>
+                    </div>
+                    <div class="date-chip on" onclick="this.classList.toggle('on')">화<div class="day-num">4/15</div>
+                    </div>
+                    <div class="date-chip on" onclick="this.classList.toggle('on')">수<div class="day-num">4/16</div>
+                    </div>
+                    <div class="date-chip" onclick="this.classList.toggle('on')">목<div class="day-num">4/17</div>
+                    </div>
+                    <div class="date-chip on" onclick="this.classList.toggle('on')">금<div class="day-num">4/18</div>
+                    </div>
+                    <div class="date-chip" onclick="this.classList.toggle('on')">토<div class="day-num">4/19</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="form-label">시작 시간</div>
+                    <select class="form-input">
+                        <option>오전 8:00</option>
+                        <option>오전 9:00</option>
+                        <option selected>오전 10:00</option>
+                        <option>오전 11:00</option>
+                        <option>오후 12:00</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">종료 시간</div>
+                    <select class="form-input">
+                        <option>오후 6:00</option>
+                        <option selected>오후 8:00</option>
+                        <option>오후 10:00</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-label">응답 마감일</div>
+                <input class="form-input" type="date" value="2026-04-16">
+                <div class="form-hint">이 날짜까지 응답한 참여자 기준으로 확정할 수 있어요</div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="btn btn-primary" onclick="go('s-host-share')">링크 생성</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S5  공유 링크
+════════════════════════════════════════ -->
+    <div id="s-host-share" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar" onclick="go('s-profile')">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in">
+            <div class="steps" style="margin-top:10px">
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">캘린더 연동</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">모임 설정</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot done">✓</div>
+                    <div class="step-label done">날짜 선택</div>
+                </div>
+                <div class="step-line done"></div>
+                <div class="step">
+                    <div class="step-dot current">4</div>
+                    <div class="step-label current">공유</div>
+                </div>
+            </div>
+
+            <div class="share-card">
+                <div style="font-size:36px;margin-bottom:12px">🎉</div>
+                <div style="font-size:18px;font-weight:800;margin-bottom:6px">조별과제 회의</div>
+                <div style="font-size:13px;opacity:0.85;margin-bottom:2px">1시간 · 4명 · 화/수/금 후보</div>
+                <div style="font-size:13px;opacity:0.85">4/15–4/18 · 오전 10:00~오후 8:00</div>
+                <div class="share-link" onclick="copyLink()">🔗 moim.ai/join/abc123xyz</div>
+                <div style="font-size:12px;opacity:0.65">클릭하면 복사돼요</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+                <button class="btn btn-kakao btn-full btn-lg" onclick="showToast('카카오톡 공유 링크가 전송됐어요!')">
+                    💬 카카오톡으로 공유
+                </button>
+                <button class="btn btn-outline btn-full" onclick="copyLink()">📋 링크 복사</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="notice notice-purple">
+                <span>✨</span>
+                <span>참여자가 링크를 클릭하면 가용시간이 자동 반영됩니다. 실시간 현황을 확인해보세요!</span>
+            </div>
+
+            <button class="btn btn-primary btn-full" style="margin-top:14px" onclick="go('s-status')">
+                📊 실시간 현황 보기
+            </button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S6  실시간 현황
+════════════════════════════════════════ -->
+    <div id="s-status" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <button class="btn btn-secondary btn-sm" onclick="go('s-host-share')">공유</button>
+                <div class="avatar" onclick="go('s-profile')">김</div>
+            </div>
+        </nav>
+
+        <div class="container-wide animate-in" style="padding-bottom:100px">
+            <div style="margin-top:4px">
+                <div style="font-size:20px;font-weight:800;color:var(--text-heading)">조별과제 회의</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:3px">1시간 · 화/수/금 후보 · 마감 4/16</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Progress -->
+            <div style="margin-bottom:18px">
+                <div class="progress-label"><span>참여 현황</span><span id="prog-text">3명 / 4명 완료</span></div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="prog-fill" style="width:75%"></div>
+                </div>
+            </div>
+
+            <!-- Participants -->
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+                <div class="p-item">
+                    <div class="p-avatar" style="background:var(--primary-100);color:var(--primary-600)">김</div>
+                    <div>
+                        <div class="p-name">김유현 (나)</div>
+                        <div class="p-sub">구글 캘린더 연동 · 서울 성북구</div>
+                    </div>
+                    <span class="status-pill pill-done">완료</span>
+                </div>
+                <div class="p-item">
+                    <div class="p-avatar" style="background:var(--warning-light);color:#92400e">이</div>
+                    <div>
+                        <div class="p-name">이민준</div>
+                        <div class="p-sub">구글 캘린더 연동 · 서울 마포구</div>
+                    </div>
+                    <span class="status-pill pill-done">완료</span>
+                </div>
+                <div class="p-item">
+                    <div class="p-avatar" style="background:#fce7f3;color:#be185d">박</div>
+                    <div>
+                        <div class="p-name">박서연</div>
+                        <div class="p-sub">에브리타임 + 직접입력 · 서울 서대문구</div>
+                    </div>
+                    <span class="status-pill pill-done">완료</span>
+                </div>
+                <div class="p-item" id="last-p">
+                    <div class="p-avatar" style="background:var(--gray-100);color:var(--gray-400)">최</div>
+                    <div>
+                        <div class="p-name">최준호</div>
+                        <div class="p-sub pulse" id="last-sub" style="color:var(--gray-400)">응답 대기 중...</div>
+                    </div>
+                    <span class="status-pill pill-wait" id="last-pill">대기 중</span>
+                </div>
+            </div>
+
+            <button class="btn btn-outline btn-sm" onclick="showToast('최준호님께 카카오톡 리마인더를 보냈어요!')">
+                💬 최준호님에게 카톡 재촉구
+            </button>
+
+            <div class="divider"></div>
+
+            <!-- Heatmap -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:3px">
+                공통 가능 시간 <span class="tag tag-purple">3명 기준</span>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">짙을수록 더 많은 사람이 가능한 시간</div>
+
+            <div class="card" style="padding:12px">
+                <div class="grid-wrap">
+                    <div id="heatmap-grid"></div>
+                </div>
+                <div
+                    style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--text-muted)">
+                    <span>적음</span>
+                    <div style="display:flex;gap:2px">
+                        <div style="width:16px;height:16px;border-radius:3px;background:var(--primary-100)"></div>
+                        <div style="width:16px;height:16px;border-radius:3px;background:var(--primary-200)"></div>
+                        <div style="width:16px;height:16px;border-radius:3px;background:var(--primary-400)"></div>
+                        <div style="width:16px;height:16px;border-radius:3px;background:var(--primary-500)"></div>
+                        <div style="width:16px;height:16px;border-radius:3px;background:var(--primary-600)"></div>
+                    </div>
+                    <span>많음</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-full btn-lg" style="margin-top:18px" onclick="go('s-confirm')">
+                ⏰ 시간 확정하기
+            </button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S7  참여자 — 참여하기
+════════════════════════════════════════ -->
+    <div id="s-participant" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:100px">
+            <div style="text-align:center;margin:24px 0">
+                <div style="font-size:36px;margin-bottom:12px">📅</div>
+                <div style="font-size:20px;font-weight:800;color:var(--text-heading)">조별과제 회의</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:4px">김유현님이 초대했어요</div>
+                <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+                    <span class="tag tag-purple">1시간</span>
+                    <span class="tag tag-purple">4명</span>
+                    <span class="tag tag-purple">화/수/금 후보</span>
+                    <span class="tag tag-green">3명 완료</span>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn on" onclick="switchTab(this,'tc-cal')">🔗 캘린더 연동</button>
+                <button class="tab-btn" onclick="switchTab(this,'tc-manual')">✏️ 직접 입력</button>
+            </div>
+
+            <!-- TAB A: Calendar connect -->
+            <div id="tc-cal">
+                <div class="notice notice-purple" style="margin-bottom:16px">
+                    <span>✨</span>
+                    <span>캘린더를 연동하면 가능한 시간이 <b>자동으로</b> 반영돼요. 한 번만 설정하면 다음엔 자동!</span>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                    <button class="btn btn-google btn-full btn-lg" onclick="connectCalP('google')">🔵 구글 캘린더로
+                        연동</button>
+                    <button class="btn btn-outline btn-full btn-lg" onclick="connectCalP('apple')">🍎 애플 캘린더로
+                        연동</button>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-label">에브리타임 시간표 <span class="tag tag-gray">선택</span></div>
+                    <div class="upload-zone" id="et-p" onclick="uploadETP()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-title">시간표 캡처 업로드</div>
+                        <div class="upload-sub">수업 시간이 자동으로 차단돼요</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-label">내 위치 <span class="tag tag-purple">중간지점 계산</span></div>
+                    <input class="form-input" type="text" placeholder="예: 서울 마포구 합정동" value="서울 마포구 합정동">
+                </div>
+            </div>
+
+            <!-- TAB B: Manual -->
+            <div id="tc-manual" style="display:none">
+                <div class="notice notice-purple" style="margin-bottom:14px">
+                    <span>👆</span>
+                    <span>가능한 시간을 <b>드래그</b>해서 선택하세요. 파란색이 가능한 시간이에요.</span>
+                </div>
+                <div class="card" style="padding:12px">
+                    <div class="grid-wrap">
+                        <div id="manual-grid"></div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:14px">
+                    <div class="form-label">내 위치 <span class="tag tag-purple">중간지점 계산</span></div>
+                    <input class="form-input" type="text" placeholder="예: 서울 서대문구 신촌">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:6px">
+                <div class="form-label">이름</div>
+                <input class="form-input" type="text" placeholder="이름을 입력해주세요" value="박서연">
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="btn btn-primary" onclick="submitP()">제출하기</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S8  시간 확정
+════════════════════════════════════════ -->
+    <div id="s-confirm" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar">김</div>
+            </div>
+        </nav>
+
+        <div class="container animate-in" style="padding-bottom:100px">
+            <div style="margin-top:8px;margin-bottom:18px">
+                <div style="font-size:20px;font-weight:800;color:var(--text-heading)">시간 확정하기</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:3px">
+                    모두가 가능한 시간 중 하나를 선택해 주세요
+                    <span class="tag tag-green" style="margin-left:4px">4명 모두 가능</span>
+                </div>
+            </div>
+
+            <div style="font-size:14px;font-weight:700;color:var(--text-heading);margin-bottom:10px">🌟 AI 추천 시간</div>
+
+            <div class="time-option on" onclick="pickTime(this)">
+                <div class="t-radio"></div>
+                <div class="t-info">
+                    <div class="t-title">4월 16일 (수) 오후 2:00 – 3:00</div>
+                    <div class="t-sub">4명 모두 가능 · 점심 후 집중력 최적 시간대</div>
+                </div>
+                <span class="t-badge">추천</span>
+            </div>
+            <div class="time-option" onclick="pickTime(this)">
+                <div class="t-radio"></div>
+                <div class="t-info">
+                    <div class="t-title">4월 15일 (화) 오후 4:00 – 5:00</div>
+                    <div class="t-sub">4명 모두 가능</div>
+                </div>
+            </div>
+            <div class="time-option" onclick="pickTime(this)">
+                <div class="t-radio"></div>
+                <div class="t-info">
+                    <div class="t-title">4월 18일 (금) 오전 11:00 – 12:00</div>
+                    <div class="t-sub">3명 가능 · 1명 불확실</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="font-size:14px;font-weight:700;color:var(--text-heading);margin-bottom:10px">📍 참여자 위치</div>
+            <div class="card" style="padding:14px">
+                <div style="display:flex;flex-direction:column;gap:9px">
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                        <div class="p-avatar"
+                            style="width:28px;height:28px;font-size:11px;background:var(--primary-100);color:var(--primary-600)">
+                            김</div>
+                        <span>김유현 · 서울 성북구 돈암동</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                        <div class="p-avatar"
+                            style="width:28px;height:28px;font-size:11px;background:var(--warning-light);color:#92400e">
+                            이</div>
+                        <span>이민준 · 서울 마포구 합정동</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                        <div class="p-avatar"
+                            style="width:28px;height:28px;font-size:11px;background:#fce7f3;color:#be185d">박</div>
+                        <span>박서연 · 서울 서대문구 신촌</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                        <div class="p-avatar"
+                            style="width:28px;height:28px;font-size:11px;background:#f0fdf4;color:#15803d">최</div>
+                        <span>최준호 · 서울 은평구 연신내</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="btn btn-primary" onclick="go('s-result')">확정하기</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S9  결과 + 중간지점
+════════════════════════════════════════ -->
+    <div id="s-result" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <div class="avatar">김</div>
+            </div>
+        </nav>
+
+        <div class="result-header">
+            <div style="font-size:38px;margin-bottom:10px">🎉</div>
+            <h2>모임이 확정됐어요!</h2>
+            <p>4월 16일 (수) 오후 2:00 – 3:00</p>
+            <div style="margin-top:12px">
+                <span class="result-pill">📅 수요일</span>
+                <span class="result-pill">⏱ 1시간</span>
+                <span class="result-pill">👥 4명</span>
+            </div>
+        </div>
+
+        <div class="container-wide animate-in" style="padding-bottom:100px">
+
+            <!-- Calendar auto-add -->
+            <div class="card" style="margin-top:20px">
+                <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:12px">📲 캘린더 자동 추가
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+                        <span style="color:var(--text-body)">🔵 김유현 (구글 캘린더)</span>
+                        <span class="tag tag-green">✓ 자동 추가됨</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+                        <span style="color:var(--text-body)">🔵 이민준 (구글 캘린더)</span>
+                        <span class="tag tag-green">✓ 자동 추가됨</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+                        <span style="color:var(--text-body)">✏️ 박서연 (직접 입력)</span>
+                        <button class="btn btn-outline btn-sm" onclick="showToast('.ics 파일이 다운로드됩니다!')">📥 .ics
+                            다운로드</button>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+                        <span style="color:var(--text-body)">🔵 최준호 (구글 캘린더)</span>
+                        <span class="tag tag-green">✓ 자동 추가됨</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- MIDPOINT -->
+            <div style="font-size:18px;font-weight:800;color:var(--text-heading);margin-bottom:4px">📍 중간 지점 추천</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">4명의 위치를 분석해 최적의 만남 장소를 찾았어요</div>
+
+            <!-- Map -->
+            <div class="map-box">
+                <div class="midpoint-badge">중간 지점: 홍대·합정 일대</div>
+
+                <!-- Person pins -->
+                <div class="map-pin" style="top:32%;left:62%">
+                    <div class="pin-label" style="color:var(--primary-600)">김유현 · 성북구</div>
+                    <div style="width:2px;height:8px;background:var(--primary-500);margin:1px auto"></div>
+                    <div class="pin-dot" style="background:var(--primary-500)"></div>
+                </div>
+                <div class="map-pin" style="top:42%;left:22%">
+                    <div class="pin-label" style="color:#92400e">이민준 · 마포구</div>
+                    <div style="width:2px;height:8px;background:#d97706;margin:1px auto"></div>
+                    <div class="pin-dot" style="background:#d97706"></div>
+                </div>
+                <div class="map-pin" style="top:58%;left:28%">
+                    <div class="pin-label" style="color:#be185d">박서연 · 서대문구</div>
+                    <div style="width:2px;height:8px;background:#ec4899;margin:1px auto"></div>
+                    <div class="pin-dot" style="background:#ec4899"></div>
+                </div>
+                <div class="map-pin" style="top:25%;left:42%">
+                    <div class="pin-label" style="color:#a81010">최준호 · 은평구</div>
+                    <div style="width:2px;height:8px;background:#F21616;margin:1px auto"></div>
+                    <div class="pin-dot" style="background:#F21616"></div>
+                </div>
+
+                <div class="midpoint-dot"></div>
+            </div>
+
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+                🗺 추천 지역: <strong style="color:var(--text-heading)">서울 마포구 홍대입구·합정 일대</strong>
+                — 4명 모두 접근 용이
+            </div>
+
+            <!-- Place cards -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:10px">추천 장소</div>
+
+            <div class="place-card" onclick="showToast('네이버 지도에서 검색할게요!')">
+                <div class="place-icon" style="background:#fff7ed">☕</div>
+                <div>
+                    <div class="place-name">카페 콤마 홍대점</div>
+                    <div class="place-detail">홍대입구역 도보 3분 · 스터디 공간 완비</div>
+                </div>
+                <div class="place-dist">0.3km</div>
+            </div>
+
+            <div class="place-card" onclick="showToast('네이버 지도에서 검색할게요!')">
+                <div class="place-icon" style="background:#f0fdf4">🍽️</div>
+                <div>
+                    <div class="place-name">합정 맛집거리</div>
+                    <div class="place-detail">합정동 · 식사 + 카페 모두 가능한 거리</div>
+                </div>
+                <div class="place-dist">0.5km</div>
+            </div>
+
+            <div class="place-card" onclick="showToast('네이버 지도에서 검색할게요!')">
+                <div class="place-icon" style="background:var(--primary-100)">📚</div>
+                <div>
+                    <div class="place-name">신촌 스터디카페</div>
+                    <div class="place-detail">신촌역 5분 · 조용하고 집중하기 좋은 공간</div>
+                </div>
+                <div class="place-dist">1.2km</div>
+            </div>
+
+            <div class="place-card" onclick="showToast('네이버 지도에서 검색할게요!')">
+                <div class="place-icon" style="background:#fdf4ff">🏢</div>
+                <div>
+                    <div class="place-name">홍대 공유오피스 스터디룸</div>
+                    <div class="place-detail">서교동 · 프라이빗 룸 예약 가능</div>
+                </div>
+                <div class="place-dist">0.8km</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Result share card -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:10px">결과 공유</div>
+            <div class="card"
+                style="background:linear-gradient(135deg,var(--primary-500),var(--primary-600));color:white;border:none">
+                <div style="font-size:14px;font-weight:700;margin-bottom:5px">📢 조별과제 회의 확정!</div>
+                <div style="font-size:13px;opacity:0.9;margin-bottom:3px">📅 4월 16일 (수) 오후 2:00</div>
+                <div style="font-size:13px;opacity:0.9;margin-bottom:8px">📍 홍대·합정 일대 (중간지점)</div>
+                <div style="font-size:12px;opacity:0.65">MOIM으로 잡았어요 → moim.ai</div>
+            </div>
+
+            <button class="btn btn-kakao btn-full btn-lg" style="margin-top:10px"
+                onclick="showToast('카카오톡으로 확정 결과를 공유했어요! 🎉')">
+                💬 카카오톡으로 결과 공유
+            </button>
+            <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="go('s-host-create')">
+                + 새 모임 만들기
+            </button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+     S-PROFILE  프로필 / 내 캘린더
+════════════════════════════════════════ -->
+    <div id="s-profile" class="screen">
+        <nav class="nav">
+            <div class="nav-logo" onclick="goHome()" style="cursor:pointer">MOIM</div>
+            <div class="nav-actions">
+                <button class="btn btn-outline btn-sm" onclick="goBack()">← 뒤로</button>
+            </div>
+        </nav>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar-lg">김</div>
+            <div>
+                <div class="profile-name">김유현</div>
+                <div class="profile-email">yoohyun@ssu.ac.kr</div>
+                <div style="margin-top:6px">
+                    <span
+                        style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:var(--radius-full);font-size:11px;font-weight:600">
+                        📍 서울 성북구 돈암동
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="container animate-in" style="padding-bottom:32px">
+
+            <!-- 연동된 캘린더 섹션 -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-top:20px;margin-bottom:4px">연동된
+                캘린더</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">모든 일정이 합쳐져 가용시간이 계산돼요</div>
+
+            <div class="card" style="padding:0 16px">
+
+                <!-- Google Calendar -->
+                <div class="cal-source-row">
+                    <div class="cal-source-icon">🗓️</div>
+                    <div class="cal-source-info">
+                        <div class="cal-source-name">구글 캘린더</div>
+                        <div class="cal-source-status status-connected">✓ 연동됨 · yoohyun@gmail.com</div>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="showToast('구글 캘린더를 다시 연동했어요! ✅')">재연동</button>
+                </div>
+
+                <!-- Everytime -->
+                <div class="cal-source-row">
+                    <div class="cal-source-icon">📱</div>
+                    <div class="cal-source-info">
+                        <div class="cal-source-name">에브리타임 시간표</div>
+                        <div class="cal-source-status status-connected">✓ 연동됨 · 2026년 1학기</div>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="reuploadET()">재연동</button>
+                </div>
+
+                <!-- Apple Calendar -->
+                <div class="cal-source-row">
+                    <div class="cal-source-icon">🍎</div>
+                    <div class="cal-source-info">
+                        <div class="cal-source-name">애플 캘린더</div>
+                        <div class="cal-source-status status-none">미연동</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="connectAppleProfile()">연동하기</button>
+                </div>
+
+                <!-- Naver / .ics -->
+                <div class="cal-source-row">
+                    <div class="cal-source-icon">📁</div>
+                    <div class="cal-source-info">
+                        <div class="cal-source-name">.ics 파일 (네이버·다음)</div>
+                        <div class="cal-source-status status-none">미연동</div>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="showToast('.ics 파일을 업로드해주세요')">업로드</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 합쳐진 캘린더 미리보기 -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:4px">통합 캘린더 미리보기</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">연동된 캘린더가 합쳐진 모습이에요</div>
+
+            <div class="card" style="padding:16px">
+                <!-- legend -->
+                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+                    <div class="legend-item">
+                        <div class="legend-dot dot-orange"></div>구글 캘린더
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-green"></div>에브리타임 수업
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)">
+                        <div style="width:8px;height:8px;border-radius:50%;background:var(--primary-300)"></div>둘 다 있음
+                    </div>
+                </div>
+                <!-- weekday header -->
+                <div
+                    style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">
+                    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                </div>
+                <div class="mini-cal-grid" id="profile-mini-cal"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 위치 설정 -->
+            <div style="font-size:15px;font-weight:700;color:var(--text-heading);margin-bottom:10px">📍 내 위치 설정</div>
+            <div class="form-group">
+                <input class="form-input" type="text" value="서울 성북구 돈암동" placeholder="위치를 입력하세요">
+                <div class="form-hint">중간지점 계산에 사용돼요</div>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="showToast('위치가 저장됐어요! 📍')">저장</button>
+
+            <div class="divider"></div>
+
+            <!-- 로그아웃 -->
+            <button class="btn btn-outline btn-full" onclick="go('s-landing')"
+                style="color:var(--error-main);border-color:var(--error-main)">
+                로그아웃
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <script>
+        // ── Navigation ────────────────────────────────────────────────
+        let prevScreen = 's-main';
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const t = document.getElementById(id);
+            if (t) { t.classList.add('active'); window.scrollTo(0, 0); }
+            if (id === 's-calendar-setup') initCaptureDrop();
+            if (id === 's-main') setTimeout(scaleTimetable, 0);
+        }
+
+        function scaleTimetable() {
+            const scroll = document.querySelector('#s-main .tt-scroll');
+            const inner = document.getElementById('tt-grid');
+            if (!scroll || !inner) return;
+
+            // 트랜스폼 초기화 → 강제 리플로우로 자연 크기 정확히 측정
+            inner.style.transform = '';
+            inner.style.transformOrigin = 'top left';
+            scroll.style.overflow = 'auto';
+            scroll.style.height = '';
+            void inner.offsetWidth; // 강제 reflow
+
+            const cw = scroll.clientWidth;
+            const nw = inner.scrollWidth;
+            const nh = inner.scrollHeight;
+
+            if (nw > cw && cw > 0) {
+                const scale = cw / nw;
+                inner.style.transform = `scale(${scale})`;
+                scroll.style.overflow = 'hidden';
+                scroll.style.height = Math.ceil(nh * scale) + 'px';
+            } else {
+                scroll.style.overflow = 'hidden';
+                scroll.style.height = '';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('s-main').classList.contains('active')) scaleTimetable();
+        });
+
+        function go(id) {
+            const cur = document.querySelector('.screen.active');
+            if (cur) prevScreen = cur.id;
+            showScreen(id);
+            history.pushState({ screen: id }, '', '#' + id);
+        }
+
+        function goBack() { history.back(); }
+
+        // 브라우저 뒤로/앞으로 버튼
+        window.addEventListener('popstate', e => {
+            const id = (e.state && e.state.screen) || 's-landing';
+            showScreen(id);
+        });
+
+        // 새로고침 시 현재 화면 복원
+        (function restoreScreen() {
+            const hash = location.hash.replace('#', '');
+            const target = hash && document.getElementById(hash) ? hash : 's-landing';
+            showScreen(target);
+            // 현재 상태를 history에 기록 (뒤로가기가 이 화면을 인식하도록)
+            history.replaceState({ screen: target }, '', '#' + target);
+        })();
+
+        // ── Main Calendar ─────────────────────────────────────────────
+        // Events data: { day, type: 'google'|'et'|'moim', name, time }
+        const EVENTS = {
+            // April 2026
+            '2026-4-7': [{ type: 'et', name: '알고리즘 개론', time: '09:00–11:00' }, { type: 'google', name: '팀 프로젝트 회의', time: '14:00–15:00' }],
+            '2026-4-9': [{ type: 'et', name: '데이터구조', time: '13:00–15:00' }],
+            '2026-4-10': [{ type: 'moim', name: '알고리즘 스터디 킥오프', time: '16:00–17:30' }],
+            '2026-4-13': [{ type: 'google', name: '과제 제출 마감', time: '23:59' }, { type: 'et', name: '영어회화', time: '10:00–12:00' }],
+            '2026-4-14': [{ type: 'et', name: '알고리즘 개론', time: '09:00–11:00' }],
+            '2026-4-15': [{ type: 'et', name: '데이터구조', time: '13:00–15:00' }, { type: 'google', name: '도서관 스터디', time: '18:00–20:00' }],
+            '2026-4-16': [{ type: 'moim', name: '조별과제 회의 (확정)', time: '14:00–15:00' }],
+            '2026-4-18': [{ type: 'et', name: '알고리즘 개론', time: '09:00–11:00' }, { type: 'google', name: '동아리 모임', time: '17:00–19:00' }],
+            '2026-4-21': [{ type: 'et', name: '영어회화', time: '10:00–12:00' }],
+            '2026-4-22': [{ type: 'et', name: '알고리즘 개론', time: '09:00–11:00' }],
+            '2026-4-23': [{ type: 'et', name: '데이터구조', time: '13:00–15:00' }],
+            '2026-4-25': [{ type: 'google', name: '중간고사 기간 시작', time: '종일' }],
+        };
+
+        let calYear = 2026, calMonth = 4, selectedDay = 13;
+
+        // ── Timetable ─────────────────────────────────────────────────
+        const TT_H_START = 8;   // 08:00
+        const TT_H_END = 22;  // 22:00
+        const TT_ROW_H = 36;  // px per hour
+        const TT_SIM_TODAY = '2026-04-13';
+        let ttStart = '2026-04-13';
+        let ttEnd = '2026-04-19';
+
+        function ttDays(s, e) {
+            const days = [], cur = new Date(s + 'T00:00:00'), end = new Date(e + 'T00:00:00');
+            while (cur <= end) { days.push(cur.toISOString().slice(0, 10)); cur.setDate(cur.getDate() + 1); }
+            return days.slice(0, 7);
+        }
+
+        function parseTT(str) {
+            if (!str || str === '종일') return null;
+            const m = str.match(/(\d+):(\d+)[–\-](\d+):(\d+)/);
+            if (!m) return null;
+            return { start: +m[1] + +m[2] / 60, end: +m[3] + +m[4] / 60 };
+        }
+
+        function buildTimetable() {
+            const grid = document.getElementById('tt-grid');
+            if (!grid) return;
+            const days = ttDays(ttStart, ttEnd);
+            const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+            const hours = TT_H_END - TT_H_START;
+
+            // Header
+            let h = '<div class="tt-header-row"><div class="tt-time-header"></div>';
+            days.forEach(iso => {
+                const d = new Date(iso + 'T00:00:00');
+                const isToday = iso === TT_SIM_TODAY;
+                h += `<div class="tt-day-header${isToday ? ' tt-today' : ''}">
+                    <div class="dow">${DOW[d.getDay()]}</div>
+                    <div class="date-num">${d.getDate()}</div>
+                </div>`;
+            });
+            h += '</div>';
+
+            // Body
+            let b = '<div class="tt-body"><div class="tt-time-col">';
+            for (let i = 0; i < hours; i++) {
+                const hh = TT_H_START + i;
+                b += `<div class="tt-time-slot">${hh}:00</div>`;
+            }
+            b += '</div>';
+
+            days.forEach(iso => {
+                b += '<div class="tt-day-col">';
+                for (let i = 0; i < hours; i++) b += '<div class="tt-slot-row"></div>';
+
+                const [y, mo, da] = iso.split('-').map(Number);
+                const evs = EVENTS[`${y}-${mo}-${da}`] || [];
+                evs.forEach(ev => {
+                    const t = parseTT(ev.time);
+                    if (!t) return;
+                    const cs = Math.max(t.start, TT_H_START), ce = Math.min(t.end, TT_H_END);
+                    if (cs >= ce) return;
+                    const top = (cs - TT_H_START) * TT_ROW_H;
+                    const ht = (ce - cs) * TT_ROW_H - 2;
+                    const [bg, border, fg] = ev.type === 'google'
+                        ? ['#fefce8', '#FBBC05', '#92400e']
+                        : ev.type === 'et'
+                            ? ['#fde8e8', '#F21616', '#a81010']
+                            : ['#ede9f8', 'var(--primary-500)', 'var(--primary-600)'];
+                    b += `<div class="tt-block" title="${ev.name} ${ev.time}"
+                        style="top:${top}px;height:${ht}px;background:${bg};border-left-color:${border};color:${fg}">
+                        ${ev.name}
+                    </div>`;
+                });
+                b += '</div>';
+            });
+            b += '</div>';
+
+            grid.innerHTML = h + b;
+            // DOM 렌더 완료 후 스케일 측정
+            setTimeout(scaleTimetable, 0);
+        }
+
+        function shiftRange(dir) {
+            const s = new Date(ttStart + 'T00:00:00'), e = new Date(ttEnd + 'T00:00:00');
+            const len = Math.round((e - s) / 86400000) + 1;
+            s.setDate(s.getDate() + dir * len);
+            e.setDate(e.getDate() + dir * len);
+            ttStart = s.toISOString().slice(0, 10);
+            ttEnd = e.toISOString().slice(0, 10);
+            document.getElementById('tt-start').value = ttStart;
+            document.getElementById('tt-end').value = ttEnd;
+            buildTimetable();
+        }
+
+        function updateRange() {
+            const s = document.getElementById('tt-start').value;
+            const e = document.getElementById('tt-end').value;
+            if (!s || !e || new Date(e) < new Date(s)) return;
+            ttStart = s; ttEnd = e;
+            buildTimetable();
+        }
+
+        function renderEvList() {
+            const list = document.getElementById('ev-list');
+            const label = document.getElementById('selected-day-label');
+            const countEl = document.getElementById('selected-day-count');
+            if (!list) return;
+
+            const key = `${calYear}-${calMonth}-${selectedDay}`;
+            const evs = EVENTS[key] || [];
+            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+            const dow = new Date(calYear, calMonth - 1, selectedDay).getDay();
+
+            if (label) label.textContent = `${calMonth}월 ${selectedDay}일 (${dayNames[dow]}) 일정`;
+            if (countEl) countEl.textContent = evs.length ? `${evs.length}개` : '없음';
+
+            if (!evs.length) {
+                list.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px">이 날은 일정이 없어요 🎉</div>`;
+                return;
+            }
+
+            list.innerHTML = evs.map(ev => {
+                const color = ev.type === 'google' ? '#FBBC05' : ev.type === 'et' ? '#F21616' : 'var(--primary-500)';
+                const src = ev.type === 'google' ? '구글 캘린더' : ev.type === 'et' ? '에브리타임' : '모임AI';
+                return `<div class="ev-item">
+      <div class="ev-stripe" style="background:${color}"></div>
+      <div>
+        <div class="ev-name">${ev.name}</div>
+        <div class="ev-time">${ev.time}</div>
+        <div class="ev-source">${src}</div>
+      </div>
+    </div>`;
+            }).join('');
+        }
+
+        // ── Profile mini-calendar ─────────────────────────────────────
+        function buildProfileMiniCal() {
+            const grid = document.getElementById('profile-mini-cal');
+            if (!grid) return;
+
+            const firstDay = new Date(2026, 3, 1).getDay(); // April 2026 starts on Wed=3
+            const days = 30;
+
+            // Which days have google / et events
+            const googleDays = new Set([7, 13, 15, 18, 25]);
+            const etDays = new Set([7, 9, 14, 15, 18, 21, 22, 23]);
+
+            let html = '';
+            for (let i = 0; i < firstDay; i++) html += '<div class="mini-day blank"></div>';
+            for (let d = 1; d <= days; d++) {
+                const hasG = googleDays.has(d), hasE = etDays.has(d);
+                const cls = hasG && hasE ? 'has-pg' : hasG ? 'has-p' : hasE ? 'has-g' : '';
+                const today = d === 13 ? ' today-m' : '';
+                html += `<div class="mini-day ${cls}${today}">${d}</div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        // ── Profile helpers ───────────────────────────────────────────
+        function connectAppleProfile() {
+            showToast('애플 캘린더가 연동됐어요! ✅');
+            const btn = event.target;
+            btn.textContent = '✓ 연동됨';
+            btn.className = 'btn btn-secondary btn-sm';
+            btn.onclick = () => showToast('이미 연동된 캘린더예요');
+            const statusEl = btn.closest('.cal-source-row').querySelector('.cal-source-status');
+            statusEl.className = 'cal-source-status status-connected';
+            statusEl.textContent = '✓ 연동됨';
+        }
+
+        function reuploadET() {
+            showToast('에브리타임 시간표를 다시 업로드하려면 파일을 선택해주세요');
+        }
+
+        // ── Toast ─────────────────────────────────────────────────────
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)';
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(12px)'; }, 2500);
+        }
+
+        // ── Copy link ─────────────────────────────────────────────────
+        function copyLink() { showToast('링크가 복사됐어요! 📋'); }
+
+        // ── Email login ───────────────────────────────────────────────
+        let loggedIn = false;
+
+        function goHome() {
+            go(loggedIn ? 's-main' : 's-landing');
+        }
+
+        function loginEmail() {
+            const id = document.getElementById('login-id').value.trim();
+            const pw = document.getElementById('login-pw').value.trim();
+            if (!id) { showToast('아이디를 입력해주세요'); return; }
+            if (!pw) { showToast('비밀번호를 입력해주세요'); return; }
+            loggedIn = true;
+            go('s-calendar-setup');
+        }
+
+        // ── Tab switch ────────────────────────────────────────────────
+        function switchTab(btn, id) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+            btn.classList.add('on');
+            ['tc-cal', 'tc-manual'].forEach(tid => {
+                const el = document.getElementById(tid);
+                if (el) el.style.display = tid === id ? 'block' : 'none';
+            });
+        }
+
+        // 공통 connect 헬퍼
+        function markConnected(cardId, btnId, label) {
+            const card = document.getElementById(cardId);
+            const btn = document.getElementById(btnId);
+            if (!card || !btn) return;
+            card.classList.add('done');
+            btn.textContent = '✓ 연동 완료';
+            btn.style.cssText = 'background:var(--success-main);color:white;border:none;padding:6px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:default';
+            showToast(label + ' ✅');
+        }
+
+        let googleDone = false, appleDone = false, samsungDone = false, etDone = false;
+
+        function connectGoogle() {
+            if (googleDone) return; googleDone = true;
+            markConnected('cc-google', 'btn-google-cal', '구글 캘린더가 연동됐어요!');
+        }
+        function connectApple() {
+            if (appleDone) return; appleDone = true;
+            markConnected('cc-apple', 'btn-apple-cal', '애플 캘린더가 연동됐어요!');
+        }
+        function connectSamsung() {
+            if (samsungDone) return; samsungDone = true;
+            markConnected('cc-samsung', 'btn-samsung-cal', '삼성 캘린더가 연동됐어요!');
+        }
+        function connectEverytime() {
+            if (etDone) {
+                // 이미 업로드됐으면 다시 올리기
+                document.getElementById('et-upload-wrap').style.display = 'block';
+                return;
+            }
+            // 카드 클릭 시 업로드 영역 펼침
+            const wrap = document.getElementById('et-upload-wrap');
+            wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // ── ET upload ─────────────────────────────────────────────────
+        function uploadET() {
+            const z = document.getElementById('et-upload');
+            z.innerHTML = '<div class="upload-icon pulse">⏳</div><div class="upload-title">AI 분석 중...</div><div class="upload-sub">수업 블록 감지하는 중</div>';
+            setTimeout(() => {
+                etDone = true;
+                z.innerHTML = '<div class="upload-icon">✅</div><div class="upload-title">시간표 인식 완료!</div><div class="upload-sub">월/수/금 9–12시 블록 감지됨 (수정 가능)</div>';
+                z.classList.add('done');
+                markConnected('cc-everytime', 'btn-et-cal', '에브리타임 시간표가 인식됐어요!');
+            }, 1800);
+        }
+
+        // ── 스케줄 캡처 업로드 ────────────────────────────────────────
+        function triggerCaptureInput() {
+            document.getElementById('capture-input').click();
+        }
+
+        // AI 분석 결과 샘플 (파일명 → 감지된 일정 요약)
+        const captureAIResults = [
+            '화/목 오전 10시–12시 차단됨',
+            '주 3회 오후 2–5시 차단됨',
+            '매주 월요일 오전 9–11시 차단됨',
+            '수/금 오후 1–3시 차단됨',
+            '주말 일정 2건 감지됨',
+        ];
+        let captureResultIdx = 0;
+
+        function handleCaptureFiles(files) {
+            if (!files || files.length === 0) return;
+            const list = document.getElementById('capture-results');
+            Array.from(files).forEach((file, i) => {
+                const id = 'cap-' + Date.now() + '-' + i;
+                const reader = new FileReader();
+
+                // 아이템 카드 생성 (분석 중 상태)
+                const item = document.createElement('div');
+                item.className = 'capture-item analyzing';
+                item.id = id;
+                item.innerHTML = `
+                    <div class="capture-thumb" id="${id}-thumb">🖼️</div>
+                    <div class="capture-info">
+                        <div class="capture-name">${file.name}</div>
+                        <div class="capture-status analyzing-dot">AI 분석 중</div>
+                    </div>
+                    <span class="capture-tag">분석 중</span>`;
+                list.appendChild(item);
+
+                // 썸네일 미리보기
+                reader.onload = e => {
+                    const thumb = document.getElementById(id + '-thumb');
+                    if (thumb) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'capture-thumb';
+                        img.style.cssText = 'width:44px;height:44px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0';
+                        thumb.replaceWith(img);
+                    }
+                };
+                reader.readAsDataURL(file);
+
+                // AI 분석 완료 시뮬레이션
+                const delay = 1500 + i * 600;
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    const summary = captureAIResults[captureResultIdx % captureAIResults.length];
+                    captureResultIdx++;
+                    el.className = 'capture-item done';
+                    el.querySelector('.capture-status').textContent = '✓ ' + summary;
+                    el.querySelector('.capture-status').className = 'capture-status ok';
+                    el.querySelector('.capture-tag').textContent = '반영 완료';
+                    el.querySelector('.capture-tag').className = 'capture-tag done';
+                    showToast('📸 ' + file.name.slice(0, 12) + ' 일정 반영 완료!');
+                }, delay);
+            });
+
+            // 업로드 존 힌트 업데이트
+            const zone = document.getElementById('capture-zone');
+            zone.querySelector('.upload-title').textContent = '+ 추가 사진 올리기';
+            zone.querySelector('.upload-sub').textContent = '이미 올린 사진 외에 더 추가할 수 있어요';
+            // 파일 input 초기화 (같은 파일 다시 선택 가능하도록)
+            document.getElementById('capture-input').value = '';
+        }
+
+        // 드래그 앤 드롭 지원 — go()로 캘린더 설정 화면 진입 시 한 번 등록
+        let captureDndReady = false;
+        function initCaptureDrop() {
+            if (captureDndReady) return;
+            captureDndReady = true;
+            const zone = document.getElementById('capture-zone');
+            if (!zone) return;
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                handleCaptureFiles(e.dataTransfer.files);
+            });
+        }
+        function uploadETP() {
+            const z = document.getElementById('et-p');
+            z.innerHTML = '<div class="upload-icon pulse">⏳</div><div class="upload-title">AI 분석 중...</div><div class="upload-sub">수업 블록 감지하는 중</div>';
+            setTimeout(() => {
+                z.innerHTML = '<div class="upload-icon">✅</div><div class="upload-title">시간표 인식 완료!</div><div class="upload-sub">화/목 10–12시 + 화 2–4시 차단됨</div>';
+                z.classList.add('done');
+                showToast('에브리타임 시간표가 인식됐어요!');
+            }, 1800);
+        }
+
+        // ── Participant calendar connect ──────────────────────────────
+        function connectCalP(type) {
+            showToast(type === 'google' ? '구글 캘린더가 연동됐어요! ✅' : '애플 캘린더가 연동됐어요! ✅');
+            setTimeout(() => showToast('가용시간이 자동으로 반영됐어요'), 900);
+        }
+        function submitP() {
+            showToast('가용시간이 제출됐어요! 🎉');
+            setTimeout(() => go('s-status'), 800);
+        }
+
+        // ── Time picker ───────────────────────────────────────────────
+        function pickTime(el) {
+            document.querySelectorAll('.time-option').forEach(o => o.classList.remove('on'));
+            el.classList.add('on');
+        }
+
+        // ── Grid data ─────────────────────────────────────────────────
+        const DAYS = ['화 4/15', '수 4/16', '금 4/18'];
+        const HOURS = [];
+        for (let h = 10; h <= 20; h++) HOURS.push(`${h}:00`);
+
+        // heatmap per day/hour (0-4)
+        const heat = [
+            [1, 2, 3, 4, 4, 3, 2, 2, 1, 1, 0],  // 화
+            [0, 1, 2, 4, 4, 4, 3, 3, 2, 1, 0],  // 수 — peak at h3-h5
+            [1, 2, 2, 3, 4, 4, 3, 2, 1, 0, 0],  // 금
+        ];
+
+        function buildHeatmap() {
+            const el = document.getElementById('heatmap-grid');
+            if (!el) return;
+            let html = '<div style="display:flex">';
+            html += '<div style="width:44px;flex-shrink:0"></div>';
+            DAYS.forEach(d => html += `<div class="day-col-header">${d}</div>`);
+            html += '</div>';
+            HOURS.forEach((h, hi) => {
+                html += '<div class="grid-row">';
+                html += `<div class="time-label">${h}</div>`;
+                DAYS.forEach((d, di) => {
+                    const v = heat[di][hi];
+                    const star = di === 1 && hi === 4 ? ' star' : '';
+                    html += `<div class="t-cell h${v}${star}" title="${d} ${h} — ${v}명 가능"></div>`;
+                });
+                html += '</div>';
+            });
+            el.innerHTML = html;
+        }
+
+        // ── Manual drag grid ──────────────────────────────────────────
+        let dragging = false, dragMode = null;
+
+        function buildManual() {
+            const el = document.getElementById('manual-grid');
+            if (!el) return;
+            let html = '<div style="display:flex">';
+            html += '<div style="width:44px;flex-shrink:0"></div>';
+            DAYS.forEach(d => html += `<div class="day-col-header">${d}</div>`);
+            html += '</div>';
+            HOURS.forEach((h, hi) => {
+                html += '<div class="grid-row">';
+                html += `<div class="time-label">${h}</div>`;
+                DAYS.forEach((d, di) => {
+                    html += `<div class="t-cell" data-di="${di}" data-hi="${hi}"
+        onmousedown="startDrag(event,this)"
+        onmouseover="doDrag(this)"
+        ontouchstart="startDrag(event,this)"
+        ontouchmove="touchDrag(event)"></div>`;
+                });
+                html += '</div>';
+            });
+            el.innerHTML = html;
+            document.addEventListener('mouseup', () => { dragging = false; });
+            document.addEventListener('touchend', () => { dragging = false; });
+        }
+
+        function startDrag(e, el) {
+            e.preventDefault();
+            dragging = true;
+            dragMode = el.classList.contains('sel') ? 'off' : 'on';
+            applyCell(el);
+        }
+        function doDrag(el) {
+            if (!dragging) return;
+            applyCell(el);
+        }
+        function touchDrag(e) {
+            const t = e.touches[0];
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+            if (el && el.classList.contains('t-cell')) doDrag(el);
+        }
+        function applyCell(el) {
+            if (dragMode === 'on') el.classList.add('sel');
+            else el.classList.remove('sel');
+        }
+
+        // ── Live participant join simulation ─────────────────────────
+        function simulateLive() {
+            setTimeout(() => {
+                const sub = document.getElementById('last-sub');
+                const pill = document.getElementById('last-pill');
+                const prog = document.getElementById('prog-fill');
+                const txt = document.getElementById('prog-text');
+                if (!sub) return;
+                sub.textContent = '구글 캘린더 연동 · 서울 은평구';
+                sub.classList.remove('pulse');
+                if (pill) { pill.className = 'status-pill pill-done'; pill.textContent = '완료'; }
+                if (prog) prog.style.width = '100%';
+                if (txt) txt.textContent = '4명 / 4명 완료';
+                showToast('최준호님이 가용시간을 제출했어요! 🎉');
+            }, 4000);
+        }
+
+        // ── Init ──────────────────────────────────────────────────────
+        window.addEventListener('DOMContentLoaded', () => {
+            buildHeatmap();
+            buildManual();
+            buildTimetable();
+            buildProfileMiniCal();
+        });
+
+        // Watch status screen → kick live sim
+        new MutationObserver(() => {
+            if (document.getElementById('s-status').classList.contains('active')) simulateLive();
+        }).observe(document.getElementById('s-status'), { attributes: true, attributeFilter: ['class'] });
+    </script>
+</body>
+
+</html>
