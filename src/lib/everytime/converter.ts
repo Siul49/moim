@@ -58,6 +58,13 @@ export function timetableToFreeSlots(
     candidateEndHour = 22,
   } = options;
 
+  if (candidateStartHour < 0 || candidateEndHour > 24) {
+    throw new Error("시간 범위는 0~24 사이여야 합니다.");
+  }
+  if (candidateStartHour >= candidateEndHour) {
+    throw new Error("candidateStartHour는 candidateEndHour보다 작아야 합니다.");
+  }
+
   const result: TimeSlot[] = [];
 
   for (const day of candidateDays) {

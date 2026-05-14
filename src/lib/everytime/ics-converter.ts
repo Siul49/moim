@@ -47,9 +47,15 @@ export function parseTimetableFromIcs(icsText: string): EverytimeTimetable {
     const startMinute = startKst.getUTCHours() * 60 + startKst.getUTCMinutes();
     const endMinute = endKst.getUTCHours() * 60 + endKst.getUTCMinutes();
 
-    if (startMinute >= endMinute) continue;
-
     const name = event.title;
+    if (!name.trim()) continue;
+
+    if (startMinute >= endMinute) {
+      console.warn(
+        `[ics-converter] 잘못된 시간 범위 무시: ${name} (${startMinute}-${endMinute})`,
+      );
+      continue;
+    }
     // (요일, 시작분) 조합을 키로 중복 제거
     const slotKey = `${day}-${startMinute}`;
 

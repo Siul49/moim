@@ -23,6 +23,18 @@ describe("parseLoginResponse", () => {
     const data = { status: "ok", token: "abc123" };
     expect(() => parseLoginResponse(data)).toThrow(EverytimeAuthError);
   });
+
+  it("token이 빈 문자열이면 EverytimeAuthError를 throw한다", () => {
+    const data = { status: "ok", token: "", idx: 99999 };
+    expect(() => parseLoginResponse(data)).toThrow(EverytimeAuthError);
+  });
+
+  it("idx가 number 타입일 때 string으로 변환된다", () => {
+    const data = { status: "ok", token: "abc123", idx: 12345 };
+    const session = parseLoginResponse(data);
+    expect(session.userIdx).toBe("12345");
+    expect(typeof session.userIdx).toBe("string");
+  });
 });
 
 describe("loginToEverytime (HTTP)", () => {

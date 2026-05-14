@@ -81,14 +81,23 @@ export function parseSemesterResponse(xml: string): string {
   // <response status="ok">
   //   <semester id="100" year="2025" semester="1"/>
   // </response>
-  const parsed = xmlParser.parse(xml);
+  let parsed: ReturnType<typeof xmlParser.parse>;
+  try {
+    parsed = xmlParser.parse(xml);
+  } catch {
+    throw new EverytimeFetchError("XML 파싱에 실패했습니다.");
+  }
   const response = parsed?.response;
 
   if (response?.["@_status"] !== "ok") {
     throw new EverytimeFetchError("학기 정보를 가져오지 못했습니다.");
   }
 
-  const id = String(response?.semester?.["@_id"] ?? "");
+  const rawId = response?.semester?.["@_id"];
+  if (typeof rawId !== "string" && typeof rawId !== "number") {
+    throw new EverytimeFetchError("학기 ID를 찾을 수 없습니다.");
+  }
+  const id = String(rawId);
   if (!id) throw new EverytimeFetchError("학기 ID를 찾을 수 없습니다.");
 
   return id;
@@ -104,7 +113,12 @@ export function parseSubjectListResponse(xml: string): EverytimeTimetable {
   //     <time day="3" start="540" end="630"/>
   //   </subject>
   // </response>
-  const parsed = xmlParser.parse(xml);
+  let parsed: ReturnType<typeof xmlParser.parse>;
+  try {
+    parsed = xmlParser.parse(xml);
+  } catch {
+    throw new EverytimeFetchError("XML 파싱에 실패했습니다.");
+  }
   const response = parsed?.response;
 
   if (response?.["@_status"] !== "ok") {
@@ -136,6 +150,8 @@ function parseSubject(subject: unknown): EverytimeLecture {
         t.day <= 6 &&
         !isNaN(t.startMinute) &&
         !isNaN(t.endMinute) &&
+        t.startMinute >= 0 &&
+        t.endMinute <= 1440 &&
         t.startMinute < t.endMinute,
     );
 

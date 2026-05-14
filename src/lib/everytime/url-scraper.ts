@@ -133,6 +133,7 @@ function parseDataItem(d: unknown): EverytimeLectureTime | null {
     day > 6 ||
     isNaN(startMinute) ||
     isNaN(endMinute) ||
+    startMinute < 0 ||
     startMinute >= endMinute
   ) {
     return null;

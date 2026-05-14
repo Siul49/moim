@@ -66,4 +66,62 @@ describe("parseShareResponse", () => {
     const xml = `<?xml version="1.0"?><response></response>`;
     expect(() => parseShareResponse(xml)).toThrow(EverytimeScrapeError);
   });
+
+  it("빈 시간표(subject 없음)를 처리한다", () => {
+    const xml = `<?xml version="1.0"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="test">
+  </table>
+</response>`;
+    const timetable = parseShareResponse(xml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
+  it("음수 starttime은 필터링된다", () => {
+    const xml = `<?xml version="1.0"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="test">
+    <subject id="1">
+      <name value="테스트"/>
+      <time value="월">
+        <data day="0" starttime="-10" endtime="141" place=""/>
+      </time>
+    </subject>
+  </table>
+</response>`;
+    const timetable = parseShareResponse(xml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
+  it("day가 0-6 범위를 벗어나면 필터링된다", () => {
+    const xml = `<?xml version="1.0"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="test">
+    <subject id="1">
+      <name value="테스트"/>
+      <time value="월">
+        <data day="7" starttime="108" endtime="141" place=""/>
+      </time>
+    </subject>
+  </table>
+</response>`;
+    const timetable = parseShareResponse(xml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
+  it("starttime >= endtime이면 필터링된다", () => {
+    const xml = `<?xml version="1.0"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="test">
+    <subject id="1">
+      <name value="테스트"/>
+      <time value="월">
+        <data day="0" starttime="141" endtime="108" place=""/>
+      </time>
+    </subject>
+  </table>
+</response>`;
+    const timetable = parseShareResponse(xml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
 });

@@ -118,4 +118,32 @@ END:VCALENDAR`;
     const timetable = parseTimetableFromIcs("BEGIN:VCALENDAR\nEND:VCALENDAR");
     expect(timetable.lectures).toEqual([]);
   });
+
+  it("빈 과목명(SUMMARY)은 무시된다", () => {
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:empty@test
+SUMMARY:
+DTSTART;TZID=Asia/Seoul:20250303T090000
+DTEND;TZID=Asia/Seoul:20250303T103000
+END:VEVENT
+END:VCALENDAR`;
+    const timetable = parseTimetableFromIcs(ics);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
+  it("DTSTART >= DTEND인 이벤트는 무시된다", () => {
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:invalid@test
+SUMMARY:역순수업
+DTSTART;TZID=Asia/Seoul:20250303T103000
+DTEND;TZID=Asia/Seoul:20250303T090000
+END:VEVENT
+END:VCALENDAR`;
+    const timetable = parseTimetableFromIcs(ics);
+    expect(timetable.lectures).toHaveLength(0);
+  });
 });

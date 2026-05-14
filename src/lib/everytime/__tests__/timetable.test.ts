@@ -12,6 +12,17 @@ describe("parseSemesterResponse", () => {
     const xml = `<response status="error"/>`;
     expect(() => parseSemesterResponse(xml)).toThrow(EverytimeFetchError);
   });
+
+  it("semester id가 없으면 EverytimeFetchError를 throw한다", () => {
+    const xml = `<response status="ok"><semester year="2025"/></response>`;
+    expect(() => parseSemesterResponse(xml)).toThrow(EverytimeFetchError);
+  });
+
+  it("잘못된 XML 형식이면 EverytimeFetchError를 throw한다", () => {
+    expect(() => parseSemesterResponse("not valid xml <<<<")).toThrow(
+      EverytimeFetchError,
+    );
+  });
 });
 
 describe("parseSubjectListResponse", () => {
@@ -68,5 +79,49 @@ describe("parseSubjectListResponse", () => {
     const timetable = parseSubjectListResponse(xml);
     // day=8은 유효하지 않으므로 필터링
     expect(timetable.lectures[0].times).toHaveLength(1);
+  });
+
+  it("day=0(월요일)과 day=6(일요일) 경계값을 허용한다", () => {
+    const xml = `
+      <response status="ok">
+        <subject id="1">
+          <name>월요일수업</name>
+          <time day="0" start="540" end="630"/>
+        </subject>
+        <subject id="2">
+          <name>일요일수업</name>
+          <time day="6" start="540" end="630"/>
+        </subject>
+      </response>
+    `;
+    const timetable = parseSubjectListResponse(xml);
+    expect(timetable.lectures[0].times[0].day).toBe(0);
+    expect(timetable.lectures[1].times[0].day).toBe(6);
+  });
+
+  it("startMinute >= endMinute인 시간은 필터링된다", () => {
+    const xml = `
+      <response status="ok">
+        <subject id="1">
+          <name>테스트</name>
+          <time day="1" start="630" end="540"/>
+        </subject>
+      </response>
+    `;
+    const timetable = parseSubjectListResponse(xml);
+    expect(timetable.lectures[0].times).toHaveLength(0);
+  });
+
+  it("endMinute > 1440인 시간은 필터링된다", () => {
+    const xml = `
+      <response status="ok">
+        <subject id="1">
+          <name>테스트</name>
+          <time day="1" start="540" end="1500"/>
+        </subject>
+      </response>
+    `;
+    const timetable = parseSubjectListResponse(xml);
+    expect(timetable.lectures[0].times).toHaveLength(0);
   });
 });

@@ -70,10 +70,29 @@ async function handleUrlRequest(
     );
   }
 
+  // SSRF 방지: 허용된 도메인·프로토콜만 통과
+  let parsedUrl: URL;
   try {
-    const timetable = await fetchTimetableFromUrl(url.trim());
-    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
-    return NextResponse.json({ timetable, freeSlots });
+    parsedUrl = new URL(url.trim());
+  } catch {
+    return NextResponse.json(
+      { error: "유효하지 않은 URL입니다." },
+      { status: 400 },
+    );
+  }
+  if (
+    parsedUrl.protocol !== "https:" ||
+    parsedUrl.hostname !== "everytime.kr"
+  ) {
+    return NextResponse.json(
+      { error: "everytime.kr의 https URL만 허용됩니다." },
+      { status: 400 },
+    );
+  }
+
+  let timetable: Awaited<ReturnType<typeof fetchTimetableFromUrl>>;
+  try {
+    timetable = await fetchTimetableFromUrl(url.trim());
   } catch (err) {
     if (err instanceof EverytimeScrapeError) {
       return NextResponse.json({ error: err.message }, { status: 422 });
@@ -82,6 +101,17 @@ async function handleUrlRequest(
     return NextResponse.json(
       { error: "시간표 조회 중 오류가 발생했습니다." },
       { status: 500 },
+    );
+  }
+
+  try {
+    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    return NextResponse.json({ timetable, freeSlots });
+  } catch (err) {
+    console.error("[everytime.timetable] 시간표 변환 오류:", err);
+    return NextResponse.json(
+      { error: "시간표 변환 중 오류가 발생했습니다." },
+      { status: 422 },
     );
   }
 }
@@ -108,22 +138,45 @@ async function handleFileRequest(
     );
   }
 
-  if (!file.name.endsWith(".ics") && file.type !== "text/calendar") {
+  if (
+    !file.name.toLowerCase().endsWith(".ics") &&
+    file.type !== "text/calendar"
+  ) {
     return NextResponse.json(
       { error: ".ics 파일만 지원합니다." },
       { status: 400 },
     );
   }
 
+  if (file.size > 1024 * 1024) {
+    return NextResponse.json(
+      {
+        error: "파일 크기가 너무 큽니다. 1MB 이하의 ICS 파일을 업로드해주세요.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const icsText = await file.text();
+
+  let timetable: Awaited<ReturnType<typeof parseTimetableFromIcs>>;
   try {
-    const icsText = await file.text();
-    const timetable = parseTimetableFromIcs(icsText);
-    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
-    return NextResponse.json({ timetable, freeSlots });
+    timetable = parseTimetableFromIcs(icsText);
   } catch (err) {
     console.error("[everytime.timetable] ICS 파싱 오류:", err);
     return NextResponse.json(
       { error: "ICS 파일 파싱 중 오류가 발생했습니다." },
+      { status: 422 },
+    );
+  }
+
+  try {
+    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    return NextResponse.json({ timetable, freeSlots });
+  } catch (err) {
+    console.error("[everytime.timetable] 시간표 변환 오류:", err);
+    return NextResponse.json(
+      { error: "시간표 변환 중 오류가 발생했습니다." },
       { status: 422 },
     );
   }
@@ -142,9 +195,13 @@ const VALID_DAYS = new Set<DayCode>([
 function parseCandidateDays(req: NextRequest): DayCode[] | undefined {
   const raw = req.nextUrl.searchParams.get("days");
   if (!raw) return undefined;
-  const days = raw
-    .split(",")
-    .map((d) => d.trim().toUpperCase() as DayCode)
-    .filter((d) => VALID_DAYS.has(d));
+  const days = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((d) => d.trim().toUpperCase() as DayCode)
+        .filter((d) => VALID_DAYS.has(d)),
+    ),
+  ];
   return days.length > 0 ? days : undefined;
 }

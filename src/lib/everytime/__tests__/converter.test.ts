@@ -116,4 +116,44 @@ describe("timetableToFreeSlots", () => {
       { day: "MON", startHour: 12, endHour: 14 },
     ]);
   });
+
+  it("candidateStartHour >= candidateEndHour이면 에러를 throw한다", () => {
+    const timetable: EverytimeTimetable = { lectures: [] };
+    expect(() =>
+      timetableToFreeSlots(timetable, {
+        candidateStartHour: 12,
+        candidateEndHour: 9,
+      }),
+    ).toThrow();
+  });
+
+  it("candidateStartHour가 음수이면 에러를 throw한다", () => {
+    const timetable: EverytimeTimetable = { lectures: [] };
+    expect(() =>
+      timetableToFreeSlots(timetable, {
+        candidateStartHour: -1,
+        candidateEndHour: 22,
+      }),
+    ).toThrow();
+  });
+
+  it("candidateEndHour가 24 초과이면 에러를 throw한다", () => {
+    const timetable: EverytimeTimetable = { lectures: [] };
+    expect(() =>
+      timetableToFreeSlots(timetable, {
+        candidateStartHour: 9,
+        candidateEndHour: 25,
+      }),
+    ).toThrow();
+  });
+
+  it("빈 candidateDays이면 빈 배열을 반환한다", () => {
+    const timetable: EverytimeTimetable = { lectures: [] };
+    const result = timetableToFreeSlots(timetable, {
+      candidateDays: [],
+      candidateStartHour: 9,
+      candidateEndHour: 22,
+    });
+    expect(result).toEqual([]);
+  });
 });
