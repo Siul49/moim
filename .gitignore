@@ -43,3 +43,8 @@ next-env.d.ts
 !.agents/docs/
 *.pdf
 *.docx
+
+# Prisma local DB & env
+.env
+*.db
+*.db-journal
