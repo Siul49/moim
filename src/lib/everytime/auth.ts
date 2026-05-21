@@ -28,6 +28,9 @@ export class EverytimeAuthError extends Error {
  * 2단계: 쿠키 + 자격증명으로 POST → 토큰 반환
  *
  * 자격증명은 서버 → 에브리타임 API로만 전송되며 저장되지 않는다.
+ *
+ * @note 프로덕션 플로우에서는 reCAPTCHA v3로 인해 실제 로그인이 차단되므로 사용되지 않는다.
+ *       테스트·개발 목적으로만 유지한다.
  */
 export async function loginToEverytime(
   credentials: EverytimeCredentials,
@@ -95,6 +98,9 @@ async function fetchSessionCookies(): Promise<string> {
 export function parseLoginResponse(data: unknown): EverytimeSession {
   // 성공: { "status": "ok", "token": "TOKEN", "idx": 12345 }
   // 실패: { "status": "not_exists_user" }
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    throw new EverytimeAuthError("로그인 응답 형식이 올바르지 않습니다.");
+  }
   const res = data as Record<string, unknown>;
 
   if (res.status !== "ok") {

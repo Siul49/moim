@@ -138,10 +138,7 @@ async function handleFileRequest(
     );
   }
 
-  if (
-    !file.name.toLowerCase().endsWith(".ics") &&
-    file.type !== "text/calendar"
-  ) {
+  if (!file.name.toLowerCase().endsWith(".ics")) {
     return NextResponse.json(
       { error: ".ics 파일만 지원합니다." },
       { status: 400 },
@@ -158,6 +155,16 @@ async function handleFileRequest(
   }
 
   const icsText = await file.text();
+  const normalizedIcs = icsText.trim().toUpperCase();
+  if (
+    !normalizedIcs.includes("BEGIN:VCALENDAR") ||
+    !normalizedIcs.includes("END:VCALENDAR")
+  ) {
+    return NextResponse.json(
+      { error: "올바른 ICS 파일 형식이 아닙니다." },
+      { status: 400 },
+    );
+  }
 
   let timetable: Awaited<ReturnType<typeof parseTimetableFromIcs>>;
   try {

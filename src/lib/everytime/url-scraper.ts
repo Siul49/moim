@@ -15,6 +15,7 @@ import type {
 // ============================================================
 
 const API_URL = "https://api.everytime.kr/find/timetable/table/friend";
+const TIMEOUT_MS = 10_000;
 const SHARE_URL_PATTERN = /^https:\/\/everytime\.kr\/@([\w-]+)$/;
 
 const xmlParser = new XMLParser({
@@ -47,17 +48,31 @@ export async function fetchTimetableFromUrl(
 
   const identifier = match[1];
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Origin: "https://everytime.kr",
-      Referer: `https://everytime.kr/@${identifier}`,
-    },
-    body: new URLSearchParams({ identifier }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Origin: "https://everytime.kr",
+        Referer: `https://everytime.kr/@${identifier}`,
+      },
+      body: new URLSearchParams({ identifier }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new EverytimeScrapeError("에브리타임 API 요청 시간 초과");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new EverytimeScrapeError(
@@ -83,7 +98,14 @@ export function parseShareResponse(xml: string): EverytimeTimetable {
   //   </table>
   // </response>
 
-  const parsed = xmlParser.parse(xml);
+  let parsed: ReturnType<typeof xmlParser.parse>;
+  try {
+    parsed = xmlParser.parse(xml);
+  } catch (err) {
+    throw new EverytimeScrapeError(
+      `XML 파싱 실패: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   const table = parsed?.response?.table;
 
   if (!table) {
@@ -106,7 +128,7 @@ function parseSubject(
   const s = subject as Record<string, unknown>;
 
   const nameNode = s?.name as Record<string, unknown> | undefined;
-  const name = String(nameNode?.["@_value"] ?? "");
+  const name = String(nameNode?.["@_value"] ?? "").trim();
   if (!name) return null;
 
   const timeNode = s?.time as Record<string, unknown> | undefined;
@@ -134,6 +156,7 @@ function parseDataItem(d: unknown): EverytimeLectureTime | null {
     isNaN(startMinute) ||
     isNaN(endMinute) ||
     startMinute < 0 ||
+    endMinute > 1440 ||
     startMinute >= endMinute
   ) {
     return null;

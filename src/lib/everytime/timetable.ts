@@ -139,17 +139,18 @@ function parseSubject(subject: unknown): EverytimeLecture {
   const times: EverytimeLectureTime[] = rawTimes
     .map((t) => {
       const time = t as Record<string, unknown>;
-      const day = Number(time?.["@_day"]) as EverytimeLectureTime["day"];
+      const day = Number(time?.["@_day"]);
       const startMinute = Number(time?.["@_start"]);
       const endMinute = Number(time?.["@_end"]);
       return { day, startMinute, endMinute };
     })
     .filter(
-      (t) =>
+      (t): t is EverytimeLectureTime =>
+        Number.isInteger(t.day) &&
         t.day >= 0 &&
         t.day <= 6 &&
-        !isNaN(t.startMinute) &&
-        !isNaN(t.endMinute) &&
+        Number.isInteger(t.startMinute) &&
+        Number.isInteger(t.endMinute) &&
         t.startMinute >= 0 &&
         t.endMinute <= 1440 &&
         t.startMinute < t.endMinute,

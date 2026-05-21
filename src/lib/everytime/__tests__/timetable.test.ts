@@ -124,4 +124,17 @@ describe("parseSubjectListResponse", () => {
     const timetable = parseSubjectListResponse(xml);
     expect(timetable.lectures[0].times).toHaveLength(0);
   });
+
+  it("startMinute < 0인 시간은 필터링된다", () => {
+    const xml = `
+      <response status="ok">
+        <subject id="1">
+          <name>테스트</name>
+          <time day="1" start="-10" end="100"/>
+        </subject>
+      </response>
+    `;
+    const timetable = parseSubjectListResponse(xml);
+    expect(timetable.lectures[0].times).toHaveLength(0);
+  });
 });

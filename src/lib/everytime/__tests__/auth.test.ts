@@ -35,6 +35,26 @@ describe("parseLoginResponse", () => {
     expect(session.userIdx).toBe("12345");
     expect(typeof session.userIdx).toBe("string");
   });
+
+  it("null을 전달하면 EverytimeAuthError를 throw한다", () => {
+    expect(() => parseLoginResponse(null)).toThrow(EverytimeAuthError);
+  });
+
+  it("undefined를 전달하면 EverytimeAuthError를 throw한다", () => {
+    expect(() => parseLoginResponse(undefined)).toThrow(EverytimeAuthError);
+  });
+
+  it("문자열을 전달하면 EverytimeAuthError를 throw한다", () => {
+    expect(() => parseLoginResponse("string")).toThrow(EverytimeAuthError);
+  });
+
+  it("숫자를 전달하면 EverytimeAuthError를 throw한다", () => {
+    expect(() => parseLoginResponse(123)).toThrow(EverytimeAuthError);
+  });
+
+  it("배열을 전달하면 EverytimeAuthError를 throw한다", () => {
+    expect(() => parseLoginResponse([])).toThrow(EverytimeAuthError);
+  });
 });
 
 describe("loginToEverytime (HTTP)", () => {
@@ -110,5 +130,17 @@ describe("loginToEverytime (HTTP)", () => {
     await expect(
       loginToEverytime({ id: "wrong", password: "wrong" }),
     ).rejects.toThrow(AuthErr);
+  });
+
+  it("세션 쿠키 요청이 네트워크 오류로 실패하면 에러를 throw한다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("Network error")),
+    );
+
+    const { loginToEverytime } = await import("../auth");
+    await expect(
+      loginToEverytime({ id: "user1", password: "pass1" }),
+    ).rejects.toThrow();
   });
 });

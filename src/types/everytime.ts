@@ -19,7 +19,9 @@ export interface EverytimeSession {
 export interface EverytimeLectureTime {
   /** 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일 */
   day: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /** 자정 기준 분 (0–1439). startMinute < endMinute 보장. */
   startMinute: number;
+  /** 자정 기준 분 (1–1440). startMinute < endMinute 보장. */
   endMinute: number;
 }
 

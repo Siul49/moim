@@ -90,7 +90,7 @@ export function timetableToFreeSlots(
   return result;
 }
 
-/** 연속 시간(정수 배열)을 TimeSlot 블록으로 병합한다. */
+/** 오름차순으로 정렬된 정수 시간 배열을 TimeSlot 블록으로 병합한다. */
 function groupConsecutiveHours(day: DayCode, hours: number[]): TimeSlot[] {
   if (hours.length === 0) return [];
 

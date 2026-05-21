@@ -124,4 +124,27 @@ describe("parseShareResponse", () => {
     const timetable = parseShareResponse(xml);
     expect(timetable.lectures).toHaveLength(0);
   });
+
+  it("endtime × 5 > 1440인 시간은 필터링된다", () => {
+    // endtime=300 → 300×5=1500 > 1440
+    const xml = `<?xml version="1.0"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="test">
+    <subject id="1">
+      <name value="테스트"/>
+      <time value="월">
+        <data day="0" starttime="108" endtime="300" place=""/>
+      </time>
+    </subject>
+  </table>
+</response>`;
+    const timetable = parseShareResponse(xml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
+  it("잘못된 XML 형식이면 EverytimeScrapeError를 throw한다", () => {
+    expect(() => parseShareResponse("not valid xml <<<<")).toThrow(
+      EverytimeScrapeError,
+    );
+  });
 });
