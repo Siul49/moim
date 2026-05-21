@@ -48,6 +48,9 @@ export const signupSchema = z
 export type SignupInput = z.infer<typeof signupSchema>;
 
 export function normalizePhoneNumber(phone: string): string {
-  const digits = phone.replace(/-/g, "");
+  const digits = phone.replace(/\D/g, "");
+  if (!/^010\d{8}$/.test(digits)) {
+    throw new Error(`유효하지 않은 전화번호입니다: ${phone}`);
+  }
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }

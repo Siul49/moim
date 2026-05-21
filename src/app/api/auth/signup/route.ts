@@ -45,15 +45,16 @@ export async function POST(req: NextRequest) {
     eventSmsAgreed,
   } = result.data;
 
+  const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const now = new Date();
 
-  const passwordHash = await bcryptjs.hash(password, 12);
-
   try {
+    const passwordHash = await bcryptjs.hash(password, 12);
+
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         phoneNumber: normalizedPhone,
         nickname,
         passwordHash,
