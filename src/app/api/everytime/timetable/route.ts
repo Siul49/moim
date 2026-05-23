@@ -145,10 +145,11 @@ async function handleFileRequest(
     );
   }
 
-  if (file.size > 1024 * 1024) {
+  if (file.size > 100 * 1024) {
     return NextResponse.json(
       {
-        error: "파일 크기가 너무 큽니다. 1MB 이하의 ICS 파일을 업로드해주세요.",
+        error:
+          "파일 크기가 너무 큽니다. 100KB 이하의 ICS 파일을 업로드해주세요.",
       },
       { status: 400 },
     );
@@ -202,13 +203,13 @@ const VALID_DAYS = new Set<DayCode>([
 function parseCandidateDays(req: NextRequest): DayCode[] | undefined {
   const raw = req.nextUrl.searchParams.get("days");
   if (!raw) return undefined;
-  const days = [
-    ...new Set(
+  const days = Array.from(
+    new Set(
       raw
         .split(",")
         .map((d) => d.trim().toUpperCase() as DayCode)
         .filter((d) => VALID_DAYS.has(d)),
     ),
-  ];
+  );
   return days.length > 0 ? days : undefined;
 }

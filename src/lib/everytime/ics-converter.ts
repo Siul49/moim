@@ -47,6 +47,19 @@ export function parseTimetableFromIcs(icsText: string): EverytimeTimetable {
     const startMinute = startKst.getUTCHours() * 60 + startKst.getUTCMinutes();
     const endMinute = endKst.getUTCHours() * 60 + endKst.getUTCMinutes();
 
+    // 정수 및 범위 검증 추가
+    if (
+      !Number.isInteger(day) ||
+      day < 0 ||
+      day > 6 ||
+      !Number.isInteger(startMinute) ||
+      !Number.isInteger(endMinute) ||
+      startMinute < 0 ||
+      endMinute > 1440 ||
+      startMinute >= endMinute
+    ) {
+      continue;
+    }
     const name = event.title;
     if (!name.trim()) continue;
 

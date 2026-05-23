@@ -67,6 +67,37 @@ describe("parseShareResponse", () => {
     expect(() => parseShareResponse(xml)).toThrow(EverytimeScrapeError);
   });
 
+  it("비정상적인 시간 데이터(day 범위 초과, 정수가 아님, 범위 오류 등)는 무시한다", () => {
+    const invalidXml = `<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <table year="2026" semester="1" status="1" identifier="ApzpTKABRIpU6duu9LoH">
+    <subject id="1">
+      <name value="비정상과목1"/>
+      <time value="월 09:00-11:45">
+        <!-- day가 7 (범위 초과) -->
+        <data day="7" starttime="108" endtime="141" place="미래관"/>
+      </time>
+    </subject>
+    <subject id="2">
+      <name value="비정상과목2"/>
+      <time value="월 09:00-11:45">
+        <!-- starttime이 endtime보다 큼 -->
+        <data day="0" starttime="141" endtime="108" place="미래관"/>
+      </time>
+    </subject>
+    <subject id="3">
+      <name value="비정상과목3"/>
+      <time value="월 09:00-11:45">
+        <!-- 정수가 아님 -->
+        <data day="0" starttime="10.5" endtime="141" place="미래관"/>
+      </time>
+    </subject>
+  </table>
+</response>`;
+    const timetable = parseShareResponse(invalidXml);
+    expect(timetable.lectures).toHaveLength(0);
+  });
+
   it("빈 시간표(subject 없음)를 처리한다", () => {
     const xml = `<?xml version="1.0"?>
 <response>

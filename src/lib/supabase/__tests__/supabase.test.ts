@@ -1,0 +1,40 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createClient as createBrowserClient } from "../client";
+import { createClient as createServerClient } from "../server";
+
+// Next.js cookies API 모킹
+vi.mock("next/headers", () => ({
+  cookies: () => ({
+    getAll: vi.fn().mockReturnValue([]),
+    set: vi.fn(),
+  }),
+}));
+
+describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_SUPABASE_URL: "https://example-project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
+    };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it("createBrowserClient가 정상적으로 Supabase 브라우저 클라이언트를 반환하는지 테스트", () => {
+    const client = createBrowserClient();
+    expect(client).toBeDefined();
+    expect(client.auth).toBeDefined();
+  });
+
+  it("createServerClient가 정상적으로 Supabase 서버 클라이언트를 반환하는지 테스트", async () => {
+    const client = await createServerClient();
+    expect(client).toBeDefined();
+    expect(client.auth).toBeDefined();
+  });
+});

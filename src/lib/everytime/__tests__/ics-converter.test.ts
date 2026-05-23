@@ -146,4 +146,18 @@ END:VCALENDAR`;
     const timetable = parseTimetableFromIcs(ics);
     expect(timetable.lectures).toHaveLength(0);
   });
+
+  it("비정상적인 시간 범위(시간 범위를 벗어남 등)는 무시한다", () => {
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:outofbounds@test
+SUMMARY:자정넘김수업
+DTSTART;TZID=Asia/Seoul:20250303T230000
+DTEND;TZID=Asia/Seoul:20250304T010000
+END:VEVENT
+END:VCALENDAR`;
+    const timetable = parseTimetableFromIcs(ics);
+    expect(timetable.lectures).toHaveLength(0);
+  });
 });

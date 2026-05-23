@@ -7,9 +7,32 @@
  * TODO: Supabase URL + service role key 연결 후 구현
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createClient(): Promise<any> {
-  throw new Error(
-    "Supabase 클라이언트가 아직 설정되지 않았습니다. .env.local에 SUPABASE 환경변수를 설정해주세요.",
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export async function createClient() {
+  const cookieStore = cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    },
   );
 }

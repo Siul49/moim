@@ -63,15 +63,6 @@ export async function loginToEverytime(
   return parseLoginResponse(data);
 }
 
-function hasGetSetCookie(
-  headers: Headers,
-): headers is Headers & { getSetCookie: () => string[] } {
-  return (
-    typeof (headers as unknown as { getSetCookie?: () => string[] })
-      .getSetCookie === "function"
-  );
-}
-
 /**
  * 로그인 페이지를 GET해서 세션 쿠키를 가져온다.
  * etsid(세션 ID)와 x-et-device(기기 식별자)가 포함된다.
@@ -82,10 +73,16 @@ async function fetchSessionCookies(): Promise<string> {
     redirect: "follow",
   });
 
+  const headers = response.headers as unknown as {
+    getSetCookie?: () => string[];
+    get: (name: string) => string | null;
+  };
+
   // Node 18+: getSetCookie()로 복수의 Set-Cookie 헤더를 배열로 가져옴
-  const setCookies: string[] = hasGetSetCookie(response.headers)
-    ? response.headers.getSetCookie()
-    : [response.headers.get("set-cookie") ?? ""].filter(Boolean);
+  const setCookies: string[] =
+    typeof headers.getSetCookie === "function"
+      ? headers.getSetCookie()
+      : [headers.get("set-cookie") ?? ""].filter(Boolean);
 
   // "name=value; Path=...; ..." → "name=value" 만 추출해서 합침
   return setCookies

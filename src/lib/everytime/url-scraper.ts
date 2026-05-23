@@ -144,17 +144,28 @@ function parseSubject(
 function parseDataItem(d: unknown): EverytimeLectureTime | null {
   const item = d as Record<string, unknown>;
 
-  const day = Number(item["@_day"]);
-  // starttime/endtime은 5분 단위 → ×5 하면 자정 기준 분
-  const startMinute = Number(item["@_starttime"]) * 5;
-  const endMinute = Number(item["@_endtime"]) * 5;
+  const rawDay = Number(item["@_day"]);
+  const rawStart = Number(item["@_starttime"]);
+  const rawEnd = Number(item["@_endtime"]);
 
+  // finite number, 정수 검증
   if (
-    isNaN(day) ||
+    !Number.isInteger(rawDay) ||
+    !Number.isInteger(rawStart) ||
+    !Number.isInteger(rawEnd)
+  ) {
+    return null;
+  }
+
+  const day = rawDay;
+  // starttime/endtime은 5분 단위 → ×5 하면 자정 기준 분
+  const startMinute = rawStart * 5;
+  const endMinute = rawEnd * 5;
+
+  // 요일 범위: 0~6, 시간 범위: 0~1440
+  if (
     day < 0 ||
     day > 6 ||
-    isNaN(startMinute) ||
-    isNaN(endMinute) ||
     startMinute < 0 ||
     endMinute > 1440 ||
     startMinute >= endMinute
