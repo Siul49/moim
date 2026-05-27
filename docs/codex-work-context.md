@@ -1,21 +1,19 @@
 # MOIM 개발 현황 인수인계
 
-작성일: 2026-05-14
+작성일: 2026-05-28
 
 이 문서는 새 Codex 세션이 `C:\Users\kksu1\Dev\MOIM`에서 바로 맥락을 잡기 위한 작업 현황 노트다. 제품 설명서가 아니라, 현재 어디까지 왔고 무엇을 조심해야 하는지 정리한 handoff 문서다.
 
 ## 먼저 읽을 파일
 
-1. `docs/codex-work-context.md`
-   - 현재 개발 상태, 열린 PR, 다음 작업 순서를 빠르게 파악한다.
-2. `docs/user-flow.md`
+1. `docs/user-flow.md`
    - 실제 제품 흐름의 기준 문서다. 핵심 방향은 게스트 퍼스트, 초대 링크 문맥 우선이다.
-3. `docs/superpowers/specs/2026-04-28-moim-role-based-user-test-prototype-design.md`
-   - 사용자 테스트용 역할 기반 프로토타입의 승인된 설계 문서다.
-4. `docs/superpowers/plans/2026-04-28-moim-role-based-user-test-prototype.md`
-   - 역할 기반 프로토타입 구현 계획과 검증 흐름이 들어 있다.
-5. `prototype/moim.html`
-   - 현재 사용자 테스트용 단일 HTML 프로토타입의 중심 파일이다.
+2. `convention.md`
+   - 커밋, 브랜치, 이슈, PR 규칙의 기준이다.
+3. `ARCHITECTURE.md`
+   - 코드 구조와 테스트 전략을 볼 때의 기준 문서다.
+4. `prototype/moim.html`
+   - 사용자 테스트용 단일 HTML 프로토타입의 중심 파일이다.
 
 ## 제품 방향
 
@@ -24,8 +22,7 @@ MOIM은 여러 사람이 모임 시간을 정할 때, 주최자가 링크를 만
 현재 가장 중요한 제품 원칙은 다음과 같다.
 
 - 실제 제품 흐름은 `게스트 퍼스트 + 초대 링크 문맥 우선`이다.
-- `/join/:id`처럼 초대 링크로 들어온 사용자는 바로 참여자 흐름으로 들어가야 한다.
-- 일반 홈 `/`은 `모임 만들기`와 `초대 링크로 참여`를 중심으로 둔다.
+- 초대 링크로 들어온 사용자는 바로 참여자 흐름으로 들어가야 한다.
 - 로그인, 캘린더 저장, 계정 저장은 첫 관문이 아니라 가치를 경험한 뒤 제안한다.
 - 사용자 테스트용 역할 허브는 테스트 장치다. 실제 제품 첫 화면으로 쓰면 안 된다.
 
@@ -39,50 +36,25 @@ MVP의 최소 흐름은 다음 순서가 기준이다.
 
 ## 현재 repo 상태
 
-2026-05-14 확인 기준:
+2026-05-28 확인 기준:
 
 - repo root: `C:\Users\kksu1\Dev\MOIM`
-- 현재 로컬 브랜치: `feat/prototype-user-test`
-- 현재 HEAD: `d8e5dd1 feat: 역할 기반 사용자 테스트 프로토타입 개선`
 - GitHub remote: `origin https://github.com/Siul49/moim.git`
 - 기준 통합 브랜치: `dev`
+- PR #16, #21, #26, #27, #29는 `dev`에 merge 완료
+- 현재 레포 위생 정리 작업 이슈: #30
 
-현재 작업트리는 깨끗하지 않다. 다음 세션은 아래 변경을 사용자 작업으로 보고 함부로 되돌리면 안 된다.
+작업 시작 전에는 항상 아래를 다시 확인한다.
 
-수정됨:
-
-- `.agents/docs/1_DOMAIN_CONTEXT.md`
-- `.agents/docs/2_EXECUTION_PLAN.md`
-
-미추적:
-
-- `.claude/`
-- `docs/provided-documents-summary.md`
-- `docs/superpowers/plans/2026-04-27-moim-user-test-prototype.md`
-- `docs/user-flow.md`
-- `tsconfig.json`
-- `docs/codex-work-context.md`
-
-특히 `.agents/docs/*`와 `.claude/`는 다른 작업 흐름의 산출물일 수 있으므로, 명시 요청 없이 정리하지 않는다.
+```powershell
+git fetch origin --prune
+git status --short --branch
+gh pr list --state open --json number,title,headRefName,baseRefName,url
+```
 
 ## 현재 구현 축
 
-### 1. 사용자 테스트용 정적 프로토타입
-
-중심 파일:
-
-- `prototype/moim.html`
-
-역할 기반 사용자 테스트 프로토타입은 네 관점을 한 파일에서 볼 수 있게 하는 방향이다.
-
-- 게스트
-- 로그인 유저
-- 모임 만드는 사람
-- 초대받아 참여하는 사람
-
-이 역할 허브는 실제 제품의 정보 구조가 아니라 테스트용 진입 장치다. 실제 제품 첫 화면은 `docs/user-flow.md`의 게스트 퍼스트 흐름을 따른다.
-
-### 2. Next.js 앱
+### 1. Next.js 앱
 
 프로젝트는 Next.js App Router 기반이다.
 
@@ -90,150 +62,72 @@ MVP의 최소 흐름은 다음 순서가 기준이다.
 
 ```powershell
 npm ci
-npm test
 npm run lint
+npm run test
 npm run build
-npm run test:e2e
+npm run test:e2e -- --project=chromium
 ```
 
 `package.json` 기준 주요 스크립트:
 
 - `npm run dev`: Next dev server
-- `npm test`: Vitest
+- `npm run test`: Vitest
 - `npm run lint`: Next lint
 - `npm run build`: production build
 - `npm run test:e2e`: Playwright
 
-## 열린 PR 현황
+### 2. 일정 생성/참여 플로우
 
-2026-05-14 확인 기준 열린 PR은 2개다.
+현재 앱에는 Supabase 저장소와 별개로 브라우저 테스트 가능한 일정 생성/참여 플로우가 있다.
 
-### PR #16
+- `src/app/schedule/create/CreateScheduleClient.tsx`: 호스트가 모임을 만들고 참여자/호스트 링크를 받는다.
+- `src/app/schedule/[id]/ScheduleRoomClient.tsx`: 참여자가 이름과 가능 시간을 제출하고, host token이 있으면 결과를 본다.
+- `src/app/api/schedules/*`: 위 플로우를 위한 API route다.
+- `src/lib/schedules/in-memory-store.ts`: 프로토타입/E2E용 in-memory schedule store다.
 
-- URL: https://github.com/Siul49/moim/pull/16
-- 제목: `feat(scheduling): 캘린더 통합 가용시간 산출 프레임워크 (Date 기반 어댑터)`
-- base: `dev`
-- head: `feature/15-availability-aggregation`
-- GitHub merge 상태: `MERGEABLE`, `CLEAN`
-- checks: 통과
-- review decision: `CHANGES_REQUESTED`
+이 저장소는 운영 영속 저장소가 아니다. Supabase-backed schedule persistence를 붙일 때는 API contract를 유지하면서 저장소 구현을 교체한다.
 
-로컬 검증 결과:
+### 3. 캘린더/시간 계산
 
-- `npm test`: 16 files, 125 tests 통과
-- `npm run lint`: 통과
-- `npm run build`: 통과
+기준 모듈:
 
-머지 판단:
-
-- 충돌이나 기계적 실패는 없다.
-- 다만 CodeRabbit이 남긴 Date 객체 aliasing, Google all-day parsing, manual adapter purity 같은 리뷰는 아직 남아 있다.
-- 기반 scheduling 유틸이므로, 바로 머지하기보다는 작은 방어 수정 후 머지하는 편이 좋다.
-
-우선 확인할 파일:
-
-- `src/lib/scheduling/time-slot.ts`
+- `src/lib/scheduling/availability.ts`
 - `src/lib/scheduling/free-slots.ts`
-- `src/lib/calendar/adapters/google.ts`
-- `src/lib/calendar/adapters/manual.ts`
+- `src/lib/scheduling/time-slot.ts`
+- `src/lib/calendar/adapters/*`
+- `src/lib/scheduling/ics-parser.ts`
 
-### PR #21
+Google/iCloud/수동 입력/ICS는 provider raw data를 표준 시간 표현으로 바꾼 뒤 공통 가용시간 계산으로 들어가는 구조다.
 
-- URL: https://github.com/Siul49/moim/pull/21
-- 제목: `feat: 에브리타임 시간표 조회 기능 구현`
-- base: `dev`
-- head: `feature/20-everytime-timetable`
-- GitHub merge 상태: `MERGEABLE`, `CLEAN`
-- checks: 통과
-- review decision: `CHANGES_REQUESTED`
+### 4. 인증/계정
 
-로컬 검증 결과:
+현재 `dev`에는 이메일/닉네임 로그인, 회원가입, 카카오 로그인, Supabase/Prisma 관련 작업이 merge되어 있다. host auth와 participant guest flow는 분리해서 다룬다.
 
-- `npm test`: 15 files, 123 tests 통과
-- `npm run lint`: 통과
-- `npm run build`: 통과
+## 레포 위생 기준
 
-머지 판단:
-
-- 충돌이나 기계적 실패는 없다.
-- 실제 외부 입력을 받는 API라서 머지 전 보강이 더 중요하다.
-- 특히 ICS 업로드 크기 제한, 내용 기반 ICS 검증, 시간 값 범위 검증, URL 입력 검증을 먼저 보는 것이 좋다.
-
-우선 확인할 파일:
-
-- `src/app/api/everytime/timetable/route.ts`
-- `src/lib/everytime/url-scraper.ts`
-- `src/lib/everytime/timetable.ts`
-- `src/lib/everytime/ics-converter.ts`
-
-### 두 PR 동시 머지 검증
-
-임시 worktree에서 `origin/dev` 위에 PR #16, PR #21을 순서대로 merge 했을 때:
-
-- merge conflict 없음
-- `npm test`: 21 files, 157 tests 통과
-- `npm run lint`: 통과
-- `npm run build`: 통과
-
-즉 통합 자체는 가능하지만, review gate는 아직 남아 있다.
+- `.env`는 GitHub에 올리지 않는다. 필요한 키 이름만 `.env.example`에 둔다.
+- `.claude/`, worktree, 로컬 실행 로그, 테스트 결과물은 추적하지 않는다.
+- agent 전용 계획 문서는 기본적으로 레포에 남기지 않는다. 사람이 읽는 제품/개발 문서는 `docs/`에 직접 정리한다.
+- 오래된 스켈레톤 파일은 실제 구현과 연결되어 있지 않으면 삭제한다.
 
 ## 다음 작업 추천 순서
 
-1. 현재 작업트리 상태를 다시 확인한다.
-
-```powershell
-git status --short --branch
-gh pr list --state open --json number,title,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,url
-```
-
-2. 사용자가 PR 정리를 원하면 PR #21부터 보는 것을 추천한다.
-
-이유:
-
-- Everytime API는 외부 URL, XML, ICS 파일을 직접 다룬다.
-- validation 누락이 실제 운영 리스크로 이어질 가능성이 PR #16보다 높다.
-- checks는 통과하지만 review decision은 아직 `CHANGES_REQUESTED`다.
-
-3. PR #21 보강 시 최소 성공 기준:
-
-- ICS 파일 크기 제한을 둔다.
-- 파일명/MIME만 보지 말고 `BEGIN:VCALENDAR`, `END:VCALENDAR` 같은 내용 기반 확인을 한다.
-- `startMinute`, `endMinute`, `day`는 finite number, 정수, 범위 조건을 검증한다.
-- `timetableToFreeSlots` 오류와 scrape/parse 오류를 구분해서 응답한다.
-- `npm test`, `npm run lint`, `npm run build`를 통과시킨다.
-
-4. PR #16 보강 시 최소 성공 기준:
-
-- `mergeOverlappingDateSlots`가 입력 Date 객체를 결과에 그대로 공유하지 않게 한다.
-- `busyEventsToFree`의 empty busy path도 window Date 객체를 복사해서 반환한다.
-- Google all-day parsing의 서버 로컬 timezone 의존성을 줄인다.
-- `npm test`, `npm run lint`, `npm run build`를 통과시킨다.
-
-5. 프로토타입 작업을 이어가면 `prototype/moim.html`과 `e2e/prototype-flow.spec.ts`를 함께 본다.
-
-현재 역할 기반 프로토타입 문서의 방향은:
-
-- 첫 화면은 사용자 테스트용 역할 허브
-- 실제 제품 첫 화면은 게스트 퍼스트
-- 참여자는 로그인 없이 제출 가능
-- 주최자는 빠르게 링크를 만들고 공유 가능
-- AI는 시간을 자동 확정하지 않고 추천만 한다
+1. 이슈 #30의 레포 위생/CI 정리를 완료하고 PR을 만든다.
+2. `dev` 기준 CI가 `lint`, `test`, `build`, Chromium e2e를 모두 실행하는지 확인한다.
+3. Supabase-backed schedule persistence를 별도 이슈로 분리한다.
+4. 참여자 guest flow와 host auth flow가 섞이지 않도록 API와 UI 경계를 유지한다.
 
 ## 다음 세션 시작 프롬프트
 
-새 세션에서 바로 이어가려면 아래처럼 시작하면 된다.
-
 ```text
 C:\Users\kksu1\Dev\MOIM에서 작업해줘.
-먼저 docs/codex-work-context.md를 읽고 현재 개발 현황을 파악해.
-기존 작업트리에 수정/미추적 파일이 있으니 함부로 되돌리지 말고, git status와 열린 PR 상태를 다시 확인해.
-우선순위는 PR #21 Everytime 시간표 기능의 merge-blocking 리뷰 보강이고, 필요하면 PR #16 scheduling 유틸 보강도 이어서 봐줘.
-변경 후에는 npm test, npm run lint, npm run build로 검증해.
+먼저 docs/codex-work-context.md와 convention.md를 읽고 현재 개발 현황과 협업 규칙을 파악해.
+기존 작업트리에 수정/미추적 파일이 있으면 함부로 되돌리지 말고, git status와 GitHub PR 상태를 다시 확인해.
+변경 후에는 npm run lint, npm run test, npm run build, 가능하면 npm run test:e2e -- --project=chromium으로 검증해.
 ```
 
 ## 주의할 점
 
-- 이 문서는 2026-05-14 시점의 snapshot이다. PR 상태와 CI 결과는 바뀔 수 있으므로 다음 세션에서 반드시 다시 확인한다.
-- 기존 문서 중 일부는 PowerShell 출력에서 mojibake처럼 보일 수 있다. 문서 내용을 판단할 때는 `-Encoding UTF8`로 다시 읽는다.
-- 로컬 `node_modules`가 현재 브랜치와 맞지 않으면 테스트가 잘못 실패할 수 있다. PR 검증은 깨끗한 worktree에서 `npm ci`부터 실행하는 편이 안전하다.
+- 이 문서는 snapshot이다. PR 상태와 CI 결과는 바뀔 수 있으므로 다음 세션에서 반드시 다시 확인한다.
+- PowerShell에서 한글이 깨져 보이면 파일 문제라고 단정하지 말고 `Get-Content -Raw -Encoding UTF8`로 다시 읽는다.
 - 문서/프로토타입은 한국어 톤을 유지한다. 과한 corporate wording보다 학생 팀이 실제로 설명하는 문장에 가깝게 쓴다.
