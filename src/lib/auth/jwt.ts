@@ -2,12 +2,14 @@ import { SignJWT, jwtVerify } from "jose";
 
 export interface JwtPayload {
   userId: string;
-  email: string;
+  email?: string;
   nickname: string;
+  provider?: "local" | "kakao";
 }
 
 const ACCESS_TOKEN_TTL = "7d";
-const COOKIE_NAME = "accessToken";
+export const COOKIE_NAME = "accessToken";
+export const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7일
 
 function getSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
@@ -33,5 +35,3 @@ export async function verifyAccessToken(
     return null;
   }
 }
-
-export { COOKIE_NAME };
