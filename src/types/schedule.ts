@@ -36,6 +36,28 @@ export interface ParticipantAvailability {
 }
 
 /**
+ * 절대 시각(Date) 기반 시간 슬롯
+ *
+ * 외부 캘린더(Google/iCloud)와 AI 추출 결과는 모두 실제 Date를 갖는다.
+ * 요일+정수 시간(`TimeSlot`)으로 환원하면 30분 단위·시간대(TZ)·날짜 정보가
+ * 손실되므로, Date 기반 파이프라인에서는 본 타입을 사용한다.
+ */
+export interface DateTimeSlot {
+  startAt: Date;
+  endAt: Date;
+}
+
+/**
+ * Date 기반 참여자 가용시간
+ *
+ * `ParticipantAvailability`의 Date 버전. 두 형태는 어댑터/유틸을 통해 상호 변환한다.
+ */
+export interface ParticipantDateAvailability {
+  userId: string;
+  available: DateTimeSlot[];
+}
+
+/**
  * 스케줄링 세션 — 호스트가 생성하는 "일정 잡기"
  *
  * PRD 3.1의 "일정 잡기 생성" 결과물.
