@@ -37,4 +37,18 @@ describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
     expect(client).toBeDefined();
     expect(client.auth).toBeDefined();
   });
+
+  it("Supabase URL 환경변수가 없으면 명확한 에러를 던진다", () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    expect(() => createBrowserClient()).toThrow("NEXT_PUBLIC_SUPABASE_URL");
+  });
+
+  it("Supabase anon key 환경변수가 없으면 명확한 에러를 던진다", () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    expect(() => createBrowserClient()).toThrow(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    );
+  });
 });
