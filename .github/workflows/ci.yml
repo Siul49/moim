@@ -13,6 +13,16 @@ on:
 jobs:
   code_quality:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://example-project.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+      JWT_SECRET: test-jwt-secret-for-ci-only
+      ENCRYPTION_SECRET: 0000000000000000000000000000000000000000000000000000000000000000
+      KAKAO_REST_API_KEY: test-kakao-key
+      KAKAO_REDIRECT_URI: http://localhost:3000/api/auth/kakao/callback
+      GOOGLE_CLIENT_ID: test-google-client-id
+      GOOGLE_CLIENT_SECRET: test-google-client-secret
 
     steps:
       - name: 저장소 체크아웃 (Checkout Repository)
