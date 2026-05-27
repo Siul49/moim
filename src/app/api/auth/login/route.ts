@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json(
         { success: false, message: AUTH_FAIL_MESSAGE },
         { status: 401 },
