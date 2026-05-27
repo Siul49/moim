@@ -28,8 +28,8 @@
 | 도메인 컨텍스트 | `.agents/docs/1_DOMAIN_CONTEXT.md` | 에이전트용 프로젝트 맥락 | 수정 중 |
 | 실행 계획 | `.agents/docs/2_EXECUTION_PLAN.md` | Phase별 구현 로드맵 | 수정 중 |
 | 파일 인덱스 | `.agents/docs/3_FILE_INDEX.md` | 파일 역할 지도 | 원본 MD 존재 |
-| 제품 사용자 흐름 문서 | `docs/user-flow.md` | 게스트 퍼스트 실제 제품 흐름 | 원본 MD 존재 |
-| 개발 현황 인수인계 | `docs/codex-work-context.md` | 현재 개발 상태와 검증 기준 | 원본 MD 존재 |
+| 제품 사용자 흐름 문서 | `docs/v1/user-flow.md` | 게스트 퍼스트 실제 제품 흐름 | 원본 MD 존재 |
+| 개발 현황 인수인계 | `docs/v1/codex-work-context.md` | 현재 개발 상태와 검증 기준 | 원본 MD 존재 |
 | AI calendar assistant PRD 리뷰 맥락 | 현재 원본 파일 미확인 | 제품/수익화/범위 리뷰 | 메모리 기반 맥락만 확인 |
 
 ## 사업계획서 핵심 내용
