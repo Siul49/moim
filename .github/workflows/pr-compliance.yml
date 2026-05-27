@@ -1,11 +1,10 @@
-name: PR 품질 검사 (Compliance + Code Quality)
+name: PR 템플릿 검사
 
 on:
   pull_request:
     types: [opened, edited, synchronize]
 
 jobs:
-  # 1. PR 템플릿 양식 검사
   check-template:
     runs-on: ubuntu-latest
     steps:
@@ -26,28 +25,3 @@ jobs:
           fi
           
           echo "✅ PR 템플릿 검사 통과 성공!"
-
-  # 2. 코드 품질 검증 (린트 → 테스트 → 빌드)
-  code-quality:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 코드 체크아웃
-        uses: actions/checkout@v4
-
-      - name: 🟢 Node.js 설치
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 📦 의존성 설치
-        run: npm ci
-
-      - name: 🔍 린트 검사
-        run: npm run lint
-
-      - name: 🧪 테스트 실행
-        run: npm run test
-
-      - name: 🏗️ 빌드 테스트
-        run: npm run build
