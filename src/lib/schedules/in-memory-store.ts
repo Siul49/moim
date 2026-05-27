@@ -7,7 +7,7 @@ import type {
 import { findCommonSlots } from "@/lib/scheduling/availability";
 import { mergeOverlapping, sortSlots } from "@/lib/scheduling/time-slot";
 
-export interface CreateTestScheduleInput {
+export interface CreateInMemoryScheduleInput {
   title: string;
   durationMinutes: number;
   candidateDays: DayCode[];
@@ -20,12 +20,12 @@ export interface AddParticipantAvailabilityInput {
   available: TimeSlot[];
 }
 
-export interface CreatedTestSchedule {
+export interface CreatedInMemorySchedule {
   id: string;
   hostToken: string;
 }
 
-export interface PublicTestSchedule {
+export interface PublicSchedule {
   id: string;
   title: string;
   durationMinutes: number;
@@ -36,19 +36,19 @@ export interface PublicTestSchedule {
   createdAt: string;
 }
 
-export interface TestParticipant {
+export interface ScheduleParticipant {
   id: string;
   name: string;
   available: TimeSlot[];
   submittedAt: string;
 }
 
-export interface HostTestSchedule extends PublicTestSchedule {
-  participants: TestParticipant[];
+export interface HostSchedule extends PublicSchedule {
+  participants: ScheduleParticipant[];
   commonSlots: TimeSlot[];
 }
 
-interface TestScheduleRecord {
+interface ScheduleRecord {
   id: string;
   hostToken: string;
   title: string;
@@ -56,20 +56,20 @@ interface TestScheduleRecord {
   candidateDays: DayCode[];
   candidateStartHour: number;
   candidateEndHour: number;
-  participants: TestParticipant[];
+  participants: ScheduleParticipant[];
   createdAt: string;
 }
 
-interface TestScheduleStore {
-  schedules: Map<string, TestScheduleRecord>;
+interface ScheduleStore {
+  schedules: Map<string, ScheduleRecord>;
 }
 
-const STORE_KEY = "__moimTestScheduleStore";
+const STORE_KEY = "__moimInMemoryScheduleStore";
 const VALID_DAYS: DayCode[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-export function createTestSchedule(
-  input: CreateTestScheduleInput,
-): CreatedTestSchedule {
+export function createSchedule(
+  input: CreateInMemoryScheduleInput,
+): CreatedInMemorySchedule {
   const schedule = normalizeScheduleInput(input);
   const id = createToken(18);
   const hostToken = createToken(32);
@@ -85,7 +85,7 @@ export function createTestSchedule(
   return { id, hostToken };
 }
 
-export function getSchedulePublic(id: string): PublicTestSchedule | null {
+export function getSchedulePublic(id: string): PublicSchedule | null {
   const schedule = getStore().schedules.get(id);
   if (!schedule) return null;
   return toPublicSchedule(schedule);
@@ -94,7 +94,7 @@ export function getSchedulePublic(id: string): PublicTestSchedule | null {
 export function getScheduleForHost(
   id: string,
   hostToken: string,
-): HostTestSchedule | null {
+): HostSchedule | null {
   const schedule = getStore().schedules.get(id);
   if (!schedule || !tokenMatches(schedule.hostToken, hostToken)) return null;
 
@@ -114,11 +114,11 @@ export function getScheduleForHost(
 export function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,
-): TestParticipant {
+): ScheduleParticipant {
   const schedule = getStore().schedules.get(scheduleId);
   if (!schedule) throw new Error("schedule not found");
 
-  const participant: TestParticipant = {
+  const participant: ScheduleParticipant = {
     id: createToken(12),
     name: normalizeParticipantName(input.name),
     available: normalizeAvailability(schedule, input.available),
@@ -129,13 +129,13 @@ export function addParticipantAvailability(
   return copyParticipant(participant);
 }
 
-export function clearTestSchedules() {
+export function clearSchedules() {
   getStore().schedules.clear();
 }
 
-function getStore(): TestScheduleStore {
+function getStore(): ScheduleStore {
   const globalStore = globalThis as typeof globalThis & {
-    [STORE_KEY]?: TestScheduleStore;
+    [STORE_KEY]?: ScheduleStore;
   };
 
   if (!globalStore[STORE_KEY]) {
@@ -146,8 +146,8 @@ function getStore(): TestScheduleStore {
 }
 
 function normalizeScheduleInput(
-  input: CreateTestScheduleInput,
-): Omit<TestScheduleRecord, "id" | "hostToken" | "participants" | "createdAt"> {
+  input: CreateInMemoryScheduleInput,
+): Omit<ScheduleRecord, "id" | "hostToken" | "participants" | "createdAt"> {
   const title = input.title.trim();
   if (title.length < 2 || title.length > 80) {
     throw new Error("title must be between 2 and 80 characters");
@@ -193,7 +193,7 @@ function normalizeParticipantName(name: string): string {
 }
 
 function normalizeAvailability(
-  schedule: TestScheduleRecord,
+  schedule: ScheduleRecord,
   available: TimeSlot[],
 ): TimeSlot[] {
   if (available.length === 0) {
@@ -226,7 +226,7 @@ function validateHourRange(startHour: number, endHour: number) {
   }
 }
 
-function toPublicSchedule(schedule: TestScheduleRecord): PublicTestSchedule {
+function toPublicSchedule(schedule: ScheduleRecord): PublicSchedule {
   return {
     id: schedule.id,
     title: schedule.title,
@@ -239,7 +239,9 @@ function toPublicSchedule(schedule: TestScheduleRecord): PublicTestSchedule {
   };
 }
 
-function copyParticipant(participant: TestParticipant): TestParticipant {
+function copyParticipant(
+  participant: ScheduleParticipant,
+): ScheduleParticipant {
   return {
     ...participant,
     available: participant.available.map((slot) => ({ ...slot })),

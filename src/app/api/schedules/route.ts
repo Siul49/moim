@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createTestSchedule,
+  createSchedule,
   getSchedulePublic,
-} from "@/lib/schedule-test/store";
+} from "@/lib/schedules/in-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const created = createTestSchedule(await request.json());
+    const created = createSchedule(await request.json());
     const schedule = getSchedulePublic(created.id);
 
     return NextResponse.json(

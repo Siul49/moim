@@ -2,19 +2,19 @@ import { describe, expect, test, afterEach } from "vitest";
 import type { TimeSlot } from "@/types/schedule";
 import {
   addParticipantAvailability,
-  clearTestSchedules,
-  createTestSchedule,
+  clearSchedules,
+  createSchedule,
   getScheduleForHost,
   getSchedulePublic,
-} from "../store";
+} from "../in-memory-store";
 
-describe("test schedule store", () => {
+describe("in-memory schedule store", () => {
   afterEach(() => {
-    clearTestSchedules();
+    clearSchedules();
   });
 
   test("creates an unguessable schedule id and keeps the host token out of public data", () => {
-    const created = createTestSchedule({
+    const created = createSchedule({
       title: "제품 회의",
       durationMinutes: 60,
       candidateDays: ["MON", "TUE"],
@@ -37,7 +37,7 @@ describe("test schedule store", () => {
   });
 
   test("requires the host token before returning participant details and common slots", () => {
-    const created = createTestSchedule({
+    const created = createSchedule({
       title: "인터뷰 일정",
       durationMinutes: 60,
       candidateDays: ["MON"],
@@ -69,7 +69,7 @@ describe("test schedule store", () => {
   });
 
   test("rejects participant slots outside the schedule candidate window", () => {
-    const created = createTestSchedule({
+    const created = createSchedule({
       title: "저녁 약속",
       durationMinutes: 60,
       candidateDays: ["FRI"],
@@ -91,7 +91,7 @@ describe("test schedule store", () => {
   });
 
   test("rejects empty participant names and empty availability", () => {
-    const created = createTestSchedule({
+    const created = createSchedule({
       title: "스터디",
       durationMinutes: 60,
       candidateDays: ["SAT"],

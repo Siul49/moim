@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   addParticipantAvailability,
   getSchedulePublic,
-} from "@/lib/schedule-test/store";
+} from "@/lib/schedules/in-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
