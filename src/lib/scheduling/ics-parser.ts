@@ -68,27 +68,28 @@ function unfoldLines(icsContent: string): string[] {
 function eventToSlot(event: IcsEvent): TimeSlot | null {
   if (!event.start || !event.end) return null;
 
-  const startHour = event.start.isDateOnly ? 0 : event.start.date.getUTCHours();
-  const endHour = getEndHour(event);
+  const { start, end } = event;
+  const startHour = start.isDateOnly ? 0 : start.date.getUTCHours();
+  const endHour = getEndHour(start, end);
 
   if (startHour >= endHour) return null;
 
   return {
-    day: toDayCode(event.start.date.getUTCDay()),
+    day: toDayCode(start.date.getUTCDay()),
     startHour,
     endHour,
   };
 }
 
-function getEndHour(event: Required<IcsEvent>): number {
-  if (event.end.isDateOnly) return 24;
+function getEndHour(start: IcsDate, end: IcsDate): number {
+  if (end.isDateOnly) return 24;
 
   const sameUtcDay =
-    event.start.date.getUTCFullYear() === event.end.date.getUTCFullYear() &&
-    event.start.date.getUTCMonth() === event.end.date.getUTCMonth() &&
-    event.start.date.getUTCDate() === event.end.date.getUTCDate();
+    start.date.getUTCFullYear() === end.date.getUTCFullYear() &&
+    start.date.getUTCMonth() === end.date.getUTCMonth() &&
+    start.date.getUTCDate() === end.date.getUTCDate();
 
-  return sameUtcDay ? event.end.date.getUTCHours() : 24;
+  return sameUtcDay ? end.date.getUTCHours() : 24;
 }
 
 function parseIcsDate(value: string): IcsDate | undefined {
