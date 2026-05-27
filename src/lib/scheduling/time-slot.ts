@@ -45,9 +45,7 @@ export function mergeOverlapping(slots: TimeSlot[]): TimeSlot[] {
 }
 
 export function sortDateSlots(slots: DateTimeSlot[]): DateTimeSlot[] {
-  return [...slots].sort(
-    (a, b) => a.startAt.getTime() - b.startAt.getTime(),
-  );
+  return [...slots].sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 }
 
 export function mergeOverlappingDateSlots(
@@ -62,10 +60,13 @@ export function mergeOverlappingDateSlots(
     const last = result[result.length - 1];
     if (last && slot.startAt.getTime() <= last.endAt.getTime()) {
       if (slot.endAt.getTime() > last.endAt.getTime()) {
-        last.endAt = slot.endAt;
+        last.endAt = new Date(slot.endAt.getTime());
       }
     } else {
-      result.push({ startAt: slot.startAt, endAt: slot.endAt });
+      result.push({
+        startAt: new Date(slot.startAt.getTime()),
+        endAt: new Date(slot.endAt.getTime()),
+      });
     }
   }
 

@@ -50,5 +50,5 @@ function toCalendarEvent(event: GoogleEvent): CalendarEvent {
 
 function parseAllDay(yyyymmdd: string): Date {
   const [y, m, d] = yyyymmdd.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  return new Date(Date.UTC(y, m - 1, d));
 }

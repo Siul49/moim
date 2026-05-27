@@ -42,7 +42,12 @@ export function busyEventsToFree(
 ): TimeRange[] {
   const busy = eventsToBusyRanges(events, window);
   if (busy.length === 0) {
-    return [{ startAt: window.startAt, endAt: window.endAt }];
+    return [
+      {
+        startAt: new Date(window.startAt.getTime()),
+        endAt: new Date(window.endAt.getTime()),
+      },
+    ];
   }
 
   const free: TimeRange[] = [];
