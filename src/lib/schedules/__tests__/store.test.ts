@@ -3,6 +3,7 @@ import type { TimeSlot } from "@/types/schedule";
 import {
   addParticipantAvailability,
   clearSchedules,
+  confirmSchedule,
   createSchedule,
   getScheduleForHost,
   getSchedulePublic,
@@ -141,5 +142,83 @@ describe("schedule store", () => {
         available: [],
       }),
     ).rejects.toThrow("availability");
+  });
+
+  test("lets the host confirm one of the common slots", async () => {
+    const created = await createSchedule({
+      title: "주간 회의",
+      durationMinutes: 60,
+      candidateDays: ["FRI"],
+      candidateStartHour: 18,
+      candidateEndHour: 22,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "민지",
+      available: [{ day: "FRI", startHour: 19, endHour: 21 }],
+    });
+    await addParticipantAvailability(created.id, {
+      name: "준호",
+      available: [{ day: "FRI", startHour: 19, endHour: 22 }],
+    });
+
+    const confirmed = await confirmSchedule(created.id, created.hostToken, {
+      day: "FRI",
+      startHour: 19,
+      endHour: 20,
+    });
+
+    expect(confirmed.status).toBe("confirmed");
+    expect(confirmed.confirmedSlot).toEqual({
+      day: "FRI",
+      startHour: 19,
+      endHour: 20,
+    });
+    expect((await getSchedulePublic(created.id))?.status).toBe("confirmed");
+  });
+
+  test("rejects confirmation with an invalid host token", async () => {
+    const created = await createSchedule({
+      title: "주간 회의",
+      durationMinutes: 60,
+      candidateDays: ["FRI"],
+      candidateStartHour: 18,
+      candidateEndHour: 22,
+    });
+
+    await expect(
+      confirmSchedule(created.id, "wrong-token", {
+        day: "FRI",
+        startHour: 19,
+        endHour: 20,
+      }),
+    ).rejects.toThrow("invalid host token");
+  });
+
+  test("rejects confirmation outside the current common slots", async () => {
+    const created = await createSchedule({
+      title: "주간 회의",
+      durationMinutes: 60,
+      candidateDays: ["FRI"],
+      candidateStartHour: 18,
+      candidateEndHour: 22,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "민지",
+      available: [{ day: "FRI", startHour: 19, endHour: 20 }],
+    });
+    await addParticipantAvailability(created.id, {
+      name: "준호",
+      available: [{ day: "FRI", startHour: 20, endHour: 21 }],
+    });
+
+    await expect(
+      confirmSchedule(created.id, created.hostToken, {
+        day: "FRI",
+        startHour: 19,
+        endHour: 20,
+      }),
+    ).rejects.toThrow("common slots");
   });
 });

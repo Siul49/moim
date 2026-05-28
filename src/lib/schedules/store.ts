@@ -35,6 +35,8 @@ export interface PublicSchedule {
   candidateStartHour: number;
   candidateEndHour: number;
   participantCount: number;
+  status: "open" | "confirmed";
+  confirmedSlot?: TimeSlot;
   createdAt: string;
 }
 
@@ -140,6 +142,34 @@ export async function addParticipantAvailability(
   return toScheduleParticipant(participant);
 }
 
+export async function confirmSchedule(
+  id: string,
+  hostToken: string,
+  confirmedSlot: TimeSlot,
+): Promise<HostSchedule> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id },
+    include: { participants: true },
+  });
+  if (!schedule) throw new Error("schedule not found");
+  if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
+    throw new Error("invalid host token");
+  }
+
+  const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
+  await prisma.schedule.update({
+    where: { id },
+    data: {
+      status: "confirmed",
+      confirmedSlot: JSON.stringify(normalizedSlot),
+    },
+  });
+
+  const updated = await getScheduleForHost(id, hostToken);
+  if (!updated) throw new Error("schedule not found");
+  return updated;
+}
+
 export async function clearSchedules() {
   await prisma.scheduleParticipant.deleteMany();
   await prisma.schedule.deleteMany();
@@ -219,6 +249,43 @@ function normalizeAvailability(
   return mergeOverlapping(sortSlots(available)).map((slot) => ({ ...slot }));
 }
 
+function normalizeConfirmedSlot(
+  schedule: ScheduleWithParticipants,
+  confirmedSlot: TimeSlot,
+): TimeSlot {
+  validateHourRange(confirmedSlot.startHour, confirmedSlot.endHour);
+  const normalizedSlot = { ...confirmedSlot };
+  const candidateDays = parseDayCodes(schedule.candidateDays);
+  if (
+    !candidateDays.includes(normalizedSlot.day) ||
+    normalizedSlot.startHour < schedule.candidateStartHour ||
+    normalizedSlot.endHour > schedule.candidateEndHour
+  ) {
+    throw new Error("confirmed slot must stay inside the candidate window");
+  }
+
+  const participants = schedule.participants.map(toScheduleParticipant);
+  const commonSlots = findCommonSlots(
+    participants.map((participant) => ({
+      userId: participant.id,
+      available: participant.available,
+    })),
+  );
+  if (!commonSlots.some((slot) => containsSlot(slot, normalizedSlot))) {
+    throw new Error("confirmed slot must be inside the current common slots");
+  }
+
+  return normalizedSlot;
+}
+
+function containsSlot(container: TimeSlot, target: TimeSlot): boolean {
+  return (
+    container.day === target.day &&
+    container.startHour <= target.startHour &&
+    container.endHour >= target.endHour
+  );
+}
+
 function validateHourRange(startHour: number, endHour: number) {
   if (
     !Number.isInteger(startHour) ||
@@ -240,6 +307,8 @@ function toPublicSchedule(schedule: ScheduleWithParticipants): PublicSchedule {
     candidateStartHour: schedule.candidateStartHour,
     candidateEndHour: schedule.candidateEndHour,
     participantCount: schedule.participants.length,
+    status: schedule.status === "confirmed" ? "confirmed" : "open",
+    confirmedSlot: parseOptionalTimeSlot(schedule.confirmedSlot),
     createdAt: schedule.createdAt.toISOString(),
   };
 }
@@ -272,6 +341,12 @@ function parseTimeSlots(value: string): TimeSlot[] {
   return parsed
     .filter((slot): slot is TimeSlot => isTimeSlot(slot))
     .map((slot) => ({ ...slot }));
+}
+
+function parseOptionalTimeSlot(value: string | null): TimeSlot | undefined {
+  if (!value) return undefined;
+  const parsed = parseJson(value);
+  return isTimeSlot(parsed) ? { ...parsed } : undefined;
 }
 
 function parseJson(value: string): unknown {

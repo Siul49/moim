@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getScheduleForHost, getSchedulePublic } from "@/lib/schedules/store";
+import {
+  confirmSchedule,
+  getScheduleForHost,
+  getSchedulePublic,
+} from "@/lib/schedules/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,4 +32,29 @@ export async function GET(
   }
 
   return NextResponse.json({ schedule });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const schedule = await confirmSchedule(
+      id,
+      body.hostToken,
+      body.confirmedSlot,
+    );
+    return NextResponse.json({ schedule });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "invalid request";
+    const status =
+      message === "schedule not found"
+        ? 404
+        : message === "invalid host token"
+          ? 403
+          : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
