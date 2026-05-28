@@ -45,6 +45,8 @@ await prisma.$executeRawUnsafe(`
     "candidateDays" TEXT NOT NULL,
     "candidateStartHour" INTEGER NOT NULL,
     "candidateEndHour" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'open',
+    "confirmedSlot" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
   )
@@ -79,5 +81,22 @@ await prisma.$executeRawUnsafe(
 await prisma.$executeRawUnsafe(
   `CREATE INDEX IF NOT EXISTS "ScheduleParticipant_scheduleId_idx" ON "ScheduleParticipant"("scheduleId")`,
 );
+
+const scheduleColumns = await prisma.$queryRawUnsafe(
+  `PRAGMA table_info("Schedule")`,
+);
+const scheduleColumnNames = new Set(scheduleColumns.map((column) => column.name));
+
+if (!scheduleColumnNames.has("status")) {
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "Schedule" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'open'`,
+  );
+}
+
+if (!scheduleColumnNames.has("confirmedSlot")) {
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "Schedule" ADD COLUMN "confirmedSlot" TEXT`,
+  );
+}
 
 await prisma.$disconnect();

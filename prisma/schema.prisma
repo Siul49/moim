@@ -44,6 +44,8 @@ model Schedule {
   candidateDays      String
   candidateStartHour Int
   candidateEndHour   Int
+  status             String                @default("open")
+  confirmedSlot      String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   participants       ScheduleParticipant[]
