@@ -2,13 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import {
-  CheckCircle2,
-  ChevronRight,
-  EyeOff,
-  MessageCircle,
-} from "lucide-react";
-import { ProviderGlyph, PurpleButton } from "@/components/moim/reference-ui";
+import { CheckCircle2, ChevronRight, EyeOff } from "lucide-react";
+import { AuthProviderGlyph } from "@/components/moim/auth-social";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -102,7 +97,7 @@ export default function SignupPage() {
               <SocialButton type="kakao" label="카카오로 시작하기" />
               <SocialButton type="google" label="구글로 시작하기" />
               <SocialButton type="naver" label="네이버로 시작하기" />
-              <SocialButton type="apple" label="애플로 시작하기" dark />
+              <SocialButton type="apple" label="iCloud로 시작하기" dark />
             </div>
 
             <div className="my-8 h-px bg-[#dedbe3]" />
@@ -179,13 +174,13 @@ export default function SignupPage() {
                 </p>
               ) : null}
 
-              <PurpleButton
+              <button
                 type="submit"
-                className="w-full"
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "가입 중" : "회원가입"}
-              </PurpleButton>
+              </button>
             </form>
             <p className="mt-6 text-center text-lg font-semibold text-[#6f6a73]">
               계정이 있으신가요?{" "}
@@ -209,7 +204,12 @@ function SocialButton({
   label: string;
   dark?: boolean;
 }) {
-  const href = type === "kakao" ? "/api/auth/kakao/login" : undefined;
+  const href =
+    type === "kakao"
+      ? "/api/auth/kakao/login"
+      : type === "apple"
+        ? "/api/auth/apple/login"
+        : undefined;
   const className = dark
     ? "bg-[#171717] text-white"
     : type === "kakao"
@@ -219,7 +219,7 @@ function SocialButton({
         : "border border-[#dedbe3] bg-white text-[#222026]";
   const content = (
     <>
-      <ProviderGlyph type={type} />
+      <AuthProviderGlyph type={type} />
       {label}
     </>
   );
@@ -229,8 +229,7 @@ function SocialButton({
         href={href}
         className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg text-lg font-bold ${className}`}
       >
-        <MessageCircle className="h-5 w-5" />
-        {label}
+        {content}
       </a>
     );
   }

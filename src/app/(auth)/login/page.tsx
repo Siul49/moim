@@ -3,8 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { EyeOff, MessageCircle } from "lucide-react";
-import { ProviderGlyph, PurpleButton } from "@/components/moim/reference-ui";
-import { Button } from "@/components/ui/button";
+import { AuthProviderGlyph } from "@/components/moim/auth-social";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -123,13 +122,13 @@ export default function LoginPage() {
             </p>
           ) : null}
 
-          <PurpleButton
+          <button
             type="submit"
-            className="mt-6 w-full"
+            className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isSubmitting}
           >
             {isSubmitting ? "로그인 중" : "로그인"}
-          </PurpleButton>
+          </button>
         </form>
 
         <div className="my-12 flex items-center gap-6 text-lg font-semibold text-[#aaa5ad]">
@@ -145,26 +144,25 @@ export default function LoginPage() {
           >
             <MessageCircle className="h-5 w-5" /> 카카오로 시작하기
           </a>
-          <Button
+          <button
             type="button"
-            variant="outline"
-            className="h-14 rounded-lg border-[#dedbe3] bg-white text-lg font-bold"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg border border-[#dedbe3] bg-white text-lg font-bold"
             onClick={handleGoogleLogin}
           >
-            <ProviderGlyph type="google" /> 구글로 시작하기
-          </Button>
+            <AuthProviderGlyph type="google" /> 구글로 시작하기
+          </button>
           <button
             type="button"
             className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#03c75a] text-lg font-bold text-white"
           >
-            <ProviderGlyph type="naver" /> 네이버로 시작하기
+            <AuthProviderGlyph type="naver" /> 네이버로 시작하기
           </button>
-          <button
-            type="button"
+          <a
+            href="/api/auth/apple/login"
             className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#171717] text-lg font-bold text-white"
           >
-            <ProviderGlyph type="apple" /> 애플로 시작하기
-          </button>
+            <AuthProviderGlyph type="apple" /> iCloud로 시작하기
+          </a>
         </div>
 
         <p className="mt-12 text-center text-lg font-semibold text-[#6f6a73]">
