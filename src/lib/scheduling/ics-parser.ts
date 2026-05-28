@@ -111,7 +111,8 @@ function parseIcsDate(value: string): IcsDate | undefined {
   );
   if (!match) return undefined;
 
-  const [, year, month, day, hour, minute, second] = match;
+  const [, year, month, day, hour, minute, second, utcSuffix] = match;
+  if (!utcSuffix) return undefined;
   return {
     date: new Date(
       Date.UTC(

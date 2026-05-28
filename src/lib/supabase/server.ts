@@ -10,7 +10,7 @@ import { cookies } from "next/headers";
 import { getSupabaseConfig } from "./env";
 
 export async function createClient() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const { url, anonKey } = getSupabaseConfig();
 
   return createServerClient(url, anonKey, {

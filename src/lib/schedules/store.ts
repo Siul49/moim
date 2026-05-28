@@ -1,13 +1,15 @@
-import { randomBytes, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import type { Prisma } from "@prisma/client";
 import type {
   DayCode,
   ParticipantAvailability,
   TimeSlot,
 } from "@/types/schedule";
+import { prisma } from "@/lib/prisma";
 import { findCommonSlots } from "@/lib/scheduling/availability";
 import { mergeOverlapping, sortSlots } from "@/lib/scheduling/time-slot";
 
-export interface CreateInMemoryScheduleInput {
+export interface CreateScheduleInput {
   title: string;
   durationMinutes: number;
   candidateDays: DayCode[];
@@ -20,7 +22,7 @@ export interface AddParticipantAvailabilityInput {
   available: TimeSlot[];
 }
 
-export interface CreatedInMemorySchedule {
+export interface CreatedSchedule {
   id: string;
   hostToken: string;
 }
@@ -48,106 +50,104 @@ export interface HostSchedule extends PublicSchedule {
   commonSlots: TimeSlot[];
 }
 
-interface ScheduleRecord {
-  id: string;
-  hostToken: string;
-  title: string;
-  durationMinutes: number;
+type ScheduleWithParticipants = Prisma.ScheduleGetPayload<{
+  include: { participants: true };
+}>;
+
+type NormalizedScheduleInput = Omit<CreateScheduleInput, "candidateDays"> & {
   candidateDays: DayCode[];
-  candidateStartHour: number;
-  candidateEndHour: number;
-  participants: ScheduleParticipant[];
-  createdAt: string;
-}
+};
 
-interface ScheduleStore {
-  schedules: Map<string, ScheduleRecord>;
-}
-
-const STORE_KEY = "__moimInMemoryScheduleStore";
 const VALID_DAYS: DayCode[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-export function createSchedule(
-  input: CreateInMemoryScheduleInput,
-): CreatedInMemorySchedule {
+export async function createSchedule(
+  input: CreateScheduleInput,
+): Promise<CreatedSchedule> {
   const schedule = normalizeScheduleInput(input);
   const id = createToken(18);
   const hostToken = createToken(32);
 
-  getStore().schedules.set(id, {
-    ...schedule,
-    id,
-    hostToken,
-    participants: [],
-    createdAt: new Date().toISOString(),
+  await prisma.schedule.create({
+    data: {
+      ...schedule,
+      id,
+      hostTokenHash: hashToken(hostToken),
+      candidateDays: JSON.stringify(schedule.candidateDays),
+    },
   });
 
   return { id, hostToken };
 }
 
-export function getSchedulePublic(id: string): PublicSchedule | null {
-  const schedule = getStore().schedules.get(id);
+export async function getSchedulePublic(
+  id: string,
+): Promise<PublicSchedule | null> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id },
+    include: { participants: true },
+  });
   if (!schedule) return null;
   return toPublicSchedule(schedule);
 }
 
-export function getScheduleForHost(
+export async function getScheduleForHost(
   id: string,
   hostToken: string,
-): HostSchedule | null {
-  const schedule = getStore().schedules.get(id);
-  if (!schedule || !tokenMatches(schedule.hostToken, hostToken)) return null;
+): Promise<HostSchedule | null> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id },
+    include: { participants: true },
+  });
+  if (!schedule || !tokenMatches(schedule.hostTokenHash, hostToken)) {
+    return null;
+  }
 
-  const participantAvailability: ParticipantAvailability[] =
-    schedule.participants.map((participant) => ({
+  const participants = schedule.participants.map(toScheduleParticipant);
+  const participantAvailability: ParticipantAvailability[] = participants.map(
+    (participant) => ({
       userId: participant.id,
       available: participant.available,
-    }));
+    }),
+  );
 
   return {
     ...toPublicSchedule(schedule),
-    participants: schedule.participants.map(copyParticipant),
+    participants,
     commonSlots: findCommonSlots(participantAvailability),
   };
 }
 
-export function addParticipantAvailability(
+export async function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,
-): ScheduleParticipant {
-  const schedule = getStore().schedules.get(scheduleId);
+): Promise<ScheduleParticipant> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: scheduleId },
+  });
   if (!schedule) throw new Error("schedule not found");
 
-  const participant: ScheduleParticipant = {
-    id: createToken(12),
-    name: normalizeParticipantName(input.name),
-    available: normalizeAvailability(schedule, input.available),
-    submittedAt: new Date().toISOString(),
-  };
+  const participant = await prisma.scheduleParticipant.create({
+    data: {
+      id: createToken(12),
+      scheduleId,
+      name: normalizeParticipantName(input.name),
+      available: JSON.stringify(
+        normalizeAvailability(schedule, input.available),
+      ),
+    },
+  });
 
-  schedule.participants.push(participant);
-  return copyParticipant(participant);
+  return toScheduleParticipant(participant);
 }
 
-export function clearSchedules() {
-  getStore().schedules.clear();
-}
-
-function getStore(): ScheduleStore {
-  const globalStore = globalThis as typeof globalThis & {
-    [STORE_KEY]?: ScheduleStore;
-  };
-
-  if (!globalStore[STORE_KEY]) {
-    globalStore[STORE_KEY] = { schedules: new Map() };
-  }
-
-  return globalStore[STORE_KEY];
+export async function clearSchedules() {
+  await prisma.scheduleParticipant.deleteMany();
+  await prisma.schedule.deleteMany();
 }
 
 function normalizeScheduleInput(
-  input: CreateInMemoryScheduleInput,
-): Omit<ScheduleRecord, "id" | "hostToken" | "participants" | "createdAt"> {
+  input: CreateScheduleInput,
+): NormalizedScheduleInput {
   const title = input.title.trim();
   if (title.length < 2 || title.length > 80) {
     throw new Error("title must be between 2 and 80 characters");
@@ -193,17 +193,22 @@ function normalizeParticipantName(name: string): string {
 }
 
 function normalizeAvailability(
-  schedule: ScheduleRecord,
+  schedule: {
+    candidateDays: string;
+    candidateStartHour: number;
+    candidateEndHour: number;
+  },
   available: TimeSlot[],
 ): TimeSlot[] {
   if (available.length === 0) {
     throw new Error("availability must not be empty");
   }
 
+  const candidateDays = parseDayCodes(schedule.candidateDays);
   for (const slot of available) {
     validateHourRange(slot.startHour, slot.endHour);
     if (
-      !schedule.candidateDays.includes(slot.day) ||
+      !candidateDays.includes(slot.day) ||
       slot.startHour < schedule.candidateStartHour ||
       slot.endHour > schedule.candidateEndHour
     ) {
@@ -226,35 +231,81 @@ function validateHourRange(startHour: number, endHour: number) {
   }
 }
 
-function toPublicSchedule(schedule: ScheduleRecord): PublicSchedule {
+function toPublicSchedule(schedule: ScheduleWithParticipants): PublicSchedule {
   return {
     id: schedule.id,
     title: schedule.title,
     durationMinutes: schedule.durationMinutes,
-    candidateDays: [...schedule.candidateDays],
+    candidateDays: parseDayCodes(schedule.candidateDays),
     candidateStartHour: schedule.candidateStartHour,
     candidateEndHour: schedule.candidateEndHour,
     participantCount: schedule.participants.length,
-    createdAt: schedule.createdAt,
+    createdAt: schedule.createdAt.toISOString(),
   };
 }
 
-function copyParticipant(
-  participant: ScheduleParticipant,
-): ScheduleParticipant {
+function toScheduleParticipant(participant: {
+  id: string;
+  name: string;
+  available: string;
+  submittedAt: Date;
+}): ScheduleParticipant {
   return {
-    ...participant,
-    available: participant.available.map((slot) => ({ ...slot })),
+    id: participant.id,
+    name: participant.name,
+    available: parseTimeSlots(participant.available),
+    submittedAt: participant.submittedAt.toISOString(),
   };
+}
+
+function parseDayCodes(value: string): DayCode[] {
+  const parsed = parseJson(value);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((day): day is DayCode =>
+    VALID_DAYS.includes(day as DayCode),
+  );
+}
+
+function parseTimeSlots(value: string): TimeSlot[] {
+  const parsed = parseJson(value);
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .filter((slot): slot is TimeSlot => isTimeSlot(slot))
+    .map((slot) => ({ ...slot }));
+}
+
+function parseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function isTimeSlot(value: unknown): value is TimeSlot {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const slot = value as Partial<TimeSlot>;
+  return (
+    typeof slot.day === "string" &&
+    VALID_DAYS.includes(slot.day as DayCode) &&
+    Number.isInteger(slot.startHour) &&
+    Number.isInteger(slot.endHour)
+  );
 }
 
 function createToken(byteLength: number): string {
   return randomBytes(byteLength).toString("base64url");
 }
 
-function tokenMatches(expected: string, received: string): boolean {
-  const expectedBuffer = Buffer.from(expected);
-  const receivedBuffer = Buffer.from(received);
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("base64url");
+}
+
+function tokenMatches(expectedHash: string, receivedToken: string): boolean {
+  const expectedBuffer = Buffer.from(expectedHash, "base64url");
+  const receivedBuffer = Buffer.from(hashToken(receivedToken), "base64url");
   return (
     expectedBuffer.length === receivedBuffer.length &&
     timingSafeEqual(expectedBuffer, receivedBuffer)

@@ -52,4 +52,68 @@ describe("parseIcsToSlots", () => {
       { day: "FRI", startHour: 0, endHour: 24 },
     ]);
   });
+
+  test("빈 ICS와 VEVENT가 없는 ICS는 빈 배열을 반환한다", () => {
+    expect(parseIcsToSlots("")).toEqual([]);
+    expect(parseIcsToSlots("BEGIN:VCALENDAR\nEND:VCALENDAR")).toEqual([]);
+  });
+
+  test("DTSTART가 없거나 잘못된 VEVENT는 무시한다", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTEND:20260504T110000Z",
+      "END:VEVENT",
+      "BEGIN:VEVENT",
+      "DTSTART:not-a-date",
+      "DTEND:20260504T110000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([]);
+  });
+
+  test("UTC suffix가 없는 floating datetime은 조용히 제외한다", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T090000",
+      "DTEND:20260504T110000",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([]);
+  });
+
+  test("DTSTART와 DTEND가 같으면 슬롯을 만들지 않는다", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T090000Z",
+      "DTEND:20260504T090000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([]);
+  });
+
+  test("자정 시작 이벤트와 접힌 줄을 처리한다", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T000000Z",
+      "DTEND:20260504T020000Z",
+      "SUMMARY:접힌",
+      " 제목",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([
+      { day: "MON", startHour: 0, endHour: 2 },
+    ]);
+  });
 });

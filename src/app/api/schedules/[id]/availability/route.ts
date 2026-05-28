@@ -2,24 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   addParticipantAvailability,
   getSchedulePublic,
-} from "@/lib/schedules/in-memory-store";
+} from "@/lib/schedules/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const participant = addParticipantAvailability(
-      params.id,
+    const { id } = await params;
+    const participant = await addParticipantAvailability(
+      id,
       await request.json(),
     );
     return NextResponse.json(
       {
         participant,
-        schedule: getSchedulePublic(params.id),
+        schedule: await getSchedulePublic(id),
       },
       { status: 201 },
     );

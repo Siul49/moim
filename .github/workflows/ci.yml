@@ -1,5 +1,8 @@
 name: CI Pipeline
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
@@ -17,8 +20,6 @@ jobs:
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       NEXT_PUBLIC_SUPABASE_URL: https://example-project.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-      JWT_SECRET: test-jwt-secret-for-ci-only
-      ENCRYPTION_SECRET: 0000000000000000000000000000000000000000000000000000000000000000
       KAKAO_REST_API_KEY: test-kakao-key
       KAKAO_REDIRECT_URI: http://localhost:3000/api/auth/kakao/callback
       GOOGLE_CLIENT_ID: test-google-client-id
@@ -32,11 +33,21 @@ jobs:
       - name: Node.js 세팅 (Setup Node.js)
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: 패키지 설치 (Install Dependencies)
         run: npm ci
+
+      - name: CI 전용 보안 키 생성 (Generate CI Secrets)
+        run: |
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 32)"
+            echo "ENCRYPTION_SECRET=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+
+      - name: 데이터베이스 마이그레이션 (Database Migration)
+        run: npm run db:migrate
 
       - name: 코드 린트 검사 (Lint Check)
         run: npm run lint
