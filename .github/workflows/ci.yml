@@ -1,29 +1,65 @@
 name: CI Pipeline
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
       - main
       - dev
+  push:
+    branches:
+      - main
+      - dev
 
 jobs:
-  build_and_lint:
+  code_quality:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://example-project.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+      KAKAO_REST_API_KEY: test-kakao-key
+      KAKAO_REDIRECT_URI: http://localhost:3000/api/auth/kakao/callback
+      GOOGLE_CLIENT_ID: test-google-client-id
+      GOOGLE_CLIENT_SECRET: test-google-client-secret
+      DATABASE_URL: file:./ci.db
 
     steps:
       - name: 저장소 체크아웃 (Checkout Repository)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Node.js 세팅 (Setup Node.js)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
 
       - name: 패키지 설치 (Install Dependencies)
         run: npm ci
 
+      - name: CI 전용 보안 키 생성 (Generate CI Secrets)
+        run: |
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 32)"
+            echo "ENCRYPTION_SECRET=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+
+      - name: 데이터베이스 마이그레이션 (Database Migration)
+        run: npm run db:migrate
+
       - name: 코드 린트 검사 (Lint Check)
         run: npm run lint
 
+      - name: 테스트 실행 (Unit Test)
+        run: npm run test
+
       - name: Next.js 빌드 테스트 (Build Test)
         run: npm run build
+
+      - name: Playwright 브라우저 설치 (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E 테스트 실행 (Chromium)
+        run: npm run test:e2e -- --project=chromium
