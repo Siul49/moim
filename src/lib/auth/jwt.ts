@@ -4,7 +4,7 @@ export interface JwtPayload {
   userId: string;
   email?: string;
   nickname: string;
-  provider?: "local" | "kakao";
+  provider?: "local" | "kakao" | "google";
 }
 
 const ACCESS_TOKEN_TTL = "7d";
