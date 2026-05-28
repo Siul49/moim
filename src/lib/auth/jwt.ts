@@ -30,6 +30,8 @@ export async function verifyAccessToken(
 ): Promise<JwtPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
+    if (typeof payload.userId !== "string" || !payload.userId) return null;
+    if (typeof payload.nickname !== "string" || !payload.nickname) return null;
     return payload as unknown as JwtPayload;
   } catch {
     return null;

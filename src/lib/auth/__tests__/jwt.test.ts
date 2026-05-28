@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import {
   signAccessToken,
   verifyAccessToken,
@@ -68,6 +68,28 @@ describe("signAccessToken / verifyAccessToken 라운드트립", () => {
   test("빈 토큰 문자열은 null을 반환한다", async () => {
     const result = await verifyAccessToken("");
     expect(result).toBeNull();
+  });
+
+  test("만료 전에는 페이로드를 반환하고 만료 후에는 null을 반환한다", async () => {
+    vi.useFakeTimers();
+    try {
+      const token = await signAccessToken({
+        userId: "user_exp",
+        nickname: "만료테스트",
+      });
+
+      // 만료 전 (1분 경과) — 유효
+      vi.advanceTimersByTime(60 * 1000);
+      const before = await verifyAccessToken(token);
+      expect(before?.userId).toBe("user_exp");
+
+      // 만료 후 (7일 + 1초 경과) — 무효
+      vi.advanceTimersByTime(60 * 60 * 24 * 7 * 1000);
+      const after = await verifyAccessToken(token);
+      expect(after).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

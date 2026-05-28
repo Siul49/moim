@@ -1,3 +1,23 @@
+const FETCH_TIMEOUT_MS = 5000;
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`요청 시간 초과: ${url}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 interface NaverTokenResponse {
   access_token: string;
   token_type: string;
@@ -65,7 +85,7 @@ export async function getNaverToken(
     state,
   });
 
-  const res = await fetch("https://nid.naver.com/oauth2.0/token", {
+  const res = await fetchWithTimeout("https://nid.naver.com/oauth2.0/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
@@ -91,7 +111,7 @@ export async function getNaverToken(
 export async function getNaverUser(
   naverAccessToken: string,
 ): Promise<NaverUser> {
-  const res = await fetch("https://openapi.naver.com/v1/nid/me", {
+  const res = await fetchWithTimeout("https://openapi.naver.com/v1/nid/me", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${naverAccessToken}`,
@@ -106,6 +126,10 @@ export async function getNaverUser(
 
   if (data.resultcode !== "00") {
     throw new Error(`네이버 사용자 정보 조회 오류: ${data.message}`);
+  }
+
+  if (!data.response?.id) {
+    throw new Error("네이버 사용자 정보 조회 오류: id 누락");
   }
 
   return {

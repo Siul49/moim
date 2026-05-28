@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getNaverAuthUrl } from "@/lib/auth/naver";
 
 export const dynamic = "force-dynamic";
@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const STATE_COOKIE = "naver_oauth_state";
 const STATE_MAX_AGE = 600; // 10분
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const state = crypto.randomUUID();
     const naverAuthUrl = getNaverAuthUrl(state);
@@ -26,7 +26,7 @@ export async function GET() {
       "[auth.naver.login] 오류:",
       err instanceof Error ? err.message : "알 수 없는 오류",
     );
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-    return NextResponse.redirect(`${baseUrl}/login?error=naver_login_failed`);
+    const origin = new URL(request.url).origin;
+    return NextResponse.redirect(`${origin}/login?error=naver_login_failed`);
   }
 }

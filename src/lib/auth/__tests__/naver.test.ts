@@ -171,6 +171,22 @@ describe("getNaverUser", () => {
       "네이버 사용자 정보 조회 오류",
     );
   });
+
+  test("resultcode가 '00'이지만 response.id가 없으면 에러를 던진다", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          resultcode: "00",
+          message: "success",
+          response: { email: "user@naver.com", nickname: "닉네임" }, // id 누락
+        }),
+    } as Response);
+
+    await expect(getNaverUser("access_token")).rejects.toThrow(
+      "네이버 사용자 정보 조회 오류: id 누락",
+    );
+  });
 });
 
 // ──────────────────────────────────────────────

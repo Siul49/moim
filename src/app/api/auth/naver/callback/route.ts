@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getNaverToken,
@@ -102,10 +103,10 @@ export async function GET(req: NextRequest) {
         finalNickname = `naver_${naverId}`;
       }
 
-      const newUser = await prisma.user.create({
+      const createUserData = (nick: string) => ({
         data: {
           email: email ?? null,
-          nickname: finalNickname,
+          nickname: nick,
           profileCompleted: false, // phoneNumber, 약관 동의 등 추가 정보 필요
           socialAccounts: {
             create: {
@@ -122,7 +123,21 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      user = newUser;
+      try {
+        user = await prisma.user.create(createUserData(finalNickname));
+      } catch (createErr) {
+        if (
+          createErr instanceof Prisma.PrismaClientKnownRequestError &&
+          createErr.code === "P2002"
+        ) {
+          const randomSuffix = Math.random().toString(36).slice(2, 7);
+          user = await prisma.user.create(
+            createUserData(`naver_${naverId}_${randomSuffix}`),
+          );
+        } else {
+          throw createErr;
+        }
+      }
     }
 
     // 우리 서비스 JWT 발급 (Naver access_token은 포함하지 않음)
