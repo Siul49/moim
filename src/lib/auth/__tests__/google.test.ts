@@ -13,8 +13,8 @@ import {
 // ──────────────────────────────────────────────
 describe("getGoogleAuthUrl", () => {
   beforeEach(() => {
-    process.env.GOOGLE_CLIENT_ID = "test_client_id";
-    process.env.GOOGLE_REDIRECT_URI =
+    process.env.GOOGLE_LOGIN_CLIENT_ID = "test_client_id";
+    process.env.GOOGLE_LOGIN_REDIRECT_URI =
       "http://localhost:3000/api/auth/google/callback";
   });
 
@@ -32,17 +32,17 @@ describe("getGoogleAuthUrl", () => {
     expect(url).toContain("scope=");
   });
 
-  test("GOOGLE_CLIENT_ID가 없으면 에러를 던진다", () => {
-    delete process.env.GOOGLE_CLIENT_ID;
+  test("GOOGLE_LOGIN_CLIENT_ID가 없으면 에러를 던진다", () => {
+    delete process.env.GOOGLE_LOGIN_CLIENT_ID;
     expect(() => getGoogleAuthUrl("state")).toThrow(
-      "GOOGLE_CLIENT_ID 또는 GOOGLE_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
+      "GOOGLE_LOGIN_CLIENT_ID 또는 GOOGLE_LOGIN_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
     );
   });
 
-  test("GOOGLE_REDIRECT_URI가 없으면 에러를 던진다", () => {
-    delete process.env.GOOGLE_REDIRECT_URI;
+  test("GOOGLE_LOGIN_REDIRECT_URI가 없으면 에러를 던진다", () => {
+    delete process.env.GOOGLE_LOGIN_REDIRECT_URI;
     expect(() => getGoogleAuthUrl("state")).toThrow(
-      "GOOGLE_CLIENT_ID 또는 GOOGLE_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
+      "GOOGLE_LOGIN_CLIENT_ID 또는 GOOGLE_LOGIN_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
     );
   });
 
@@ -58,9 +58,9 @@ describe("getGoogleAuthUrl", () => {
 // ──────────────────────────────────────────────
 describe("getGoogleToken", () => {
   beforeEach(() => {
-    process.env.GOOGLE_CLIENT_ID = "test_client_id";
-    process.env.GOOGLE_CLIENT_SECRET = "test_client_secret";
-    process.env.GOOGLE_REDIRECT_URI =
+    process.env.GOOGLE_LOGIN_CLIENT_ID = "test_client_id";
+    process.env.GOOGLE_LOGIN_CLIENT_SECRET = "test_client_secret";
+    process.env.GOOGLE_LOGIN_REDIRECT_URI =
       "http://localhost:3000/api/auth/google/callback";
     vi.restoreAllMocks();
   });
@@ -94,7 +94,7 @@ describe("getGoogleToken", () => {
   });
 
   test("환경변수가 없으면 에러를 던진다", async () => {
-    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_LOGIN_CLIENT_ID;
     await expect(getGoogleToken("code")).rejects.toThrow(
       "구글 환경변수가 설정되지 않았습니다.",
     );

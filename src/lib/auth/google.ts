@@ -36,11 +36,11 @@ export interface GoogleUser {
 }
 
 export function getGoogleAuthUrl(state: string): string {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const clientId = process.env.GOOGLE_LOGIN_CLIENT_ID;
+  const redirectUri = process.env.GOOGLE_LOGIN_REDIRECT_URI;
   if (!clientId || !redirectUri) {
     throw new Error(
-      "GOOGLE_CLIENT_ID 또는 GOOGLE_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
+      "GOOGLE_LOGIN_CLIENT_ID 또는 GOOGLE_LOGIN_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
     );
   }
 
@@ -58,9 +58,9 @@ export function getGoogleAuthUrl(state: string): string {
 export async function getGoogleToken(
   code: string,
 ): Promise<GoogleTokenResponse> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const clientId = process.env.GOOGLE_LOGIN_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_LOGIN_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_LOGIN_REDIRECT_URI;
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error("구글 환경변수가 설정되지 않았습니다.");
   }
