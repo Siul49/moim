@@ -82,6 +82,23 @@ describe("getGoogleToken", () => {
     expect(result.access_token).toBe("google_access_token_mock");
   });
 
+  test("code가 공백이면 외부 호출 없이 에러를 던진다", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    await expect(getGoogleToken(" ")).rejects.toThrow(
+      "인가 코드가 비어 있습니다.",
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test("fetch 타임아웃은 요청 시간 초과 에러로 변환한다", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValueOnce(
+      Object.assign(new Error("aborted"), { name: "AbortError" }),
+    );
+
+    await expect(getGoogleToken("auth_code")).rejects.toThrow("요청 시간 초과");
+  });
+
   test("fetch가 ok:false이면 에러를 던진다", async () => {
     vi.spyOn(global, "fetch").mockResolvedValueOnce({
       ok: false,
@@ -90,6 +107,22 @@ describe("getGoogleToken", () => {
 
     await expect(getGoogleToken("bad_code")).rejects.toThrow(
       "구글 토큰 발급 실패",
+    );
+  });
+
+  test("토큰 응답에 access_token이 없으면 에러를 던진다", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          expires_in: 3599,
+          token_type: "Bearer",
+          scope: "openid email profile",
+        }),
+    } as Response);
+
+    await expect(getGoogleToken("auth_code")).rejects.toThrow(
+      "access_token 누락",
     );
   });
 
@@ -125,6 +158,15 @@ describe("getGoogleUser", () => {
     expect(user.id).toBe("google_user_id_123");
     expect(user.email).toBe("user@gmail.com");
     expect(user.name).toBe("홍길동");
+  });
+
+  test("accessToken이 공백이면 외부 호출 없이 에러를 던진다", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    await expect(getGoogleUser(" ")).rejects.toThrow(
+      "accessToken이 비어 있습니다.",
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   test("fetch가 ok:false이면 에러를 던진다", async () => {

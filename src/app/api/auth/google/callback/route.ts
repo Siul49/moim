@@ -18,6 +18,32 @@ const LOGIN_SUCCESS_REDIRECT = "/";
 const ADDITIONAL_INFO_REDIRECT = "/signup/additional-info?provider=google";
 const LOGIN_FAILURE_REDIRECT = "/login?error=google_login_failed";
 
+function redirectWithStateCleanup(origin: string, path: string) {
+  const res = NextResponse.redirect(`${origin}${path}`);
+  res.cookies.delete(STATE_COOKIE);
+  return res;
+}
+
+function isUniqueConstraintError(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
+
+function uniqueTargetIncludes(
+  error: Prisma.PrismaClientKnownRequestError,
+  field: string,
+) {
+  const target = error.meta?.target;
+  if (Array.isArray(target)) {
+    return target.includes(field);
+  }
+  return typeof target === "string" && target.includes(field);
+}
+
 export async function GET(req: NextRequest) {
   const origin = new URL(req.url).origin;
 
@@ -28,23 +54,23 @@ export async function GET(req: NextRequest) {
 
   // 구글 인가 거부
   if (error) {
-    return NextResponse.redirect(`${origin}${LOGIN_FAILURE_REDIRECT}`);
+    return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 
   // code 없음
   if (!code) {
-    return NextResponse.redirect(`${origin}${LOGIN_FAILURE_REDIRECT}`);
+    return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 
   // state 파라미터 누락
   if (!state) {
-    return NextResponse.redirect(`${origin}${LOGIN_FAILURE_REDIRECT}`);
+    return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 
   // CSRF 방어: state 검증
   const savedState = req.cookies.get(STATE_COOKIE)?.value;
   if (!savedState || savedState !== state) {
-    return NextResponse.redirect(`${origin}${LOGIN_FAILURE_REDIRECT}`);
+    return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 
   try {
@@ -121,10 +147,37 @@ export async function GET(req: NextRequest) {
       try {
         user = await prisma.user.create(createUserData(finalNickname));
       } catch (createErr) {
+        if (!isUniqueConstraintError(createErr)) {
+          throw createErr;
+        }
+
         if (
-          createErr instanceof Prisma.PrismaClientKnownRequestError &&
-          createErr.code === "P2002"
+          uniqueTargetIncludes(createErr, "provider") ||
+          uniqueTargetIncludes(createErr, "providerUserId")
         ) {
+          const racedSocialAccount = await prisma.socialAccount.findUnique({
+            where: {
+              provider_providerUserId: {
+                provider: "google",
+                providerUserId: googleId,
+              },
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  nickname: true,
+                  profileCompleted: true,
+                },
+              },
+            },
+          });
+          if (!racedSocialAccount) {
+            throw createErr;
+          }
+          user = racedSocialAccount.user;
+        } else if (uniqueTargetIncludes(createErr, "nickname")) {
           const randomSuffix = Math.random().toString(36).slice(2, 7);
           user = await prisma.user.create(
             createUserData(`google_${googleId}_${randomSuffix}`),
@@ -167,6 +220,6 @@ export async function GET(req: NextRequest) {
       "[auth.google.callback] 오류:",
       err instanceof Error ? err.message : "알 수 없는 오류",
     );
-    return NextResponse.redirect(`${origin}${LOGIN_FAILURE_REDIRECT}`);
+    return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 }

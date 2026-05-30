@@ -58,6 +58,10 @@ export function getGoogleAuthUrl(state: string): string {
 export async function getGoogleToken(
   code: string,
 ): Promise<GoogleTokenResponse> {
+  if (!code.trim()) {
+    throw new Error("인가 코드가 비어 있습니다.");
+  }
+
   const clientId = process.env.GOOGLE_LOGIN_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_LOGIN_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_LOGIN_REDIRECT_URI;
@@ -85,10 +89,19 @@ export async function getGoogleToken(
     throw new Error(`구글 토큰 발급 실패 (status: ${res.status})`);
   }
 
-  return res.json() as Promise<GoogleTokenResponse>;
+  const data = (await res.json()) as Partial<GoogleTokenResponse>;
+  if (!data.access_token) {
+    throw new Error("구글 토큰 응답 오류: access_token 누락");
+  }
+
+  return data as GoogleTokenResponse;
 }
 
 export async function getGoogleUser(accessToken: string): Promise<GoogleUser> {
+  if (!accessToken.trim()) {
+    throw new Error("accessToken이 비어 있습니다.");
+  }
+
   const res = await fetchWithTimeout(
     "https://www.googleapis.com/oauth2/v2/userinfo",
     {
