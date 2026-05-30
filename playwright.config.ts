@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const e2ePort = process.env.PLAYWRIGHT_PORT ?? "3100";
+const baseURL = `http://localhost:${e2ePort}`;
+
 /**
  * Playwright E2E 설정
  *
@@ -18,7 +21,7 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry", // 실패 시 트레이스 기록 (디버깅용)
   },
 
@@ -39,8 +42,8 @@ export default defineConfig({
 
   // Next.js 개발 서버를 자동으로 띄워서 테스트
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
+    command: `npm run dev -- --port ${e2ePort}`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
 });

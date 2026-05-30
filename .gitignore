@@ -39,6 +39,7 @@ yarn-error.log*
 next-env.d.ts
 
 # AI & Local configs
+.claude/
 .agents/*
 !.agents/docs/
 *.pdf
