@@ -44,6 +44,15 @@ export default defineConfig({
   webServer: {
     command: `npm run dev -- --port ${e2ePort}`,
     url: baseURL,
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL ?? baseURL,
+      NEXT_PUBLIC_SUPABASE_URL:
+        process.env.NEXT_PUBLIC_SUPABASE_URL ??
+        "https://example-project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "test-anon-key",
+    },
     reuseExistingServer: !process.env.CI,
   },
 });

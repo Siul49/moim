@@ -35,7 +35,9 @@ test("participant can submit availability from an invite link and host can see i
   ).toBeVisible();
 
   const commonSlots = page.getByTestId("common-slots");
-  const targetSlot = commonSlots.getByText("월요일 10:00-12:00").locator("..");
+  const targetSlot = commonSlots
+    .getByRole("listitem")
+    .filter({ hasText: "월요일 10:00-12:00" });
   await targetSlot.getByRole("button", { name: "이 시간 확정" }).click();
   await expect(page.getByText("시간이 확정되었습니다")).toBeVisible();
 });
