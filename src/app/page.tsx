@@ -4,10 +4,8 @@ import {
   HeatmapGrid,
   MoimShell,
   MoimTopBar,
-  PurpleButton,
   SchedulerPreview,
 } from "@/components/moim/reference-ui";
-import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -120,16 +118,17 @@ export default function Home() {
           MOIM과 함께 스트레스 없는 약속 잡기를 경험해보세요.
         </p>
         <div className="mt-10 flex justify-center gap-4">
-          <Link href="/signup">
-            <PurpleButton className="w-44">가입하기</PurpleButton>
+          <Link
+            href="/signup"
+            className="inline-flex h-12 w-44 items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9]"
+          >
+            가입하기
           </Link>
-          <Link href="/schedule/create">
-            <Button
-              variant="outline"
-              className="h-12 w-44 rounded-xl border-[#eee8f4] bg-white text-[#8f7bd6]"
-            >
-              문의하기
-            </Button>
+          <Link
+            href="/schedule/create"
+            className="inline-flex h-12 w-44 items-center justify-center rounded-xl border border-[#eee8f4] bg-white text-sm font-medium text-[#8f7bd6] transition-colors hover:bg-muted hover:text-foreground"
+          >
+            문의하기
           </Link>
         </div>
       </section>

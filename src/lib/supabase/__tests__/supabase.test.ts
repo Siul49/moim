@@ -58,6 +58,14 @@ describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
     );
   });
 
+  it("Supabase anon key 환경변수가 공백이면 명확한 에러를 던진다", () => {
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "   ";
+
+    expect(() => createBrowserClient()).toThrow(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    );
+  });
+
   it("createServerClient도 Supabase URL 누락을 같은 계약으로 검증한다", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -68,6 +76,14 @@ describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
 
   it("createServerClient도 Supabase anon key 누락을 같은 계약으로 검증한다", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    await expect(createServerClient()).rejects.toThrow(
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    );
+  });
+
+  it("createServerClient도 Supabase anon key 공백을 같은 계약으로 검증한다", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "   ";
 
     await expect(createServerClient()).rejects.toThrow(
       "NEXT_PUBLIC_SUPABASE_ANON_KEY",

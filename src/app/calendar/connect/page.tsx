@@ -52,6 +52,18 @@ export default function CalendarConnectPage() {
 
   async function submitEverytimeFile(file: File | null) {
     if (!file) return;
+    const isIcs =
+      file.type === "text/calendar" || file.name.toLowerCase().endsWith(".ics");
+    const maxSize = 2 * 1024 * 1024;
+    if (!isIcs) {
+      setMessage("ICS 형식 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > maxSize) {
+      setMessage("파일 크기는 2MB 이하여야 합니다.");
+      return;
+    }
+
     setMessage("");
     setIsLoading("everytime-file");
     try {

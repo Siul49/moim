@@ -171,8 +171,10 @@ export async function confirmSchedule(
 }
 
 export async function clearSchedules() {
-  await prisma.scheduleParticipant.deleteMany();
-  await prisma.schedule.deleteMany();
+  await prisma.$transaction([
+    prisma.scheduleParticipant.deleteMany(),
+    prisma.schedule.deleteMany(),
+  ]);
 }
 
 function normalizeScheduleInput(

@@ -35,6 +35,9 @@ export default function SignupPage() {
       if (form.password !== form.passwordConfirm) {
         throw new Error("비밀번호 확인이 일치하지 않습니다.");
       }
+      if (!form.isAgeOver14 || !form.termsAgreed || !form.privacyAgreed) {
+        throw new Error("필수 약관에 모두 동의해 주세요.");
+      }
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,6 +159,11 @@ export default function SignupPage() {
                               name as keyof typeof form,
                               event.target.checked,
                             )
+                          }
+                          required={
+                            name === "isAgeOver14" ||
+                            name === "termsAgreed" ||
+                            name === "privacyAgreed"
                           }
                           className="h-5 w-5 rounded border-[#dedbe3]"
                         />

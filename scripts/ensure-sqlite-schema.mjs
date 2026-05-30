@@ -6,7 +6,8 @@ if (process.env.NODE_ENV !== "production") {
 
 const prisma = new PrismaClient();
 
-await prisma.$executeRawUnsafe(`
+try {
+  await prisma.$executeRawUnsafe(`
   CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT,
@@ -24,7 +25,7 @@ await prisma.$executeRawUnsafe(`
   )
 `);
 
-await prisma.$executeRawUnsafe(`
+  await prisma.$executeRawUnsafe(`
   CREATE TABLE IF NOT EXISTS "SocialAccount" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -36,7 +37,7 @@ await prisma.$executeRawUnsafe(`
   )
 `);
 
-await prisma.$executeRawUnsafe(`
+  await prisma.$executeRawUnsafe(`
   CREATE TABLE IF NOT EXISTS "Schedule" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "hostTokenHash" TEXT NOT NULL,
@@ -52,7 +53,7 @@ await prisma.$executeRawUnsafe(`
   )
 `);
 
-await prisma.$executeRawUnsafe(`
+  await prisma.$executeRawUnsafe(`
   CREATE TABLE IF NOT EXISTS "ScheduleParticipant" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "scheduleId" TEXT NOT NULL,
@@ -63,40 +64,43 @@ await prisma.$executeRawUnsafe(`
   )
 `);
 
-await prisma.$executeRawUnsafe(
-  `CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email")`,
-);
-await prisma.$executeRawUnsafe(
-  `CREATE UNIQUE INDEX IF NOT EXISTS "User_phoneNumber_key" ON "User"("phoneNumber")`,
-);
-await prisma.$executeRawUnsafe(
-  `CREATE UNIQUE INDEX IF NOT EXISTS "User_nickname_key" ON "User"("nickname")`,
-);
-await prisma.$executeRawUnsafe(
-  `CREATE UNIQUE INDEX IF NOT EXISTS "SocialAccount_provider_providerUserId_key" ON "SocialAccount"("provider", "providerUserId")`,
-);
-await prisma.$executeRawUnsafe(
-  `CREATE UNIQUE INDEX IF NOT EXISTS "Schedule_hostTokenHash_key" ON "Schedule"("hostTokenHash")`,
-);
-await prisma.$executeRawUnsafe(
-  `CREATE INDEX IF NOT EXISTS "ScheduleParticipant_scheduleId_idx" ON "ScheduleParticipant"("scheduleId")`,
-);
-
-const scheduleColumns = await prisma.$queryRawUnsafe(
-  `PRAGMA table_info("Schedule")`,
-);
-const scheduleColumnNames = new Set(scheduleColumns.map((column) => column.name));
-
-if (!scheduleColumnNames.has("status")) {
   await prisma.$executeRawUnsafe(
-    `ALTER TABLE "Schedule" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'open'`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email")`,
   );
-}
-
-if (!scheduleColumnNames.has("confirmedSlot")) {
   await prisma.$executeRawUnsafe(
-    `ALTER TABLE "Schedule" ADD COLUMN "confirmedSlot" TEXT`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "User_phoneNumber_key" ON "User"("phoneNumber")`,
   );
-}
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "User_nickname_key" ON "User"("nickname")`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "SocialAccount_provider_providerUserId_key" ON "SocialAccount"("provider", "providerUserId")`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "Schedule_hostTokenHash_key" ON "Schedule"("hostTokenHash")`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ScheduleParticipant_scheduleId_idx" ON "ScheduleParticipant"("scheduleId")`,
+  );
 
-await prisma.$disconnect();
+  const scheduleColumns = await prisma.$queryRawUnsafe(
+    `PRAGMA table_info("Schedule")`,
+  );
+  const scheduleColumnNames = new Set(
+    scheduleColumns.map((column) => column.name),
+  );
+
+  if (!scheduleColumnNames.has("status")) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Schedule" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'open'`,
+    );
+  }
+
+  if (!scheduleColumnNames.has("confirmedSlot")) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Schedule" ADD COLUMN "confirmedSlot" TEXT`,
+    );
+  }
+} finally {
+  await prisma.$disconnect();
+}

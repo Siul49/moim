@@ -4,6 +4,7 @@ import {
   getScheduleForHost,
   getSchedulePublic,
 } from "@/lib/schedules/store";
+import type { TimeSlot } from "@/types/schedule";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,13 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+    if (typeof body.hostToken !== "string" || !isTimeSlot(body.confirmedSlot)) {
+      return NextResponse.json(
+        { error: "hostToken and confirmedSlot are required" },
+        { status: 400 },
+      );
+    }
+
     const schedule = await confirmSchedule(
       id,
       body.hostToken,
@@ -57,4 +65,16 @@ export async function PATCH(
           : 400;
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+function isTimeSlot(value: unknown): value is TimeSlot {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const slot = value as Partial<TimeSlot>;
+  return (
+    typeof slot.day === "string" &&
+    Number.isInteger(slot.startHour) &&
+    Number.isInteger(slot.endHour)
+  );
 }
