@@ -68,15 +68,13 @@ async function handleAppleCallback(
   }
 
   try {
-    const tokenData = input.idToken
-      ? null
-      : await exchangeAppleCodeForToken(input.code, baseUrl);
-    const idToken = input.idToken ?? tokenData?.id_token;
+    const tokenData = await exchangeAppleCodeForToken(input.code, baseUrl);
+    const idToken = tokenData.id_token;
     if (!idToken) {
       throw new Error("Apple id_token is missing.");
     }
 
-    const identity = extractAppleIdentity(idToken, input.user);
+    const identity = await extractAppleIdentity(idToken, input.user);
     const user = await findOrCreateAppleUser(identity);
     const token = await signAccessToken({
       userId: user.id,

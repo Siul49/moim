@@ -312,24 +312,43 @@ export function CalendarBoard() {
   );
 }
 
-export function HeatmapGrid({ className }: { className?: string }) {
-  const rows = ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
-  const days = ["11/23 (목)", "11/24 (금)", "11/25 (토)"];
-  const colors = [
-    ["bg-[#f1eef9]", "bg-[#ded8f1]", "bg-[#f5f3f7]"],
-    ["bg-[#eeeaf7]", "bg-[#d6ceec]", "bg-[#f1eef9]"],
-    ["bg-[#f7f6f7]", "bg-[#9683d5]", "bg-[#a998dd]"],
-    ["bg-[#a998dd]", "bg-[#8f7bd6] ring-2 ring-white", "bg-[#b8ace4]"],
-    ["bg-[#b9afe3]", "bg-[#a998dd]", "bg-[#ac9fdf]"],
-    ["bg-[#c9c1eb]", "bg-[#ece8f7]", "bg-[#a99dde]"],
-    ["bg-[#eeeaf7]", "bg-[#f0edf7]", "bg-[#c6bce8]"],
-  ];
+const DEFAULT_HEATMAP_ROWS = [
+  "09:00",
+  "11:00",
+  "13:00",
+  "15:00",
+  "17:00",
+  "19:00",
+  "21:00",
+];
+const DEFAULT_HEATMAP_DAYS = ["11/23 (목)", "11/24 (금)", "11/25 (토)"];
+const DEFAULT_HEATMAP_COLORS = [
+  ["bg-[#f1eef9]", "bg-[#ded8f1]", "bg-[#f5f3f7]"],
+  ["bg-[#eeeaf7]", "bg-[#d6ceec]", "bg-[#f1eef9]"],
+  ["bg-[#f7f6f7]", "bg-[#9683d5]", "bg-[#a998dd]"],
+  ["bg-[#a998dd]", "bg-[#8f7bd6] ring-2 ring-white", "bg-[#b8ace4]"],
+  ["bg-[#b9afe3]", "bg-[#a998dd]", "bg-[#ac9fdf]"],
+  ["bg-[#c9c1eb]", "bg-[#ece8f7]", "bg-[#a99dde]"],
+  ["bg-[#eeeaf7]", "bg-[#f0edf7]", "bg-[#c6bce8]"],
+];
+
+export function HeatmapGrid({
+  className,
+  rows = DEFAULT_HEATMAP_ROWS,
+  days = DEFAULT_HEATMAP_DAYS,
+  colors = DEFAULT_HEATMAP_COLORS,
+}: {
+  className?: string;
+  rows?: string[];
+  days?: string[];
+  colors?: string[][];
+}) {
   return (
     <div
-      className={cn(
-        "grid grid-cols-[58px_repeat(3,minmax(0,1fr))] gap-2",
-        className,
-      )}
+      className={cn("grid gap-2", className)}
+      style={{
+        gridTemplateColumns: `58px repeat(${days.length}, minmax(0, 1fr))`,
+      }}
     >
       <div />
       {days.map((day, index) => (
@@ -349,7 +368,10 @@ export function HeatmapGrid({ className }: { className?: string }) {
           {days.map((day, dayIndex) => (
             <div
               key={`${day}-${time}`}
-              className={cn("h-7 rounded-sm", colors[rowIndex][dayIndex])}
+              className={cn(
+                "h-7 rounded-sm",
+                colors[rowIndex]?.[dayIndex] ?? "bg-[#f5f3f7]",
+              )}
             />
           ))}
         </div>

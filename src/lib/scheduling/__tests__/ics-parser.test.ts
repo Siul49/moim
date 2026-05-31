@@ -2,13 +2,13 @@ import { describe, expect, test } from "vitest";
 import { parseIcsToSlots } from "../ics-parser";
 
 describe("parseIcsToSlots", () => {
-  test("UTC VEVENT의 DTSTART/DTEND를 요일 시간 슬롯으로 변환한다", () => {
+  test("converts UTC VEVENT DTSTART and DTEND into a weekday time slot", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
       "DTSTART:20260504T090000Z",
       "DTEND:20260504T110000Z",
-      "SUMMARY:팀 회의",
+      "SUMMARY:team meeting",
       "END:VEVENT",
       "END:VCALENDAR",
     ].join("\r\n");
@@ -18,7 +18,7 @@ describe("parseIcsToSlots", () => {
     ]);
   });
 
-  test("여러 VEVENT를 시간 순서대로 반환한다", () => {
+  test("returns multiple VEVENT slots sorted by time", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
@@ -38,7 +38,7 @@ describe("parseIcsToSlots", () => {
     ]);
   });
 
-  test("종일 이벤트는 해당 요일 전체 busy 슬롯으로 변환한다", () => {
+  test("converts date-only VEVENT into a full-day busy slot", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
@@ -53,12 +53,12 @@ describe("parseIcsToSlots", () => {
     ]);
   });
 
-  test("빈 ICS와 VEVENT가 없는 ICS는 빈 배열을 반환한다", () => {
+  test("returns an empty array for empty ICS or calendars without VEVENT", () => {
     expect(parseIcsToSlots("")).toEqual([]);
     expect(parseIcsToSlots("BEGIN:VCALENDAR\nEND:VCALENDAR")).toEqual([]);
   });
 
-  test("DTSTART가 없거나 잘못된 VEVENT는 무시한다", () => {
+  test("ignores VEVENT entries without a valid DTSTART", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
@@ -74,7 +74,7 @@ describe("parseIcsToSlots", () => {
     expect(parseIcsToSlots(ics)).toEqual([]);
   });
 
-  test("UTC suffix가 없는 floating datetime은 조용히 제외한다", () => {
+  test("ignores floating datetime values without UTC suffix", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
@@ -87,7 +87,7 @@ describe("parseIcsToSlots", () => {
     expect(parseIcsToSlots(ics)).toEqual([]);
   });
 
-  test("DTSTART와 DTEND가 같으면 슬롯을 만들지 않는다", () => {
+  test("ignores zero-length events", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
@@ -100,14 +100,14 @@ describe("parseIcsToSlots", () => {
     expect(parseIcsToSlots(ics)).toEqual([]);
   });
 
-  test("자정 시작 이벤트와 접힌 줄을 처리한다", () => {
+  test("handles folded lines", () => {
     const ics = [
       "BEGIN:VCALENDAR",
       "BEGIN:VEVENT",
       "DTSTART:20260504T000000Z",
       "DTEND:20260504T020000Z",
-      "SUMMARY:접힌",
-      " 제목",
+      "SUMMARY:folded",
+      " title",
       "END:VEVENT",
       "END:VCALENDAR",
     ].join("\r\n");
@@ -115,5 +115,38 @@ describe("parseIcsToSlots", () => {
     expect(parseIcsToSlots(ics)).toEqual([
       { day: "MON", startHour: 0, endHour: 2 },
     ]);
+  });
+
+  test("cross-midnight VEVENT is split into daily busy slots", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T220000Z",
+      "DTEND:20260505T020000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([
+      { day: "MON", startHour: 22, endHour: 24 },
+      { day: "TUE", startHour: 0, endHour: 2 },
+    ]);
+  });
+
+  test("rejects normalized invalid ICS dates", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260230T090000Z",
+      "DTEND:20260230T110000Z",
+      "END:VEVENT",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T250000Z",
+      "DTEND:20260504T260000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([]);
   });
 });

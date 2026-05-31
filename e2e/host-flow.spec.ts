@@ -22,7 +22,7 @@ test("host can create a schedule and receive safe participant and host links", a
   expect(participantLink).toContain("/schedule/");
   expect(participantLink).not.toContain("hostToken=");
   expect(hostLink).toContain("/schedule/");
-  expect(hostLink).toContain("hostToken=");
+  expect(hostLink).not.toContain("hostToken=");
 
   await page.goto(hostLink);
   await expect(

@@ -223,3 +223,40 @@ describe("extractNaverUserInfo", () => {
     expect(email).toBeUndefined();
   });
 });
+
+describe("getNaverToken validation hardening", () => {
+  beforeEach(() => {
+    process.env.NAVER_CLIENT_ID = "test_client_id";
+    process.env.NAVER_CLIENT_SECRET = "test_client_secret";
+    process.env.NAVER_REDIRECT_URI =
+      "http://localhost:3000/api/auth/naver/callback";
+    vi.restoreAllMocks();
+  });
+
+  test("rejects blank authorization code before calling Naver", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    await expect(getNaverToken("   ", "state")).rejects.toThrow("code");
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test("rejects blank state before calling Naver", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    await expect(getNaverToken("auth_code", "   ")).rejects.toThrow("state");
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test("rejects token responses without access_token", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ token_type: "bearer" }),
+    } as Response);
+
+    await expect(getNaverToken("auth_code", "state")).rejects.toThrow(
+      "access_token",
+    );
+  });
+});

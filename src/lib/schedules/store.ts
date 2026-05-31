@@ -56,6 +56,10 @@ type ScheduleWithParticipants = Prisma.ScheduleGetPayload<{
   include: { participants: true };
 }>;
 
+type ScheduleWithParticipantCount = Prisma.ScheduleGetPayload<{
+  include: { _count: { select: { participants: true } } };
+}>;
+
 type NormalizedScheduleInput = Omit<CreateScheduleInput, "candidateDays"> & {
   candidateDays: DayCode[];
 };
@@ -86,7 +90,7 @@ export async function getSchedulePublic(
 ): Promise<PublicSchedule | null> {
   const schedule = await prisma.schedule.findUnique({
     where: { id },
-    include: { participants: true },
+    include: { _count: { select: { participants: true } } },
   });
   if (!schedule) return null;
   return toPublicSchedule(schedule);
@@ -104,39 +108,32 @@ export async function getScheduleForHost(
     return null;
   }
 
-  const participants = schedule.participants.map(toScheduleParticipant);
-  const participantAvailability: ParticipantAvailability[] = participants.map(
-    (participant) => ({
-      userId: participant.id,
-      available: participant.available,
-    }),
-  );
-
-  return {
-    ...toPublicSchedule(schedule),
-    participants,
-    commonSlots: findCommonSlots(participantAvailability),
-  };
+  return toHostSchedule(schedule);
 }
 
 export async function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,
 ): Promise<ScheduleParticipant> {
-  const schedule = await prisma.schedule.findUnique({
-    where: { id: scheduleId },
-  });
-  if (!schedule) throw new Error("schedule not found");
+  const participant = await prisma.$transaction(async (tx) => {
+    const schedule = await tx.schedule.findUnique({
+      where: { id: scheduleId },
+    });
+    if (!schedule) throw new Error("schedule not found");
+    if (schedule.status !== "open") {
+      throw new Error("schedule is not open");
+    }
 
-  const participant = await prisma.scheduleParticipant.create({
-    data: {
-      id: createToken(12),
-      scheduleId,
-      name: normalizeParticipantName(input.name),
-      available: JSON.stringify(
-        normalizeAvailability(schedule, input.available),
-      ),
-    },
+    return tx.scheduleParticipant.create({
+      data: {
+        id: createToken(12),
+        scheduleId,
+        name: normalizeParticipantName(input.name),
+        available: JSON.stringify(
+          normalizeAvailability(schedule, input.available),
+        ),
+      },
+    });
   });
 
   return toScheduleParticipant(participant);
@@ -147,27 +144,36 @@ export async function confirmSchedule(
   hostToken: string,
   confirmedSlot: TimeSlot,
 ): Promise<HostSchedule> {
-  const schedule = await prisma.schedule.findUnique({
-    where: { id },
-    include: { participants: true },
-  });
-  if (!schedule) throw new Error("schedule not found");
-  if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
-    throw new Error("invalid host token");
-  }
+  const updated = await prisma.$transaction(async (tx) => {
+    const schedule = await tx.schedule.findUnique({
+      where: { id },
+      include: { participants: true },
+    });
+    if (!schedule) throw new Error("schedule not found");
+    if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
+      throw new Error("invalid host token");
+    }
+    if (schedule.status !== "open") {
+      throw new Error("schedule is not open");
+    }
 
-  const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
-  await prisma.schedule.update({
-    where: { id },
-    data: {
-      status: "confirmed",
-      confirmedSlot: JSON.stringify(normalizedSlot),
-    },
+    const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
+    await tx.schedule.update({
+      where: { id },
+      data: {
+        status: "confirmed",
+        confirmedSlot: JSON.stringify(normalizedSlot),
+      },
+    });
+
+    return tx.schedule.findUnique({
+      where: { id },
+      include: { participants: true },
+    });
   });
 
-  const updated = await getScheduleForHost(id, hostToken);
   if (!updated) throw new Error("schedule not found");
-  return updated;
+  return toHostSchedule(updated);
 }
 
 export async function clearSchedules() {
@@ -300,7 +306,9 @@ function validateHourRange(startHour: number, endHour: number) {
   }
 }
 
-function toPublicSchedule(schedule: ScheduleWithParticipants): PublicSchedule {
+function toPublicSchedule(
+  schedule: ScheduleWithParticipants | ScheduleWithParticipantCount,
+): PublicSchedule {
   return {
     id: schedule.id,
     title: schedule.title,
@@ -308,10 +316,29 @@ function toPublicSchedule(schedule: ScheduleWithParticipants): PublicSchedule {
     candidateDays: parseDayCodes(schedule.candidateDays),
     candidateStartHour: schedule.candidateStartHour,
     candidateEndHour: schedule.candidateEndHour,
-    participantCount: schedule.participants.length,
+    participantCount:
+      "participants" in schedule
+        ? schedule.participants.length
+        : schedule._count.participants,
     status: schedule.status === "confirmed" ? "confirmed" : "open",
     confirmedSlot: parseOptionalTimeSlot(schedule.confirmedSlot),
     createdAt: schedule.createdAt.toISOString(),
+  };
+}
+
+function toHostSchedule(schedule: ScheduleWithParticipants): HostSchedule {
+  const participants = schedule.participants.map(toScheduleParticipant);
+  const participantAvailability: ParticipantAvailability[] = participants.map(
+    (participant) => ({
+      userId: participant.id,
+      available: participant.available,
+    }),
+  );
+
+  return {
+    ...toPublicSchedule(schedule),
+    participants,
+    commonSlots: findCommonSlots(participantAvailability),
   };
 }
 

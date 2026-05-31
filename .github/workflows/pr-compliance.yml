@@ -27,6 +27,26 @@ jobs:
             exit 1
           fi
 
+          checked_count=$(echo "$PR_BODY" | grep -Ec "^\- \[[xX]\]")
+          if [ "$checked_count" -lt 4 ]; then
+            echo "❌ PR 체크리스트 4개 항목이 모두 체크되어야 합니다."
+            exit 1
+          fi
+
+          required_items=(
+            "브랜치 컨벤션(feature/00-name)을 지켰나요?"
+            "커밋 컨벤션(feat:, fix: 등)을 지켰나요?"
+            "작업 전에 관련 이슈를 생성하고 연결했나요?"
+            "내 코드가 팀의 기존 코드를 망가뜨리지 않았는지 확인했나요?"
+          )
+
+          for item in "${required_items[@]}"; do
+            if ! echo "$PR_BODY" | grep -Fq "$item"; then
+              echo "❌ PR 체크리스트 필수 항목이 누락되었습니다: $item"
+              exit 1
+            fi
+          done
+
           # 본문이 너무 짧은지 검사 (최소한의 설명 요구)
           if [ ${#PR_BODY} -lt 30 ]; then
              echo "❌ PR 설명이 너무 짧습니다. 템플릿에 맞게 어떤 작업을 했는지 명확하게 설명해주세요."

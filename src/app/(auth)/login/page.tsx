@@ -21,7 +21,7 @@ export default function LoginPage() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loginId, password }),
+        body: JSON.stringify({ loginId, password, remember }),
       });
       const result = await response.json();
       if (!response.ok) {
@@ -88,9 +88,9 @@ export default function LoginPage() {
           <label className="grid gap-2 text-lg font-bold">
             <span className="flex items-center justify-between">
               비밀번호
-              <Link href="/login" className="text-base text-[#6252ac]">
-                비밀번호 찾기
-              </Link>
+              <span className="text-base text-[#aaa5ad]">
+                비밀번호 찾기 준비 중
+              </span>
             </span>
             <span className="relative">
               <input
@@ -151,12 +151,12 @@ export default function LoginPage() {
           >
             <AuthProviderGlyph type="google" /> 구글로 시작하기
           </button>
-          <button
-            type="button"
+          <a
+            href="/api/auth/naver/login"
             className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#03c75a] text-lg font-bold text-white"
           >
             <AuthProviderGlyph type="naver" /> 네이버로 시작하기
-          </button>
+          </a>
           <a
             href="/api/auth/apple/login"
             className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#171717] text-lg font-bold text-white"

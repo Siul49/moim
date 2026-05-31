@@ -1,22 +1,4 @@
-const FETCH_TIMEOUT_MS = 5000;
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(`요청 시간 초과: ${url}`);
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
+import { fetchWithTimeout } from "./fetch-with-timeout";
 
 interface NaverTokenResponse {
   access_token: string;
@@ -69,6 +51,13 @@ export async function getNaverToken(
   code: string,
   state: string,
 ): Promise<NaverTokenResponse> {
+  if (!code.trim()) {
+    throw new Error("Naver authorization code is empty.");
+  }
+  if (!state.trim()) {
+    throw new Error("Naver OAuth state is empty.");
+  }
+
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
   const redirectUri = process.env.NAVER_REDIRECT_URI;
@@ -103,6 +92,9 @@ export async function getNaverToken(
     throw new Error(
       `네이버 토큰 발급 오류: ${data.error} - ${data.error_description ?? ""}`,
     );
+  }
+  if (!data.access_token) {
+    throw new Error("네이버 토큰 응답 오류: access_token 누락");
   }
 
   return data;

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 process.env.DATABASE_URL ||= "file:./dev.db";
 
@@ -18,19 +18,21 @@ const localBin = resolve(
   ".bin",
   process.platform === "win32" ? `${command}.cmd` : command,
 );
-const executable = existsSync(localBin) ? localBin : command;
+let executable = existsSync(localBin) ? localBin : command;
+let executableArgs = args;
 
-const child =
-  process.platform === "win32"
-    ? spawn([executable, ...args].map(quoteForShell).join(" "), {
-        env: process.env,
-        shell: true,
-        stdio: "inherit",
-      })
-    : spawn(executable, args, {
-        env: process.env,
-        stdio: "inherit",
-      });
+if (process.platform === "win32" && existsSync(localBin)) {
+  const shimTarget = resolveWindowsNodeShim(localBin);
+  if (shimTarget) {
+    executable = process.execPath;
+    executableArgs = [shimTarget, ...args];
+  }
+}
+
+const child = spawn(executable, executableArgs, {
+  env: process.env,
+  stdio: "inherit",
+});
 
 child.on("exit", (code, signal) => {
   if (signal) {
@@ -40,7 +42,8 @@ child.on("exit", (code, signal) => {
   process.exit(code ?? 1);
 });
 
-function quoteForShell(value) {
-  if (/^[A-Za-z0-9_./:=\\-]+$/.test(value)) return value;
-  return `"${value.replace(/"/g, '\\"')}"`;
+function resolveWindowsNodeShim(cmdPath) {
+  const content = readFileSync(cmdPath, "utf8");
+  const match = content.match(/"%dp0%\\(\.\.[^"]+)"/);
+  return match ? resolve(dirname(cmdPath), match[1]) : null;
 }

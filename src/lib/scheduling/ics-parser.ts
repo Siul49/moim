@@ -8,11 +8,7 @@ import { sortSlots } from "./time-slot";
  * 이슈에서 별도 확장한다.
  */
 export function parseIcsToSlots(icsContent: string): TimeSlot[] {
-  return sortSlots(
-    extractEvents(icsContent)
-      .map(eventToSlot)
-      .filter((slot): slot is TimeSlot => Boolean(slot)),
-  );
+  return sortSlots(extractEvents(icsContent).flatMap(eventToSlots));
 }
 
 interface IcsEvent {
@@ -65,43 +61,51 @@ function unfoldLines(icsContent: string): string[] {
     .filter(Boolean);
 }
 
-function eventToSlot(event: IcsEvent): TimeSlot | null {
-  if (!event.start || !event.end) return null;
+function eventToSlots(event: IcsEvent): TimeSlot[] {
+  if (!event.start || !event.end) return [];
 
   const { start, end } = event;
-  const startHour = start.isDateOnly ? 0 : start.date.getUTCHours();
-  const endHour = getEndHour(start, end);
+  if (end.date <= start.date) return [];
 
-  if (startHour >= endHour) return null;
+  const slots: TimeSlot[] = [];
+  let currentDay = startOfUtcDay(start.date);
+  const finalDay = startOfUtcDay(end.date);
 
-  return {
-    day: toDayCode(start.date.getUTCDay()),
-    startHour,
-    endHour,
-  };
-}
+  while (currentDay <= finalDay) {
+    const isFirstDay = isSameUtcDay(currentDay, start.date);
+    const isLastDay = isSameUtcDay(currentDay, end.date);
+    const startHour =
+      isFirstDay && !start.isDateOnly ? start.date.getUTCHours() : 0;
+    const endHour = isLastDay
+      ? end.isDateOnly
+        ? 0
+        : end.date.getUTCHours()
+      : 24;
 
-function getEndHour(start: IcsDate, end: IcsDate): number {
-  if (end.isDateOnly) return 24;
+    if (startHour < endHour) {
+      slots.push({
+        day: toDayCode(currentDay.getUTCDay()),
+        startHour,
+        endHour,
+      });
+    }
 
-  const sameUtcDay =
-    start.date.getUTCFullYear() === end.date.getUTCFullYear() &&
-    start.date.getUTCMonth() === end.date.getUTCMonth() &&
-    start.date.getUTCDate() === end.date.getUTCDate();
+    currentDay = addUtcDays(currentDay, 1);
+  }
 
-  return sameUtcDay ? end.date.getUTCHours() : 24;
+  return slots;
 }
 
 function parseIcsDate(value: string): IcsDate | undefined {
   if (/^\d{8}$/.test(value)) {
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(4, 6));
+    const day = Number(value.slice(6, 8));
+    const date = createUtcDate(year, month, day);
+    if (!date) return undefined;
+
     return {
-      date: new Date(
-        Date.UTC(
-          Number(value.slice(0, 4)),
-          Number(value.slice(4, 6)) - 1,
-          Number(value.slice(6, 8)),
-        ),
-      ),
+      date,
       isDateOnly: true,
     };
   }
@@ -113,19 +117,66 @@ function parseIcsDate(value: string): IcsDate | undefined {
 
   const [, year, month, day, hour, minute, second, utcSuffix] = match;
   if (!utcSuffix) return undefined;
+  const date = createUtcDate(
+    Number(year),
+    Number(month),
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+  );
+  if (!date) return undefined;
+
   return {
-    date: new Date(
-      Date.UTC(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute),
-        Number(second),
-      ),
-    ),
+    date,
     isDateOnly: false,
   };
+}
+
+function createUtcDate(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0,
+): Date | undefined {
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    date.getUTCHours() !== hour ||
+    date.getUTCMinutes() !== minute ||
+    date.getUTCSeconds() !== second
+  ) {
+    return undefined;
+  }
+  return date;
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+}
+
+function isSameUtcDay(left: Date, right: Date): boolean {
+  return (
+    left.getUTCFullYear() === right.getUTCFullYear() &&
+    left.getUTCMonth() === right.getUTCMonth() &&
+    left.getUTCDate() === right.getUTCDate()
+  );
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate() + days,
+    ),
+  );
 }
 
 function toDayCode(day: number): TimeSlot["day"] {

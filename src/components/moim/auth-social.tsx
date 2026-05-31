@@ -17,6 +17,7 @@ const PROVIDER_CLASS: Record<AuthProviderType, string> = {
 export function AuthProviderGlyph({ type }: { type: AuthProviderType }) {
   return (
     <span
+      aria-hidden="true"
       className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-lg font-extrabold ${PROVIDER_CLASS[type]}`}
     >
       {PROVIDER_LABEL[type]}

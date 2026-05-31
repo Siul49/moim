@@ -24,6 +24,10 @@ describe("socialProfileSchema", () => {
     });
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(["termsAgreed"]);
+      expect(result.error.issues[0]?.message).toContain("이용약관");
+    }
   });
 
   test("전화번호 형식이 맞지 않으면 실패한다", () => {
@@ -33,5 +37,20 @@ describe("socialProfileSchema", () => {
     });
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(["phoneNumber"]);
+      expect(result.error.issues[0]?.message).toContain("전화번호");
+    }
+  });
+
+  test("선택 동의는 생략하면 false 기본값을 채운다", () => {
+    const { marketingAgreed, eventSmsAgreed, ...input } = validInput;
+    void marketingAgreed;
+    void eventSmsAgreed;
+
+    const result = socialProfileSchema.parse(input);
+
+    expect(result.marketingAgreed).toBe(false);
+    expect(result.eventSmsAgreed).toBe(false);
   });
 });

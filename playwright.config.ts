@@ -45,8 +45,17 @@ export default defineConfig({
     command: `npm run dev -- --port ${e2ePort}`,
     url: baseURL,
     env: {
-      ...process.env,
-      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL ?? baseURL,
+      PATH: process.env.PATH,
+      Path: process.env.Path,
+      SYSTEMROOT: process.env.SYSTEMROOT,
+      SystemRoot: process.env.SystemRoot,
+      ComSpec: process.env.ComSpec,
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+      JWT_SECRET:
+        process.env.JWT_SECRET ??
+        "test_jwt_secret_that_is_long_enough_for_hs256_signing",
+      NEXT_PUBLIC_BASE_URL: baseURL,
       NEXT_PUBLIC_SUPABASE_URL:
         process.env.NEXT_PUBLIC_SUPABASE_URL ??
         "https://example-project.supabase.co",

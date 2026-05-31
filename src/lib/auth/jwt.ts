@@ -58,8 +58,10 @@ export async function signAccessToken(payload: JwtPayload): Promise<string> {
 export async function verifyAccessToken(
   token: string,
 ): Promise<JwtPayload | null> {
+  const secret = getSecret();
+
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, secret);
     if (!isJwtPayload(payload)) {
       return null;
     }

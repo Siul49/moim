@@ -1,9 +1,14 @@
-import { SignJWT, decodeJwt, importPKCS8 } from "jose";
+import { SignJWT, createRemoteJWKSet, importPKCS8, jwtVerify } from "jose";
+import type { JWTVerifyGetKey } from "jose";
+import { fetchWithTimeout } from "./fetch-with-timeout";
 
 const APPLE_AUTH_URL = "https://appleid.apple.com/auth/authorize";
 const APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token";
 const APPLE_AUDIENCE = "https://appleid.apple.com";
 const APPLE_SCOPES = "name email";
+const APPLE_JWKS = createRemoteJWKSet(
+  new URL("https://appleid.apple.com/auth/keys"),
+);
 
 export const APPLE_STATE_COOKIE = "apple_oauth_state";
 export const APPLE_STATE_MAX_AGE = 60 * 10;
@@ -92,7 +97,7 @@ export async function exchangeAppleCodeForToken(
   code: string,
   origin?: string,
 ): Promise<AppleTokenResponse> {
-  const response = await fetch(APPLE_TOKEN_URL, {
+  const response = await fetchWithTimeout(APPLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -130,11 +135,19 @@ export function parseAppleUserPayload(
   }
 }
 
-export function extractAppleIdentity(
+export async function extractAppleIdentity(
   idToken: string,
   rawUser?: string | null,
-): AppleIdentity {
-  const claims = decodeJwt<AppleIdTokenClaims>(idToken);
+  key: Parameters<typeof jwtVerify>[1] | JWTVerifyGetKey = APPLE_JWKS,
+): Promise<AppleIdentity> {
+  const { payload: claims } = await jwtVerify<AppleIdTokenClaims>(
+    idToken,
+    key,
+    {
+      issuer: APPLE_AUDIENCE,
+      audience: readRequiredEnv("APPLE_CLIENT_ID"),
+    },
+  );
   const subject = typeof claims.sub === "string" ? claims.sub : "";
   if (!subject) throw new Error("Apple id_token does not include sub.");
 

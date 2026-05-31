@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
     const res = NextResponse.redirect(authUrl);
     res.cookies.set(APPLE_STATE_COOKIE, state, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       path: "/",
       maxAge: APPLE_STATE_MAX_AGE,
     });

@@ -54,8 +54,8 @@ describe("signAccessToken / verifyAccessToken 라운드트립", () => {
     expect(result?.provider).toBe("local");
   });
 
-  test("provider가 google/apple/naver인 경우도 정상 처리한다", async () => {
-    for (const provider of ["google", "apple", "naver"] as const) {
+  test("provider가 google/apple/naver/kakao인 경우도 정상 처리한다", async () => {
+    for (const provider of ["google", "apple", "naver", "kakao"] as const) {
       const token = await signAccessToken({
         userId: `user_${provider}`,
         nickname: `${provider}_user`,
@@ -111,6 +111,13 @@ describe("signAccessToken / verifyAccessToken 라운드트립", () => {
     const result = await verifyAccessToken(token);
 
     expect(result).toBeNull();
+  });
+
+  test("verifyAccessToken은 JWT_SECRET 누락을 인증 실패로 숨기지 않는다", async () => {
+    const token = await signAccessToken({ userId: "u", nickname: "n" });
+    delete process.env.JWT_SECRET;
+
+    await expect(verifyAccessToken(token)).rejects.toThrow("JWT_SECRET");
   });
 
   test("만료 전에는 페이로드를 반환하고 만료 후에는 null을 반환한다", async () => {

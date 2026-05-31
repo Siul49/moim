@@ -217,7 +217,11 @@ function SocialButton({
       ? "/api/auth/kakao/login"
       : type === "apple"
         ? "/api/auth/apple/login"
-        : undefined;
+        : type === "google"
+          ? "/api/auth/google/login"
+          : type === "naver"
+            ? "/api/auth/naver/login"
+            : undefined;
   const className = dark
     ? "bg-[#171717] text-white"
     : type === "kakao"

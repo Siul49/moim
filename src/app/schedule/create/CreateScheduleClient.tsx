@@ -52,6 +52,13 @@ export function CreateScheduleClient() {
     setIsSubmitting(true);
 
     try {
+      validateScheduleForm({
+        candidateDays,
+        candidateStartHour,
+        candidateEndHour,
+        durationMinutes,
+      });
+
       const response = await fetch("/api/schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -243,6 +250,7 @@ export function CreateScheduleClient() {
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
+                onClick={() => copyText(links.participant)}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#fee500] text-sm font-bold text-[#191919]"
               >
                 <MessageCircle className="h-4 w-4" />
@@ -267,6 +275,32 @@ export function CreateScheduleClient() {
       </section>
     </MoimShell>
   );
+}
+
+function validateScheduleForm({
+  candidateDays,
+  candidateStartHour,
+  candidateEndHour,
+  durationMinutes,
+}: {
+  candidateDays: DayCode[];
+  candidateStartHour: string;
+  candidateEndHour: string;
+  durationMinutes: string;
+}) {
+  if (candidateDays.length === 0) {
+    throw new Error("후보 요일을 하나 이상 선택해 주세요.");
+  }
+  if (Number(candidateEndHour) <= Number(candidateStartHour)) {
+    throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
+  }
+  if (Number(durationMinutes) <= 0) {
+    throw new Error("소요 시간은 0보다 커야 합니다.");
+  }
+}
+
+async function copyText(value: string) {
+  await navigator.clipboard?.writeText(value);
 }
 
 function MiniInfo({
@@ -311,7 +345,14 @@ function LinkField({
           readOnly
           className="h-12 w-full rounded-xl border border-[#dedbe3] bg-[#fbf7ff] px-4 pr-12 text-sm outline-none"
         />
-        <Copy className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#aaa5ad]" />
+        <button
+          type="button"
+          aria-label={`${label} 복사`}
+          onClick={() => copyText(value)}
+          className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#6252ac] hover:bg-white"
+        >
+          <Copy className="h-4 w-4" />
+        </button>
       </span>
     </label>
   );

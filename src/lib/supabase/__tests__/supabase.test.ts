@@ -74,6 +74,14 @@ describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
     );
   });
 
+  it("createServerClient도 Supabase URL 공백을 같은 계약으로 검증한다", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "   ";
+
+    await expect(createServerClient()).rejects.toThrow(
+      "NEXT_PUBLIC_SUPABASE_URL",
+    );
+  });
+
   it("createServerClient도 Supabase anon key 누락을 같은 계약으로 검증한다", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

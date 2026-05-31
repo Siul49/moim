@@ -177,6 +177,61 @@ describe("schedule store", () => {
     expect((await getSchedulePublic(created.id))?.status).toBe("confirmed");
   });
 
+  test("rejects participant availability after the schedule is confirmed", async () => {
+    const created = await createSchedule({
+      title: "confirmed schedule",
+      durationMinutes: 60,
+      candidateDays: ["FRI"],
+      candidateStartHour: 18,
+      candidateEndHour: 22,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "first",
+      available: [{ day: "FRI", startHour: 19, endHour: 21 }],
+    });
+    await confirmSchedule(created.id, created.hostToken, {
+      day: "FRI",
+      startHour: 19,
+      endHour: 20,
+    });
+
+    await expect(
+      addParticipantAvailability(created.id, {
+        name: "late",
+        available: [{ day: "FRI", startHour: 19, endHour: 20 }],
+      }),
+    ).rejects.toThrow("not open");
+  });
+
+  test("rejects confirming an already confirmed schedule", async () => {
+    const created = await createSchedule({
+      title: "single confirmation",
+      durationMinutes: 60,
+      candidateDays: ["FRI"],
+      candidateStartHour: 18,
+      candidateEndHour: 22,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "first",
+      available: [{ day: "FRI", startHour: 19, endHour: 21 }],
+    });
+    await confirmSchedule(created.id, created.hostToken, {
+      day: "FRI",
+      startHour: 19,
+      endHour: 20,
+    });
+
+    await expect(
+      confirmSchedule(created.id, created.hostToken, {
+        day: "FRI",
+        startHour: 19,
+        endHour: 20,
+      }),
+    ).rejects.toThrow("not open");
+  });
+
   test("rejects confirmation with an invalid host token", async () => {
     const created = await createSchedule({
       title: "주간 회의",

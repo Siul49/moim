@@ -106,6 +106,11 @@ export default function AdditionalInfoPage() {
                           event.target.checked,
                         )
                       }
+                      required={
+                        name === "isAgeOver14" ||
+                        name === "termsAgreed" ||
+                        name === "privacyAgreed"
+                      }
                       className="h-5 w-5 rounded border-[#dedbe3]"
                     />
                     {label}

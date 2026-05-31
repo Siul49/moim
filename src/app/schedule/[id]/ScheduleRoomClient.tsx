@@ -317,71 +317,75 @@ export function ScheduleRoomClient({
             />
           </aside>
 
-          <form
-            onSubmit={handleSubmit}
-            className="grid h-fit gap-6 rounded-[2rem] border border-[#eee8f4] bg-white p-6 shadow-[0_24px_70px_rgba(95,82,130,0.12)] sm:p-8"
-          >
-            <div>
-              <p className="text-sm font-extrabold text-[#8f7bd6]">STEP 1</p>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-normal">
-                가능한 시간을 알려주세요
-              </h2>
-            </div>
-
-            {error ? (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            ) : null}
-
-            <label className="grid gap-3 text-lg font-extrabold">
-              이름
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="h-14 rounded-xl border border-[#dedbe3] px-4 text-lg font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
-                maxLength={40}
-                required
-              />
-            </label>
-
-            <fieldset className="grid gap-3">
-              <legend className="text-lg font-extrabold">가능 시간</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {slotOptions.map((option) => (
-                  <label
-                    key={option.key}
-                    className="flex h-12 items-center gap-3 rounded-xl border border-[#dedbe3] bg-[#fbf7ff] px-4 text-sm font-bold text-[#4f4a55]"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(option.key)}
-                      onChange={(event) =>
-                        toggleSlot(option.key, event.target.checked)
-                      }
-                      className="h-5 w-5 rounded border-[#cfc8d9]"
-                    />
-                    {option.label}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            {status ? (
-              <p className="flex items-center gap-2 rounded-2xl bg-[#eef8f0] p-4 text-sm font-bold text-[#23623a]">
-                <CheckCircle2 className="h-4 w-4" />
-                {status}
-              </p>
-            ) : null}
-
-            <PurpleButton
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting || selected.length === 0}
+          {schedule.status === "confirmed" && schedule.confirmedSlot ? (
+            <ConfirmedGuestPanel slot={schedule.confirmedSlot} />
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="grid h-fit gap-6 rounded-[2rem] border border-[#eee8f4] bg-white p-6 shadow-[0_24px_70px_rgba(95,82,130,0.12)] sm:p-8"
             >
-              {isSubmitting ? "제출 중" : "가능 시간 제출"}
-            </PurpleButton>
-          </form>
+              <div>
+                <p className="text-sm font-extrabold text-[#8f7bd6]">STEP 1</p>
+                <h2 className="mt-2 text-3xl font-extrabold tracking-normal">
+                  가능한 시간을 알려주세요
+                </h2>
+              </div>
+
+              {error ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+              ) : null}
+
+              <label className="grid gap-3 text-lg font-extrabold">
+                이름
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="h-14 rounded-xl border border-[#dedbe3] px-4 text-lg font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                  maxLength={40}
+                  required
+                />
+              </label>
+
+              <fieldset className="grid gap-3">
+                <legend className="text-lg font-extrabold">가능 시간</legend>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {slotOptions.map((option) => (
+                    <label
+                      key={option.key}
+                      className="flex h-12 items-center gap-3 rounded-xl border border-[#dedbe3] bg-[#fbf7ff] px-4 text-sm font-bold text-[#4f4a55]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(option.key)}
+                        onChange={(event) =>
+                          toggleSlot(option.key, event.target.checked)
+                        }
+                        className="h-5 w-5 rounded border-[#cfc8d9]"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {status ? (
+                <p className="flex items-center gap-2 rounded-2xl bg-[#eef8f0] p-4 text-sm font-bold text-[#23623a]">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {status}
+                </p>
+              ) : null}
+
+              <PurpleButton
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting || selected.length === 0}
+              >
+                {isSubmitting ? "제출 중" : "가능 시간 제출"}
+              </PurpleButton>
+            </form>
+          )}
         </section>
       ) : null}
     </MoimShell>
@@ -455,6 +459,21 @@ function InviteMetric({ label, value }: { label: string; value: string }) {
       <p className="text-sm font-bold text-[#77727c]">{label}</p>
       <p className="mt-1 text-xl font-extrabold text-[#222026]">{value}</p>
     </div>
+  );
+}
+
+function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
+  return (
+    <section className="grid h-fit gap-4 rounded-[2rem] border border-[#d8efd7] bg-[#f4fbf4] p-8 text-[#23623a] shadow-[0_24px_70px_rgba(95,82,130,0.10)]">
+      <CheckCircle2 className="h-10 w-10" />
+      <div>
+        <p className="text-sm font-extrabold">CONFIRMED</p>
+        <h2 className="mt-2 text-3xl font-extrabold tracking-normal">
+          일정이 확정되었습니다
+        </h2>
+        <p className="mt-3 text-lg font-bold">{formatSlot(slot)}</p>
+      </div>
+    </section>
   );
 }
 
