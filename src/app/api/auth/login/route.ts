@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { loginId, password } = result.data;
+  const { loginId, password, remember } = result.data;
 
   try {
     const where = isEmail(loginId)
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: COOKIE_MAX_AGE,
+      maxAge: remember ? 60 * 60 * 24 * 30 : COOKIE_MAX_AGE,
     });
 
     return res;

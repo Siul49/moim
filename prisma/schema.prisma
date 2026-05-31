@@ -35,3 +35,29 @@ model SocialAccount {
 
   @@unique([provider, providerUserId])
 }
+
+model Schedule {
+  id                 String                @id
+  hostTokenHash      String                @unique
+  title              String
+  durationMinutes    Int
+  candidateDays      String
+  candidateStartHour Int
+  candidateEndHour   Int
+  status             String                @default("open")
+  confirmedSlot      String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  participants       ScheduleParticipant[]
+}
+
+model ScheduleParticipant {
+  id          String   @id
+  scheduleId  String
+  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  name        String
+  available   String
+  submittedAt DateTime @default(now())
+
+  @@index([scheduleId])
+}

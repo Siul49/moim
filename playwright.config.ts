@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const e2ePort = process.env.PLAYWRIGHT_PORT ?? "3100";
+const baseURL = `http://localhost:${e2ePort}`;
+
 /**
  * Playwright E2E 설정
  *
@@ -18,7 +21,7 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry", // 실패 시 트레이스 기록 (디버깅용)
   },
 
@@ -39,8 +42,26 @@ export default defineConfig({
 
   // Next.js 개발 서버를 자동으로 띄워서 테스트
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
+    command: `npm run dev -- --port ${e2ePort}`,
+    url: baseURL,
+    env: {
+      PATH: process.env.PATH,
+      Path: process.env.Path,
+      SYSTEMROOT: process.env.SYSTEMROOT,
+      SystemRoot: process.env.SystemRoot,
+      ComSpec: process.env.ComSpec,
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
+      JWT_SECRET:
+        process.env.JWT_SECRET ??
+        "test_jwt_secret_that_is_long_enough_for_hs256_signing",
+      NEXT_PUBLIC_BASE_URL: baseURL,
+      NEXT_PUBLIC_SUPABASE_URL:
+        process.env.NEXT_PUBLIC_SUPABASE_URL ??
+        "https://example-project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "test-anon-key",
+    },
     reuseExistingServer: !process.env.CI,
   },
 });

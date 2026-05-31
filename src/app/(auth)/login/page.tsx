@@ -1,105 +1,177 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { EyeOff, MessageCircle } from "lucide-react";
+import { AuthProviderGlyph } from "@/components/moim/auth-social";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const supabase = createClient();
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleLogin = async (provider: "google" | "kakao") => {
-    setIsLoading(provider);
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
+
     try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loginId, password, remember }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message ?? "로그인에 실패했습니다.");
+      }
+      window.location.href = "/schedule/create";
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error ? caught.message : "요청에 실패했습니다.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setMessage("");
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}/api/auth/callback`,
         },
       });
       if (error) throw error;
-    } catch (err) {
-      console.error("로그인 에러:", err);
-      setIsLoading(null);
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : "Google 로그인을 시작할 수 없습니다.",
+      );
     }
-  };
+  }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 px-4">
-      {/* 백그라운드 오로라 이펙트 */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-violet-600/20 blur-[120px] filter animate-pulse"
-          style={{ animationDuration: "10s" }}
-        />
-        <div
-          className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[60%] rounded-full bg-rose-600/10 blur-[120px] filter animate-pulse"
-          style={{ animationDuration: "7s" }}
-        />
-      </div>
-
-      {/* 로그인 카드 */}
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 p-8 shadow-2xl backdrop-blur-xl transition-all duration-300">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 font-bold text-2xl shadow-lg shadow-violet-500/5">
-            M
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mt-4">
-            MOIM 시작하기
-          </h1>
-          <p className="text-sm text-slate-400">
-            시간 조율을 더 스마트하고 완벽하게
+    <main className="min-h-screen bg-white px-6 py-16 text-[#222026]">
+      <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-[420px] flex-col justify-center">
+        <div className="mb-12 text-center">
+          <Link
+            href="/"
+            className="text-6xl font-extrabold tracking-normal text-[#6252ac]"
+          >
+            MOIM
+          </Link>
+          <p className="mt-5 text-lg font-semibold text-[#6f6a73]">
+            모임을 더 가깝게, 일상을 더 특별하게
           </p>
         </div>
 
-        <div className="mt-8 space-y-4">
-          {/* 카카오 로그인 버튼 */}
-          <button
-            onClick={() => handleLogin("kakao")}
-            disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#FEE500] px-4 py-3 text-sm font-semibold text-[#191919] hover:bg-[#FEE500]/90 active:scale-[0.98] transition-all duration-150 shadow-md shadow-yellow-500/5 disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {isLoading === "kakao" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#191919] border-t-transparent" />
-            ) : (
-              <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.68 2.531-.777 2.87-.12.43.148.423.31.314.127-.085 2.029-1.38 2.846-1.936.438.12.896.183 1.351.183 4.97 0 9-3.186 9-7.115S16.97 3 12 3z" />
-              </svg>
-            )}
-            카카오로 3초 만에 시작하기
-          </button>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <label className="grid gap-2 text-lg font-bold">
+            이메일
+            <input
+              value={loginId}
+              onChange={(event) => setLoginId(event.target.value)}
+              placeholder="example@email.com"
+              className="h-16 rounded-lg border border-[#dedbe3] px-5 text-xl font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-lg font-bold">
+            <span className="flex items-center justify-between">
+              비밀번호
+              <span className="text-base text-[#aaa5ad]">
+                비밀번호 찾기 준비 중
+              </span>
+            </span>
+            <span className="relative">
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                className="h-16 w-full rounded-lg border border-[#dedbe3] px-5 pr-14 text-xl font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                autoComplete="current-password"
+                required
+              />
+              <EyeOff className="absolute right-5 top-1/2 h-6 w-6 -translate-y-1/2 text-[#aaa5ad]" />
+            </span>
+          </label>
 
-          {/* 구글 로그인 버튼 */}
+          <label className="mt-2 flex items-center gap-3 text-lg font-semibold text-[#47434d]">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="h-5 w-5 rounded border-[#dedbe3]"
+            />
+            로그인 유지
+          </label>
+
+          {message ? (
+            <p role="alert" className="text-sm text-destructive">
+              {message}
+            </p>
+          ) : null}
+
           <button
-            onClick={() => handleLogin("google")}
-            disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-slate-800 px-4 py-3 text-sm font-semibold text-white active:scale-[0.98] transition-all duration-150 shadow-md disabled:opacity-50 disabled:pointer-events-none"
+            type="submit"
+            className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={isSubmitting}
           >
-            {isLoading === "google" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  fill="#EA4335"
-                  d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.107C18.28 1.945 15.5 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.985 0-.74-.08-1.3-.176-1.857H12.24z"
-                />
-              </svg>
-            )}
-            Google 계정으로 계속하기
+            {isSubmitting ? "로그인 중" : "로그인"}
           </button>
+        </form>
+
+        <div className="my-12 flex items-center gap-6 text-lg font-semibold text-[#aaa5ad]">
+          <div className="h-px flex-1 bg-[#dedbe3]" />
+          또는
+          <div className="h-px flex-1 bg-[#dedbe3]" />
         </div>
 
-        <div className="mt-8 text-center text-xs text-slate-500">
-          로그인 시 MOIM의{" "}
-          <a href="#" className="underline hover:text-slate-400">
-            서비스 이용약관
+        <div className="grid gap-4">
+          <a
+            href="/api/auth/kakao/login"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#fee500] text-lg font-bold text-[#191919]"
+          >
+            <MessageCircle className="h-5 w-5" /> 카카오로 시작하기
           </a>
-          및{" "}
-          <a href="#" className="underline hover:text-slate-400">
-            개인정보 처리방침
+          <button
+            type="button"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg border border-[#dedbe3] bg-white text-lg font-bold"
+            onClick={handleGoogleLogin}
+          >
+            <AuthProviderGlyph type="google" /> 구글로 시작하기
+          </button>
+          <a
+            href="/api/auth/naver/login"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#03c75a] text-lg font-bold text-white"
+          >
+            <AuthProviderGlyph type="naver" /> 네이버로 시작하기
           </a>
-          에 동의하게 됩니다.
+          <a
+            href="/api/auth/apple/login"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#171717] text-lg font-bold text-white"
+          >
+            <AuthProviderGlyph type="apple" /> iCloud로 시작하기
+          </a>
         </div>
-      </div>
-    </div>
+
+        <p className="mt-12 text-center text-lg font-semibold text-[#6f6a73]">
+          아직 계정이 없으신가요?{" "}
+          <Link href="/signup" className="text-[#6252ac]">
+            회원가입
+          </Link>
+        </p>
+      </section>
+    </main>
   );
 }

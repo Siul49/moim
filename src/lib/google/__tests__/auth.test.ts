@@ -24,8 +24,8 @@ beforeEach(() => {
   mockFetch.mockReset();
   mockCookieStore.get.mockReset();
   mockCookieStore.set.mockReset();
-  process.env.GOOGLE_CLIENT_ID = "test-client-id";
-  process.env.GOOGLE_CLIENT_SECRET = "test-client-secret";
+  process.env.GOOGLE_CALENDAR_CLIENT_ID = "test-client-id";
+  process.env.GOOGLE_CALENDAR_CLIENT_SECRET = "test-client-secret";
   process.env.NEXT_PUBLIC_BASE_URL = "http://localhost:3000";
 });
 
