@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { EyeOff, MessageCircle } from "lucide-react";
+import { Eye, EyeOff, MessageCircle } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
 
 export default function LoginPage() {
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -37,25 +38,8 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogleLogin() {
-    setMessage("");
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
-        },
-      });
-      if (error) throw error;
-    } catch (caught) {
-      setMessage(
-        caught instanceof Error
-          ? caught.message
-          : "Google 로그인을 시작할 수 없습니다.",
-      );
-    }
+  function handleGoogleLogin() {
+    window.location.href = "/api/auth/google/login";
   }
 
   return (
@@ -88,13 +72,16 @@ export default function LoginPage() {
           <label className="grid gap-2 text-lg font-bold">
             <span className="flex items-center justify-between">
               비밀번호
-              <span className="text-base text-[#aaa5ad]">
-                비밀번호 찾기 준비 중
-              </span>
+              <Link
+                href="/forgot-password"
+                className="text-base text-[#8f7bd6] hover:underline"
+              >
+                비밀번호 찾기
+              </Link>
             </span>
             <span className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
@@ -102,7 +89,17 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
               />
-              <EyeOff className="absolute right-5 top-1/2 h-6 w-6 -translate-y-1/2 text-[#aaa5ad]" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+              >
+                {showPassword ? (
+                  <Eye className="h-6 w-6" />
+                ) : (
+                  <EyeOff className="h-6 w-6" />
+                )}
+              </button>
             </span>
           </label>
 

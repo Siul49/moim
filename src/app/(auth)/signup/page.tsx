@@ -2,8 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, EyeOff } from "lucide-react";
+import { CheckCircle2, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
+import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -21,6 +22,48 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [activeTermsKey, setActiveTermsKey] = useState<TermsKey | null>(null);
+  const [touched, setTouched] = useState({
+    email: false,
+    phoneNumber: false,
+    nickname: false,
+    password: false,
+    passwordConfirm: false,
+  });
+
+  const errors = {
+    email:
+      form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+        ? "올바른 이메일 형식이 아닙니다."
+        : "",
+    phoneNumber:
+      form.phoneNumber && !/^01[016789]-?\d{3,4}-?\d{4}$/.test(form.phoneNumber)
+        ? "올바른 전화번호 형식이 아닙니다. (예: 010-0000-0000)"
+        : "",
+    nickname:
+      form.nickname && form.nickname.length < 2
+        ? "닉네임은 2자 이상이어야 합니다."
+        : "",
+    password:
+      form.password &&
+      (form.password.length < 8 ||
+        !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':",./<>?]).{8,}$/.test(
+          form.password,
+        ))
+        ? "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다."
+        : "",
+    passwordConfirm:
+      form.passwordConfirm && form.password !== form.passwordConfirm
+        ? "비밀번호가 일치하지 않습니다."
+        : "",
+  };
+
+  function handleBlur(field: keyof typeof touched) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }
 
   function updateField(name: keyof typeof form, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -110,6 +153,8 @@ export default function SignupPage() {
                 label="이메일"
                 value={form.email}
                 onChange={(value) => updateField("email", value)}
+                onBlur={() => handleBlur("email")}
+                error={touched.email && errors.email ? errors.email : ""}
                 type="email"
                 autoComplete="email"
               />
@@ -117,23 +162,49 @@ export default function SignupPage() {
                 label="전화번호"
                 value={form.phoneNumber}
                 onChange={(value) => updateField("phoneNumber", value)}
+                onBlur={() => handleBlur("phoneNumber")}
+                error={
+                  touched.phoneNumber && errors.phoneNumber
+                    ? errors.phoneNumber
+                    : ""
+                }
                 autoComplete="tel"
               />
               <TextField
                 label="닉네임"
                 value={form.nickname}
                 onChange={(value) => updateField("nickname", value)}
+                onBlur={() => handleBlur("nickname")}
+                error={
+                  touched.nickname && errors.nickname ? errors.nickname : ""
+                }
                 autoComplete="nickname"
               />
               <PasswordField
                 label="비밀번호"
                 value={form.password}
                 onChange={(value) => updateField("password", value)}
+                onBlur={() => handleBlur("password")}
+                showPassword={showPassword}
+                onToggleShow={() => setShowPassword(!showPassword)}
+                error={
+                  touched.password && errors.password ? errors.password : ""
+                }
               />
               <PasswordField
                 label="비밀번호 확인"
                 value={form.passwordConfirm}
                 onChange={(value) => updateField("passwordConfirm", value)}
+                onBlur={() => handleBlur("passwordConfirm")}
+                showPassword={showPasswordConfirm}
+                onToggleShow={() =>
+                  setShowPasswordConfirm(!showPasswordConfirm)
+                }
+                error={
+                  touched.passwordConfirm && errors.passwordConfirm
+                    ? errors.passwordConfirm
+                    : ""
+                }
               />
 
               <fieldset className="rounded-lg border border-[#dedbe3] p-5">
@@ -146,11 +217,11 @@ export default function SignupPage() {
                     ["marketingAgreed", "개인정보 마케팅 활용 동의", "선택"],
                     ["eventSmsAgreed", "이벤트, 쿠폰 및 SMS 등 수신", "선택"],
                   ].map(([name, label, required]) => (
-                    <label
+                    <div
                       key={name}
                       className="flex items-center justify-between gap-3 text-base font-semibold text-[#504b55]"
                     >
-                      <span className="flex items-center gap-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={Boolean(form[name as keyof typeof form])}
@@ -169,9 +240,15 @@ export default function SignupPage() {
                         />
                         {label}
                         <span className="text-[#8f7bd6]">({required})</span>
-                      </span>
-                      <ChevronRight className="h-5 w-5 text-[#aaa5ad]" />
-                    </label>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTermsKey(name as TermsKey)}
+                        className="rounded p-1 hover:bg-[#fbf7ff] text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </fieldset>
@@ -199,6 +276,13 @@ export default function SignupPage() {
           </>
         )}
       </section>
+
+      {activeTermsKey && (
+        <TermsModal
+          termsKey={activeTermsKey}
+          onClose={() => setActiveTermsKey(null)}
+        />
+      )}
     </main>
   );
 }
@@ -261,12 +345,16 @@ function TextField({
   onChange,
   type = "text",
   autoComplete,
+  onBlur,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   autoComplete?: string;
+  onBlur?: () => void;
+  error?: string;
 }) {
   return (
     <label className="grid gap-2 text-lg font-bold">
@@ -275,10 +363,18 @@ function TextField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 rounded-lg border border-[#dedbe3] px-4 text-lg font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+        onBlur={onBlur}
+        className={`h-14 rounded-lg border px-4 text-lg font-normal outline-none focus:ring-2 ${
+          error
+            ? "border-destructive focus:border-destructive focus:ring-red-100"
+            : "border-[#dedbe3] focus:border-[#8f7bd6] focus:ring-[#ece7fb]"
+        }`}
         autoComplete={autoComplete}
         required
       />
+      {error && (
+        <span className="text-sm font-semibold text-destructive">{error}</span>
+      )}
     </label>
   );
 }
@@ -287,25 +383,51 @@ function PasswordField({
   label,
   value,
   onChange,
+  showPassword,
+  onToggleShow,
+  onBlur,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  showPassword?: boolean;
+  onToggleShow?: () => void;
+  onBlur?: () => void;
+  error?: string;
 }) {
   return (
     <label className="grid gap-2 text-lg font-bold">
       {label}
       <span className="relative">
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-14 w-full rounded-lg border border-[#dedbe3] px-4 pr-12 text-lg font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+          onBlur={onBlur}
+          className={`h-14 w-full rounded-lg border px-4 pr-12 text-lg font-normal outline-none focus:ring-2 ${
+            error
+              ? "border-destructive focus:border-destructive focus:ring-red-100"
+              : "border-[#dedbe3] focus:border-[#8f7bd6] focus:ring-[#ece7fb]"
+          }`}
           autoComplete="new-password"
           required
         />
-        <EyeOff className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#aaa5ad]" />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+        >
+          {showPassword ? (
+            <Eye className="h-5 w-5" />
+          ) : (
+            <EyeOff className="h-5 w-5" />
+          )}
+        </button>
       </span>
+      {error && (
+        <span className="text-sm font-semibold text-destructive">{error}</span>
+      )}
     </label>
   );
 }

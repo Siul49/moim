@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ChevronRight } from "lucide-react";
+import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 
 export default function AdditionalInfoPage() {
   const [form, setForm] = useState({
@@ -15,6 +16,7 @@ export default function AdditionalInfoPage() {
   });
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTermsKey, setActiveTermsKey] = useState<TermsKey | null>(null);
 
   function updateField(name: keyof typeof form, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -92,11 +94,11 @@ export default function AdditionalInfoPage() {
                 ["marketingAgreed", "개인정보 마케팅 활용 동의", "선택"],
                 ["eventSmsAgreed", "이벤트, 쿠폰 및 SMS 등 수신", "선택"],
               ].map(([name, label, required]) => (
-                <label
+                <div
                   key={name}
                   className="flex items-center justify-between gap-3 text-base font-semibold text-[#504b55]"
                 >
-                  <span className="flex items-center gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={Boolean(form[name as keyof typeof form])}
@@ -115,8 +117,15 @@ export default function AdditionalInfoPage() {
                     />
                     {label}
                     <span className="text-[#8f7bd6]">({required})</span>
-                  </span>
-                </label>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTermsKey(name as TermsKey)}
+                    className="rounded p-1 hover:bg-[#fbf7ff] text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
               ))}
             </div>
           </fieldset>
@@ -136,6 +145,13 @@ export default function AdditionalInfoPage() {
           </button>
         </form>
       </section>
+
+      {activeTermsKey && (
+        <TermsModal
+          termsKey={activeTermsKey}
+          onClose={() => setActiveTermsKey(null)}
+        />
+      )}
     </main>
   );
 }
