@@ -13,10 +13,14 @@ export async function GET(req: NextRequest) {
     const authUrl = getAppleAuthUrl(state, req.nextUrl.origin);
 
     const res = NextResponse.redirect(authUrl);
+    const isProduction =
+      process.env.NODE_ENV === "production" ||
+      req.nextUrl.protocol === "https:";
+
     res.cookies.set(APPLE_STATE_COOKIE, state, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: "/",
       maxAge: APPLE_STATE_MAX_AGE,
     });

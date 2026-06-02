@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Copy,
   Link2,
-  MessageCircle,
 } from "lucide-react";
 import {
   MoimShell,
@@ -17,7 +16,8 @@ import {
   ProgressHeader,
   PurpleButton,
 } from "@/components/moim/reference-ui";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
@@ -224,7 +224,7 @@ export function CreateScheduleClient() {
         </form>
 
         {links ? (
-          <section className="rounded-[2rem] border border-[#eee8f4] bg-white p-8 text-center shadow-[0_24px_70px_rgba(95,82,130,0.12)]">
+          <section className="rounded-[2rem] border border-[#eee8f4] bg-white p-5 sm:p-8 text-center shadow-[0_24px_70px_rgba(95,82,130,0.12)]">
             <CheckCircle2 className="mx-auto h-16 w-16 text-[#6252ac]" />
             <h2 className="mt-5 text-3xl font-extrabold">
               초대 링크가 준비됐습니다
@@ -253,21 +253,26 @@ export function CreateScheduleClient() {
                 onClick={() => copyText(links.participant)}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#fee500] text-sm font-bold text-[#191919]"
               >
-                <MessageCircle className="h-4 w-4" />
-                카카오 공유
+                <Copy className="h-4 w-4" />
+                참여자 링크 복사
               </button>
-              <Link href={links.participant}>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full rounded-xl border-[#eee8f4] text-[#6252ac]"
-                >
-                  참여 화면 열기
-                </Button>
+              <Link
+                href={links.participant}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "h-12 w-full rounded-xl border-[#eee8f4] text-[#6252ac] font-bold shadow-sm",
+                )}
+              >
+                참여 화면 열기
               </Link>
-              <Link href={links.host}>
-                <Button className="h-12 w-full rounded-xl bg-[#8f7bd6] text-white hover:bg-[#7d68c9]">
-                  결과 화면 열기
-                </Button>
+              <Link
+                href={links.host}
+                className={cn(
+                  buttonVariants({ variant: "default" }),
+                  "h-12 w-full rounded-xl bg-[#8f7bd6] text-white hover:bg-[#7d68c9] font-bold",
+                )}
+              >
+                결과 화면 열기
               </Link>
             </div>
           </section>

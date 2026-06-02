@@ -18,6 +18,9 @@ export interface GoogleUser {
 }
 
 export function getGoogleAuthUrl(state: string): string {
+  if (!state?.trim()) {
+    throw new Error("State parameter is required and cannot be empty.");
+  }
   const clientId = process.env.GOOGLE_LOGIN_CLIENT_ID;
   const redirectUri = process.env.GOOGLE_LOGIN_REDIRECT_URI;
   if (!clientId || !redirectUri) {
@@ -31,7 +34,7 @@ export function getGoogleAuthUrl(state: string): string {
     client_id: clientId,
     redirect_uri: redirectUri,
     scope: "openid email profile",
-    state,
+    state: state.trim(),
     access_type: "online",
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

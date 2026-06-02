@@ -188,6 +188,18 @@ export function ScheduleRoomClient({
   async function importEverytimeFile(file: File | null) {
     if (!schedule || !file) return;
 
+    const isIcs =
+      file.type === "text/calendar" || file.name.toLowerCase().endsWith(".ics");
+    const maxSize = 100 * 1024;
+    if (!isIcs) {
+      setImportMessage("ICS 형식 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > maxSize) {
+      setImportMessage("파일 크기는 100KB 이하여야 합니다.");
+      return;
+    }
+
     setImportMessage("");
     setImportMode("file");
     try {
@@ -350,23 +362,25 @@ export function ScheduleRoomClient({
 
               <fieldset className="grid gap-3">
                 <legend className="text-lg font-extrabold">가능 시간</legend>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {slotOptions.map((option) => (
-                    <label
-                      key={option.key}
-                      className="flex h-12 items-center gap-3 rounded-xl border border-[#dedbe3] bg-[#fbf7ff] px-4 text-sm font-bold text-[#4f4a55]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(option.key)}
-                        onChange={(event) =>
-                          toggleSlot(option.key, event.target.checked)
-                        }
-                        className="h-5 w-5 rounded border-[#cfc8d9]"
-                      />
-                      {option.label}
-                    </label>
-                  ))}
+                <div className="max-h-[320px] overflow-y-auto rounded-2xl border border-[#eee8f4] bg-[#fbf7ff] p-4 shadow-inner">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {slotOptions.map((option) => (
+                      <label
+                        key={option.key}
+                        className="flex h-12 items-center gap-3 rounded-xl border border-[#dedbe3] bg-white px-4 text-sm font-bold text-[#4f4a55] transition-all hover:bg-[#faf9fd] cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(option.key)}
+                          onChange={(event) =>
+                            toggleSlot(option.key, event.target.checked)
+                          }
+                          className="h-5 w-5 rounded border-[#cfc8d9]"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </fieldset>
 
@@ -529,6 +543,51 @@ function HostResultPanel({
   const [confirmingKey, setConfirmingKey] = useState("");
   const [confirmError, setConfirmError] = useState("");
 
+  const heatmapRows = useMemo(() => {
+    const r = [];
+    for (
+      let h = schedule.candidateStartHour;
+      h < schedule.candidateEndHour;
+      h++
+    ) {
+      r.push(formatHour(h));
+    }
+    return r;
+  }, [schedule.candidateStartHour, schedule.candidateEndHour]);
+
+  const heatmapDays = useMemo(() => {
+    return schedule.candidateDays.map((d) => DAY_LABELS[d] || d);
+  }, [schedule.candidateDays]);
+
+  const heatmapColors = useMemo(() => {
+    const total = schedule.participants.length;
+    return heatmapRows.map((_, rowIndex) => {
+      const hour = schedule.candidateStartHour + rowIndex;
+      return schedule.candidateDays.map((dayCode) => {
+        if (total === 0) return "bg-[#fbf7ff]";
+        const count = schedule.participants.filter((p) =>
+          p.available.some(
+            (slot) =>
+              slot.day === dayCode &&
+              slot.startHour <= hour &&
+              slot.endHour >= hour + 1,
+          ),
+        ).length;
+        const ratio = count / total;
+        if (count === 0) return "bg-[#fbf7ff]";
+        if (ratio <= 0.25) return "bg-[#eeeaf7]";
+        if (ratio <= 0.5) return "bg-[#c9c1eb]";
+        if (ratio <= 0.75) return "bg-[#9683d5]";
+        return "bg-[#8f7bd6] ring-2 ring-white";
+      });
+    });
+  }, [
+    schedule.participants,
+    schedule.candidateDays,
+    schedule.candidateStartHour,
+    heatmapRows,
+  ]);
+
   async function confirmSlot(slot: TimeSlot) {
     setConfirmError("");
     const key = `${slot.day}-${slot.startHour}-${slot.endHour}`;
@@ -578,7 +637,11 @@ function HostResultPanel({
             </div>
             <Clock3 className="h-6 w-6 text-[#8f7bd6]" />
           </div>
-          <HeatmapGrid />
+          <HeatmapGrid
+            rows={heatmapRows}
+            days={heatmapDays}
+            colors={heatmapColors}
+          />
         </div>
 
         {schedule.participants.length === 0 ? (

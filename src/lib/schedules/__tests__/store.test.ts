@@ -276,4 +276,18 @@ describe("schedule store", () => {
       }),
     ).rejects.toThrow("common slots");
   });
+
+  test("rejects schedule creation if duration exceeds candidate range", async () => {
+    await expect(
+      createSchedule({
+        title: "오버플로우 일정",
+        durationMinutes: 120,
+        candidateDays: ["MON"],
+        candidateStartHour: 10,
+        candidateEndHour: 11,
+      }),
+    ).rejects.toThrow(
+      "durationMinutes must not exceed the candidate time range",
+    );
+  });
 });

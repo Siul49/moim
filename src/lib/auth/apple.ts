@@ -64,13 +64,16 @@ export function getAppleRedirectUri(origin?: string): string {
 }
 
 export function getAppleAuthUrl(state: string, origin?: string): string {
+  if (!state?.trim()) {
+    throw new Error("State parameter is required and cannot be empty.");
+  }
   const params = new URLSearchParams({
     client_id: readRequiredEnv("APPLE_CLIENT_ID"),
     redirect_uri: getAppleRedirectUri(origin),
     response_type: "code",
     response_mode: "form_post",
     scope: APPLE_SCOPES,
-    state,
+    state: state.trim(),
   });
 
   return `${APPLE_AUTH_URL}?${params.toString()}`;
@@ -97,6 +100,9 @@ export async function exchangeAppleCodeForToken(
   code: string,
   origin?: string,
 ): Promise<AppleTokenResponse> {
+  if (!code?.trim()) {
+    throw new Error("Missing authorization code");
+  }
   const response = await fetchWithTimeout(APPLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

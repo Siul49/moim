@@ -30,6 +30,9 @@ export interface NaverUser {
 }
 
 export function getNaverAuthUrl(state: string): string {
+  if (!state?.trim()) {
+    throw new Error("State parameter is required and cannot be empty.");
+  }
   const clientId = process.env.NAVER_CLIENT_ID;
   const redirectUri = process.env.NAVER_REDIRECT_URI;
   if (!clientId || !redirectUri) {
@@ -42,7 +45,7 @@ export function getNaverAuthUrl(state: string): string {
     response_type: "code",
     client_id: clientId,
     redirect_uri: redirectUri,
-    state,
+    state: state.trim(),
   });
   return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
 }

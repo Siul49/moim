@@ -79,7 +79,9 @@ function eventToSlots(event: IcsEvent): TimeSlot[] {
     const endHour = isLastDay
       ? end.isDateOnly
         ? 0
-        : end.date.getUTCHours()
+        : end.date.getUTCMinutes() > 0 || end.date.getUTCSeconds() > 0
+          ? end.date.getUTCHours() + 1
+          : end.date.getUTCHours()
       : 24;
 
     if (startHour < endHour) {

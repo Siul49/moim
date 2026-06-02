@@ -149,4 +149,19 @@ describe("parseIcsToSlots", () => {
 
     expect(parseIcsToSlots(ics)).toEqual([]);
   });
+
+  test("ceils endHour for non-zero minutes or seconds to prevent slot loss", () => {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "DTSTART:20260504T090000Z",
+      "DTEND:20260504T101500Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    expect(parseIcsToSlots(ics)).toEqual([
+      { day: "MON", startHour: 9, endHour: 11 },
+    ]);
+  });
 });

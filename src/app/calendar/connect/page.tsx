@@ -54,13 +54,13 @@ export default function CalendarConnectPage() {
     if (!file) return;
     const isIcs =
       file.type === "text/calendar" || file.name.toLowerCase().endsWith(".ics");
-    const maxSize = 2 * 1024 * 1024;
+    const maxSize = 100 * 1024;
     if (!isIcs) {
       setMessage("ICS 형식 파일만 업로드할 수 있습니다.");
       return;
     }
     if (file.size > maxSize) {
-      setMessage("파일 크기는 2MB 이하여야 합니다.");
+      setMessage("파일 크기는 100KB 이하여야 합니다.");
       return;
     }
 
@@ -151,7 +151,7 @@ export default function CalendarConnectPage() {
             action={
               <form
                 onSubmit={submitIcloud}
-                className="grid w-full gap-2 sm:w-[420px] sm:grid-cols-[1fr_1fr_auto]"
+                className="grid w-full gap-2 md:w-[420px] sm:grid-cols-[1fr_1fr_auto]"
               >
                 <input
                   value={icloudAppleId}
@@ -187,7 +187,7 @@ export default function CalendarConnectPage() {
             action={
               <form
                 onSubmit={submitEverytimeUrl}
-                className="flex w-full gap-2 sm:w-[420px]"
+                className="flex w-full gap-2 md:w-[420px]"
               >
                 <input
                   value={everytimeUrl}
@@ -292,7 +292,7 @@ function IntegrationRow({
           </p>
         </div>
       </div>
-      <div className="flex justify-end">{action}</div>
+      <div className="w-full flex justify-end md:w-auto">{action}</div>
     </div>
   );
 }

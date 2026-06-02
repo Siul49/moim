@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type {
   DayCode,
   ParticipantAvailability,
@@ -115,26 +115,39 @@ export async function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,
 ): Promise<ScheduleParticipant> {
-  const participant = await prisma.$transaction(async (tx) => {
-    const schedule = await tx.schedule.findUnique({
-      where: { id: scheduleId },
-    });
-    if (!schedule) throw new Error("schedule not found");
-    if (schedule.status !== "open") {
-      throw new Error("schedule is not open");
-    }
+  const participant = await prisma.$transaction(
+    async (tx) => {
+      const schedule = await tx.schedule.findUnique({
+        where: { id: scheduleId },
+      });
+      if (!schedule) throw new Error("schedule not found");
+      if (schedule.status !== "open") {
+        throw new Error("schedule is not open");
+      }
 
-    return tx.scheduleParticipant.create({
-      data: {
-        id: createToken(12),
-        scheduleId,
-        name: normalizeParticipantName(input.name),
-        available: JSON.stringify(
-          normalizeAvailability(schedule, input.available),
-        ),
-      },
-    });
-  });
+      const updateResult = await tx.schedule.updateMany({
+        where: { id: scheduleId, status: "open" },
+        data: { status: "open" },
+      });
+      if (updateResult.count !== 1) {
+        throw new Error("schedule is not open");
+      }
+
+      return tx.scheduleParticipant.create({
+        data: {
+          id: createToken(12),
+          scheduleId,
+          name: normalizeParticipantName(input.name),
+          available: JSON.stringify(
+            normalizeAvailability(schedule, input.available),
+          ),
+        },
+      });
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
+  );
 
   return toScheduleParticipant(participant);
 }
@@ -144,33 +157,41 @@ export async function confirmSchedule(
   hostToken: string,
   confirmedSlot: TimeSlot,
 ): Promise<HostSchedule> {
-  const updated = await prisma.$transaction(async (tx) => {
-    const schedule = await tx.schedule.findUnique({
-      where: { id },
-      include: { participants: true },
-    });
-    if (!schedule) throw new Error("schedule not found");
-    if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
-      throw new Error("invalid host token");
-    }
-    if (schedule.status !== "open") {
-      throw new Error("schedule is not open");
-    }
+  const updated = await prisma.$transaction(
+    async (tx) => {
+      const schedule = await tx.schedule.findUnique({
+        where: { id },
+        include: { participants: true },
+      });
+      if (!schedule) throw new Error("schedule not found");
+      if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
+        throw new Error("invalid host token");
+      }
+      if (schedule.status !== "open") {
+        throw new Error("schedule is not open");
+      }
 
-    const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
-    await tx.schedule.update({
-      where: { id },
-      data: {
-        status: "confirmed",
-        confirmedSlot: JSON.stringify(normalizedSlot),
-      },
-    });
+      const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
+      const updateResult = await tx.schedule.updateMany({
+        where: { id, status: "open" },
+        data: {
+          status: "confirmed",
+          confirmedSlot: JSON.stringify(normalizedSlot),
+        },
+      });
+      if (updateResult.count !== 1) {
+        throw new Error("schedule is not open");
+      }
 
-    return tx.schedule.findUnique({
-      where: { id },
-      include: { participants: true },
-    });
-  });
+      return tx.schedule.findUnique({
+        where: { id },
+        include: { participants: true },
+      });
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
+  );
 
   if (!updated) throw new Error("schedule not found");
   return toHostSchedule(updated);
@@ -212,6 +233,12 @@ function normalizeScheduleInput(
   }
 
   validateHourRange(input.candidateStartHour, input.candidateEndHour);
+
+  const candidateWindowMinutes =
+    (input.candidateEndHour - input.candidateStartHour) * 60;
+  if (candidateWindowMinutes < input.durationMinutes) {
+    throw new Error("durationMinutes must not exceed the candidate time range");
+  }
 
   return {
     title,
