@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import * as path from "path";
 
-test("user can connect various calendars on the calendar connect page", async ({
+test("user can connect and disconnect various calendars on the calendar connect page", async ({
   page,
 }) => {
   // 컴파일 및 핫 리로드 속도를 고려하여 타임아웃 연장
@@ -10,7 +10,23 @@ test("user can connect various calendars on the calendar connect page", async ({
   const testEmail = `cal_test_${Date.now()}@example.com`;
   const testPhone = `010-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  // 1. 회원가입 진행
+  // 1. 초기 상태 Mocking 설정 (미연동 상태)
+  let calendarStatusMock = {
+    googleConnected: false,
+    googleEmail: "",
+    icloudConnected: false,
+    icloudAppleId: "",
+  };
+
+  await page.route("**/api/calendar/status", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(calendarStatusMock),
+    });
+  });
+
+  // 2. 회원가입 진행
   await page.goto("/signup");
   await page.waitForTimeout(2000);
 
@@ -43,7 +59,7 @@ test("user can connect various calendars on the calendar connect page", async ({
   await page.waitForTimeout(2000);
   await page.goto("about:blank");
 
-  // 2. 로그인 진행
+  // 3. 로그인 진행
   await page.goto("/login");
   await page.waitForTimeout(2000);
 
@@ -57,16 +73,26 @@ test("user can connect various calendars on the calendar connect page", async ({
   await page.getByRole("button", { name: "로그인" }).click();
   await page.waitForURL("**/schedule/create", { timeout: 60000 });
 
-  // 3. 캘린더 연동 페이지 이동
+  // 4. 캘린더 연동 페이지 이동
   await page.goto("/calendar/connect");
   await page.waitForTimeout(2000);
 
-  // 4. Google 캘린더 연동 링크 검증
+  // 5. 보안 선언 문구가 노출되는지 검증
+  await expect(page.getByText("MOIM 개인정보 보호 선언")).toBeVisible();
+
+  // 6. Google 캘린더 연동 링크 검증
   const googleLink = page.locator('a[href="/api/google/auth"]');
   await expect(googleLink).toBeVisible();
 
-  // 5. iCloud 캘린더 연동 검증 (Mocking)
+  // 7. iCloud 캘린더 연동 검증 (Mocking 및 상태 업데이트)
   await page.route("**/api/icloud/connect", async (route) => {
+    // 성공 시 상태 동적 변경
+    calendarStatusMock = {
+      googleConnected: false,
+      googleEmail: "",
+      icloudConnected: true,
+      icloudAppleId: "testuser@icloud.com",
+    };
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -85,13 +111,45 @@ test("user can connect various calendars on the calendar connect page", async ({
   await appPasswordInput.fill("abcd-efgh-ijkl-mnop");
   await page.getByRole("button", { name: "확인" }).click();
 
+  // 성공 메시지 노출 확인
   await expect(
     page.getByText("iCloud 캘린더 연결을 확인했습니다."),
   ).toBeVisible({
     timeout: 15000,
   });
 
-  // 6. Everytime URL 연동 검증 (Mocking)
+  // 연동됨 상태와 연동 해제 버튼 검증
+  await expect(page.getByText("testuser@icloud.com (연동됨)")).toBeVisible();
+  const disconnectButton = page.getByRole("button", { name: "연동 해제" });
+  await expect(disconnectButton).toBeVisible();
+
+  // 8. iCloud 캘린더 연동 해제 검증 (Disconnect Mocking)
+  await page.route("**/api/icloud/disconnect", async (route) => {
+    // 해제 시 상태 원래대로 복구
+    calendarStatusMock = {
+      googleConnected: false,
+      googleEmail: "",
+      icloudConnected: false,
+      icloudAppleId: "",
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true }),
+    });
+  });
+
+  await disconnectButton.click();
+  await expect(
+    page.getByText(
+      "iCloud 캘린더 연동이 해제되고 모든 데이터가 안전하게 파기되었습니다.",
+    ),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 연동 해제 후 인풋 창 재노출 검증
+  await expect(appleIdInput).toBeVisible();
+
+  // 9. Everytime URL 연동 검증 (Mocking)
   await page.route("**/api/everytime/timetable", async (route) => {
     await route.fulfill({
       status: 200,
@@ -121,8 +179,7 @@ test("user can connect various calendars on the calendar connect page", async ({
   await expect(page.getByText("MON 10:00-12:00")).toBeVisible();
   await expect(page.getByText("WED 14:00-16:00")).toBeVisible();
 
-  // 7. .ics 파일 업로드 연동 검증 (Mocking)
-  // 새 route를 덮어씌워 ics에 맞는 응답 제공
+  // 10. .ics 파일 업로드 연동 검증 (Mocking)
   await page.route("**/api/everytime/timetable", async (route) => {
     await route.fulfill({
       status: 200,

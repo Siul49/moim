@@ -81,9 +81,11 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
 
+    const isProd =
+      process.env.NODE_ENV === "production" && process.env.E2E_TEST !== "true";
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProd,
       sameSite: "lax",
       path: "/",
       maxAge: remember ? 60 * 60 * 24 * 30 : COOKIE_MAX_AGE,
