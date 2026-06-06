@@ -1,7 +1,7 @@
 /**
  * Provider-agnostic 캘린더 이벤트 타입
  *
- * iCloud(`ParsedEvent`), Google(`GoogleEvent`), 수동 입력, AI 사진 추출 등
+ * iCloud(`ParsedEvent`), Google(`GoogleEvent`), Naver, 수동 입력, AI 사진 추출 등
  * 모든 입력 경로의 출력이 이 타입으로 통일된다. 가용시간 산출 로직(`free-slots`,
  * `availability`)은 provider 구분 없이 이 타입만 다룬다.
  */
@@ -10,6 +10,7 @@
 export type CalendarEventSource =
   | "icloud"
   | "google"
+  | "naver"
   | "manual"
   | "photo"
   | "ics";
