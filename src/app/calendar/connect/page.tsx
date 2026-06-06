@@ -191,12 +191,12 @@ export default function CalendarConnectPage() {
   }
 
   return (
-    <MoimShell className="bg-white">
+    <MoimShell className="bg-[#fcfaff]">
       <MoimTopBar activeHref="/calendar/connect" help />
 
       <section className="mx-auto max-w-[920px] px-6 pb-24 pt-14">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-normal text-[#222026] sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-normal text-[#222026] sm:text-5xl bg-clip-text text-transparent bg-gradient-to-br from-[#222026] to-[#5f5865]">
             캘린더 연동
           </h1>
           <p className="mt-5 text-lg font-medium leading-8 text-[#6f6a73]">
@@ -204,20 +204,22 @@ export default function CalendarConnectPage() {
           </p>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-[#ece7fb] bg-[#fbf9ff] p-5 text-sm font-semibold text-[#6252ac] flex items-start gap-3">
-          <span className="text-lg">🔒</span>
+        <div className="mt-8 rounded-2xl border border-[#ded4f7] bg-gradient-to-br from-[#fcfaff] via-[#f5efff] to-white p-6 text-sm font-semibold text-[#6252ac] flex items-start gap-4 shadow-sm">
+          <span className="text-2xl mt-0.5">🛡️</span>
           <div>
-            <p className="font-bold text-[#4f3d9e]">MOIM 개인정보 보호 선언</p>
-            <p className="mt-1 text-xs text-[#7c749b] font-medium leading-5">
-              우리는 일정의 세부 내용(제목, 장소, 참석자 등)을 서버에 저장하지
-              않으며, 오직 시간 교집합 판단에 필요한 빈 시간 정보만 분석합니다.
-              연동 정보는 언제든지 아래에서 흔적 없이 안전하게 영구 파기하실 수
-              있습니다.
+            <p className="font-extrabold text-[#6252ac] text-sm sm:text-base">
+              MOIM 개인정보 보호 선언
+            </p>
+            <p className="mt-1 text-xs text-[#7c749b] font-semibold leading-relaxed">
+              우리는 일정의 세부 내용(제목, 장소, 참석자 등)을 서버에 절대
+              저장하지 않으며, 오직 시간 교집합 판단에 필요한 빈 시간 정보만
+              분석합니다. 연동 정보는 언제든지 아래에서 흔적 없이 안전하게 영구
+              파기하실 수 있습니다.
             </p>
           </div>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-[2rem] border border-[#eee8f4] bg-white shadow-[0_20px_60px_rgba(95,82,130,0.12)]">
+        <div className="mt-8 overflow-hidden rounded-[2rem] border border-[#eee8f4] bg-white shadow-premium hover:shadow-premium-lg transition-all duration-300">
           <IntegrationRow
             glyph={<ProviderGlyph type="google" />}
             title="Google 캘린더"
@@ -231,7 +233,7 @@ export default function CalendarConnectPage() {
                   <PurpleButton
                     type="button"
                     onClick={disconnectGoogle}
-                    className="h-11 px-5 text-sm bg-[#e11d48] hover:bg-[#be123c]"
+                    className="h-11 px-5 text-sm bg-[#e11d48] hover:bg-[#be123c] shadow-none"
                     disabled={isLoading === "google-disconnect"}
                   >
                     {isLoading === "google-disconnect"
@@ -242,7 +244,7 @@ export default function CalendarConnectPage() {
               ) : (
                 <a
                   href="/api/google/auth"
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-[#8f7bd6] px-5 text-sm font-bold text-white hover:bg-[#7d68c9]"
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-[#8f7bd6] px-5 text-sm font-bold text-white hover:bg-[#7d68c9] transition-all hover:scale-[1.02] shadow-sm"
                 >
                   연동하기
                 </a>
@@ -263,7 +265,7 @@ export default function CalendarConnectPage() {
                   <PurpleButton
                     type="button"
                     onClick={disconnectIcloud}
-                    className="h-11 px-5 text-sm bg-[#e11d48] hover:bg-[#be123c]"
+                    className="h-11 px-5 text-sm bg-[#e11d48] hover:bg-[#be123c] shadow-none"
                     disabled={isLoading === "icloud-disconnect"}
                   >
                     {isLoading === "icloud-disconnect"
@@ -281,7 +283,7 @@ export default function CalendarConnectPage() {
                       value={icloudAppleId}
                       onChange={(event) => setIcloudAppleId(event.target.value)}
                       placeholder="user@icloud.com"
-                      className="h-11 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                      className="h-11 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
                       type="email"
                       required
                     />
@@ -291,19 +293,19 @@ export default function CalendarConnectPage() {
                         setIcloudPassword(event.target.value)
                       }
                       placeholder="앱 전용 암호"
-                      className="h-11 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                      className="h-11 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
                       type="password"
                       required
                     />
                     <PurpleButton
                       type="submit"
-                      className="h-11 px-5 text-sm"
+                      className="h-11 px-5 text-sm shadow-sm"
                       disabled={isLoading === "icloud"}
                     >
                       {isLoading === "icloud" ? "확인 중" : "확인"}
                     </PurpleButton>
                   </form>
-                  <p className="text-[11px] text-[#77727c] font-medium leading-4 bg-[#fbf7ff] p-2.5 rounded-xl border border-[#eee8f4]">
+                  <p className="text-[11px] text-[#77727c] font-semibold leading-relaxed bg-[#fbf7ff] p-2.5 rounded-xl border border-[#eee8f4]">
                     ℹ️ <b>iCloud 연동 안전 가이드:</b> Apple 계정 마스터 암호가
                     아닌, Apple ID 관리 페이지에서 발급받은{" "}
                     <b>앱 전용 암호(xxxx-xxxx-xxxx-xxxx)</b>를 입력하여 보안을
@@ -328,12 +330,12 @@ export default function CalendarConnectPage() {
                   value={everytimeUrl}
                   onChange={(event) => setEverytimeUrl(event.target.value)}
                   placeholder="https://everytime.kr/@..."
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-[#e5dfeb] px-3 text-sm outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
                   required
                 />
                 <PurpleButton
                   type="submit"
-                  className="h-11 px-5 text-sm"
+                  className="h-11 px-5 text-sm shadow-sm"
                   disabled={isLoading === "everytime-url"}
                 >
                   가져오기
@@ -347,7 +349,7 @@ export default function CalendarConnectPage() {
             title=".ics 파일 업로드"
             description="기타 캘린더 파일을 직접 올려서 확인합니다."
             action={
-              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#e5dfeb] bg-white px-5 text-sm font-bold text-[#6252ac] hover:bg-[#fbf7ff]">
+              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#e5dfeb] bg-white px-5 text-sm font-bold text-[#6252ac] hover:bg-[#fbf7ff] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm">
                 <Upload className="h-4 w-4" />
                 파일 선택
                 <input

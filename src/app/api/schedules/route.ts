@@ -23,13 +23,15 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
 
+    const isProd =
+      process.env.NODE_ENV === "production" && process.env.E2E_TEST !== "true";
     response.cookies.set(
       getHostTokenCookieName(created.id),
       created.hostToken,
       {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProd,
+        sameSite: isProd ? "lax" : undefined,
         path: "/",
         maxAge: HOST_TOKEN_MAX_AGE,
       },

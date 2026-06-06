@@ -142,6 +142,14 @@ export async function GET(req: NextRequest) {
       maxAge: COOKIE_MAX_AGE,
     });
 
+    res.cookies.set("last_login_provider", "kakao", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1년
+    });
+
     // 사용한 state 쿠키 삭제
     res.cookies.delete(STATE_COOKIE);
 

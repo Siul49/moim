@@ -26,6 +26,14 @@
     --input: 0 0% 90%;
     --ring: 0 0% 55%;
     --radius: 0.625rem;
+    --brand-purple: 251 36% 50%;
+    --brand-purple-light: 253 53% 66%;
+    --brand-purple-bg: 270 100% 99%;
+    --brand-purple-hover: 253 53% 60%;
+    --brand-purple-accent: 253 53% 66%;
+    --brand-purple-ring: 253 53% 95%;
+    --brand-border-gray: 255 10% 88%;
+    --brand-bg-light: 270 100% 99%;
   }
 
   .dark {
@@ -56,6 +64,72 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground tracking-tight antialiased;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    text-wrap: balance;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6, p, span, label, input, select, button {
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+  }
+}
+
+/* 커스텀 보라색 스크롤바 스타일 */
+.scroller-style::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scroller-style::-webkit-scrollbar-track {
+  background: #fbf7ff;
+  border-radius: 10px;
+}
+.scroller-style::-webkit-scrollbar-thumb {
+  background: #dcd4f5;
+  border-radius: 10px;
+}
+.scroller-style::-webkit-scrollbar-thumb:hover {
+  background: #8f7bd6;
+}
+
+@layer components {
+  .moim-input {
+    @apply h-12 w-full rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-accent focus:ring-2 focus:ring-brand-purple-ring transition-all duration-150;
+  }
+  .moim-select {
+    @apply h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-accent focus:ring-2 focus:ring-brand-purple-ring transition-all duration-150;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .shadow-premium {
+    box-shadow: 0 10px 30px -10px rgba(95, 82, 130, 0.12), 0 1px 3px rgba(95, 82, 130, 0.05);
+  }
+  .shadow-premium-lg {
+    box-shadow: 0 20px 50px -12px rgba(95, 82, 130, 0.16), 0 2px 8px rgba(95, 82, 130, 0.06);
+  }
+  .shadow-glow {
+    box-shadow: 0 0 20px 0px rgba(143, 123, 214, 0.15);
+  }
+  .glow-pulse {
+    animation: glowPulse 2s infinite ease-in-out;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px 0px rgba(143, 123, 214, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px 5px rgba(143, 123, 214, 0.3);
   }
 }

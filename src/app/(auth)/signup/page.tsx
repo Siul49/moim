@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
+import { cn } from "@/lib/utils";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -69,8 +70,9 @@ export default function SignupPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
+    if (event) event.preventDefault();
+    if (isSubmitting) return;
     setMessage("");
     setIsSubmitting(true);
 
@@ -148,8 +150,9 @@ export default function SignupPage() {
 
             <div className="my-8 h-px bg-[#dedbe3]" />
 
-            <form onSubmit={handleSubmit} className="grid gap-6">
+            <form onSubmit={(e) => e.preventDefault()} className="grid gap-4">
               <TextField
+                id="email"
                 label="이메일"
                 value={form.email}
                 onChange={(value) => updateField("email", value)}
@@ -159,6 +162,7 @@ export default function SignupPage() {
                 autoComplete="email"
               />
               <TextField
+                id="phoneNumber"
                 label="전화번호"
                 value={form.phoneNumber}
                 onChange={(value) => updateField("phoneNumber", value)}
@@ -171,6 +175,7 @@ export default function SignupPage() {
                 autoComplete="tel"
               />
               <TextField
+                id="nickname"
                 label="닉네임"
                 value={form.nickname}
                 onChange={(value) => updateField("nickname", value)}
@@ -181,6 +186,7 @@ export default function SignupPage() {
                 autoComplete="nickname"
               />
               <PasswordField
+                id="password"
                 label="비밀번호"
                 value={form.password}
                 onChange={(value) => updateField("password", value)}
@@ -192,6 +198,7 @@ export default function SignupPage() {
                 }
               />
               <PasswordField
+                id="passwordConfirm"
                 label="비밀번호 확인"
                 value={form.passwordConfirm}
                 onChange={(value) => updateField("passwordConfirm", value)}
@@ -260,9 +267,11 @@ export default function SignupPage() {
               ) : null}
 
               <button
-                type="submit"
-                className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isSubmitting}
+                type="button"
+                onClick={() => handleSubmit()}
+                className={`inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] ${
+                  isSubmitting ? "cursor-not-allowed opacity-70" : ""
+                }`}
               >
                 {isSubmitting ? "가입 중" : "회원가입"}
               </button>
@@ -340,6 +349,7 @@ function SocialButton({
 }
 
 function TextField({
+  id,
   label,
   value,
   onChange,
@@ -348,6 +358,7 @@ function TextField({
   onBlur,
   error,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -357,18 +368,19 @@ function TextField({
   error?: string;
 }) {
   return (
-    <label className="grid gap-2 text-lg font-bold">
+    <label htmlFor={id} className="grid gap-1.5 text-base font-bold">
       {label}
       <input
+        id={id}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
-        className={`h-14 rounded-lg border px-4 text-lg font-normal outline-none focus:ring-2 ${
-          error
-            ? "border-destructive focus:border-destructive focus:ring-red-100"
-            : "border-[#dedbe3] focus:border-[#8f7bd6] focus:ring-[#ece7fb]"
-        }`}
+        className={cn(
+          "moim-input",
+          error &&
+            "border-destructive focus:border-destructive focus:ring-red-100",
+        )}
         autoComplete={autoComplete}
         required
       />
@@ -380,6 +392,7 @@ function TextField({
 }
 
 function PasswordField({
+  id,
   label,
   value,
   onChange,
@@ -388,6 +401,7 @@ function PasswordField({
   onBlur,
   error,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -397,26 +411,27 @@ function PasswordField({
   error?: string;
 }) {
   return (
-    <label className="grid gap-2 text-lg font-bold">
+    <label htmlFor={id} className="grid gap-1.5 text-base font-bold">
       {label}
       <span className="relative">
         <input
+          id={id}
           type={showPassword ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur}
-          className={`h-14 w-full rounded-lg border px-4 pr-12 text-lg font-normal outline-none focus:ring-2 ${
-            error
-              ? "border-destructive focus:border-destructive focus:ring-red-100"
-              : "border-[#dedbe3] focus:border-[#8f7bd6] focus:ring-[#ece7fb]"
-          }`}
+          className={cn(
+            "moim-input pr-12",
+            error &&
+              "border-destructive focus:border-destructive focus:ring-red-100",
+          )}
           autoComplete="new-password"
           required
         />
         <button
           type="button"
           onClick={onToggleShow}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa5ad] hover:text-brand-purple-accent focus:outline-none"
         >
           {showPassword ? (
             <Eye className="h-5 w-5" />

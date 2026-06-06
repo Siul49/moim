@@ -18,25 +18,49 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const hostToken =
-    request.nextUrl.searchParams.get("hostToken") ??
-    request.cookies.get(getHostTokenCookieName(id))?.value;
+  const queryHostToken = request.nextUrl.searchParams.get("hostToken");
+  const cookieHostToken = request.cookies.get(
+    getHostTokenCookieName(id),
+  )?.value;
+  const hostToken = queryHostToken ?? cookieHostToken;
 
   if (hostToken) {
     const hostSchedule = await getScheduleForHost(id, hostToken);
-    if (!hostSchedule) {
+    if (hostSchedule) {
+      const response = NextResponse.json({ schedule: hostSchedule });
+      const isProd =
+        process.env.NODE_ENV === "production" &&
+        process.env.E2E_TEST !== "true";
+      response.cookies.set(getHostTokenCookieName(id), hostToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "lax" : undefined,
+        path: "/",
+        maxAge: HOST_TOKEN_MAX_AGE,
+      });
+      return response;
+    }
+
+    // 쿼리 매개변수로 명시적인 잘못된 토큰을 넘긴 경우는 403 에러 반환
+    if (queryHostToken) {
       return NextResponse.json(
         { error: "invalid host token" },
         { status: 403 },
       );
     }
-    const response = NextResponse.json({ schedule: hostSchedule });
-    response.cookies.set(getHostTokenCookieName(id), hostToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+
+    // 쿠키에 담긴 토큰만 잘못된 경우: 쿠키를 자동 소멸시키고 퍼블릭 모임 정보로 이동
+    const schedule = await getSchedulePublic(id);
+    if (!schedule) {
+      return NextResponse.json(
+        { error: "schedule not found" },
+        { status: 404 },
+      );
+    }
+    const response = NextResponse.json({ schedule });
+    response.cookies.set(getHostTokenCookieName(id), "", {
       path: "/",
-      maxAge: HOST_TOKEN_MAX_AGE,
+      maxAge: 0,
     });
     return response;
   }

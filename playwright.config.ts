@@ -40,9 +40,9 @@ export default defineConfig({
     },
   ],
 
-  // Next.js 개발 서버를 자동으로 띄워서 테스트
+  // Next.js 프로덕션 서버를 자동으로 띄워서 테스트
   webServer: {
-    command: `npm run dev -- --port ${e2ePort}`,
+    command: `npm run start -- --port ${e2ePort}`,
     url: baseURL,
     env: {
       PATH: process.env.PATH,
@@ -61,6 +61,7 @@ export default defineConfig({
         "https://example-project.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY:
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "test-anon-key",
+      E2E_TEST: "true",
     },
     reuseExistingServer: !process.env.CI,
   },

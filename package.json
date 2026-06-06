@@ -14,7 +14,7 @@
     "test:watch": "node scripts/with-database-url.mjs vitest",
     "pretest:coverage": "npm run db:migrate",
     "test:coverage": "node scripts/with-database-url.mjs vitest run --coverage",
-    "pretest:e2e": "npm run db:migrate",
+    "pretest:e2e": "node scripts/ensure-sqlite-schema.mjs && node scripts/with-database-url.mjs next build",
     "test:e2e": "node scripts/with-database-url.mjs playwright test",
     "prepare": "husky",
     "postinstall": "prisma generate"

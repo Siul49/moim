@@ -42,7 +42,7 @@ function uniqueTargetIncludes(
 }
 
 export async function GET(req: NextRequest) {
-  const origin = new URL(req.url).origin;
+  const origin = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
   const { searchParams } = req.nextUrl;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
@@ -182,6 +182,14 @@ export async function GET(req: NextRequest) {
       sameSite: "lax",
       path: "/",
       maxAge: COOKIE_MAX_AGE,
+    });
+
+    res.cookies.set("last_login_provider", "naver", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1년
     });
     res.cookies.delete(STATE_COOKIE);
 

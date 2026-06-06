@@ -91,6 +91,14 @@ export async function POST(req: NextRequest) {
       maxAge: remember ? 60 * 60 * 24 * 30 : COOKIE_MAX_AGE,
     });
 
+    res.cookies.set("last_login_provider", "local", {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1년
+    });
+
     return res;
   } catch (err) {
     console.error("[auth.login] 서버 오류:", err);
