@@ -38,10 +38,14 @@ export interface NaverEvent {
 }
 
 /** 네이버 캘린더 일정 생성 API 응답 */
-export interface NaverCreateScheduleResponse {
-  result: "success" | "failure";
-  code: number;
-  message?: string;
-  returnValue?: NaverEvent;
-}
-
+export type NaverCreateScheduleResponse =
+  | {
+      result: "success";
+      code: number;
+      returnValue: NaverEvent;
+    }
+  | {
+      result: "failure";
+      code: number;
+      message: string;
+    };

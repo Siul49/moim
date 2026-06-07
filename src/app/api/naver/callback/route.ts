@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const identifier = profile.email ?? profile.nickname ?? profile.id;
 
     return NextResponse.redirect(
-      `${baseUrl}/api/naver/calendars?connected=true&user=${encodeURIComponent(identifier)}`,
+      `${baseUrl}/schedule/create?connected=naver&user=${encodeURIComponent(identifier)}`,
     );
   } catch (err) {
     console.error("[naver.callback] 오류:", err);
@@ -60,4 +60,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

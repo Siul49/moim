@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getValidTokens } from "@/lib/naver/auth";
 import { createEvent } from "@/lib/naver/events";
+import { NaverAuthError, NaverPermissionError } from "@/lib/naver/errors";
 
 export const dynamic = "force-dynamic";
 
 const CreateEventSchema = z.object({
-  calendarId: z.string().min(1, "calendarId는 필수입니다.").optional(),
+  calendarId: z
+    .string()
+    .min(1, "calendarId는 빈 문자열일 수 없습니다.")
+    .optional(),
   summary: z
     .string()
     .min(1, "제목은 1자 이상이어야 합니다.")
@@ -68,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[naver.events.create] 오류:", err);
 
-    if (err instanceof Error && err.message.includes("인증 실패")) {
+    if (err instanceof NaverAuthError) {
       return NextResponse.json(
         {
           error:
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (err instanceof Error && err.message.includes("권한")) {
+    if (err instanceof NaverPermissionError) {
       return NextResponse.json(
         { error: "Naver Calendar API 권한이 없습니다." },
         { status: 403 },

@@ -55,6 +55,12 @@ describe("buildAuthUrl", () => {
       "redirect_uri=https%3A%2F%2Fexample.com%2Fnaver%2Fcallback",
     );
   });
+
+  test("state 파라미터에 특수문자가 있어도 올바르게 인코딩한다", () => {
+    const url = buildAuthUrl("state with spaces & special=chars");
+
+    expect(url).toContain("state=state+with+spaces+%26+special%3Dchars");
+  });
 });
 
 describe("oauth state cookie", () => {
@@ -79,6 +85,18 @@ describe("oauth state cookie", () => {
     mockCookieStore.get.mockReturnValueOnce({ value: "abc" });
 
     await expect(validateAndClearOAuthState("wrong")).resolves.toBe(false);
+  });
+
+  test("receivedState가 null이면 false를 반환한다", async () => {
+    mockCookieStore.get.mockReturnValueOnce({ value: "abc" });
+
+    await expect(validateAndClearOAuthState(null)).resolves.toBe(false);
+  });
+
+  test("쿠키에 state가 없으면 false를 반환한다", async () => {
+    mockCookieStore.get.mockReturnValueOnce(undefined);
+
+    await expect(validateAndClearOAuthState("abc")).resolves.toBe(false);
   });
 });
 
@@ -193,5 +211,22 @@ describe("getUserProfile", () => {
 
     await expect(getUserProfile("token")).rejects.toThrow("사용자 ID");
   });
-});
 
+  test("401 응답 시 에러를 던진다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: () => Promise.resolve("Unauthorized"),
+    });
+
+    await expect(getUserProfile("invalid-token")).rejects.toThrow(
+      "사용자 정보 조회 실패",
+    );
+  });
+
+  test("네트워크 에러 시 에러를 던진다", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+    await expect(getUserProfile("token")).rejects.toThrow("Network error");
+  });
+});

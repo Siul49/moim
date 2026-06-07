@@ -4,6 +4,7 @@ import type {
   NaverEvent,
   NaverEventInput,
 } from "@/types/naver-calendar";
+import { NaverAuthError, NaverPermissionError } from "./errors";
 
 const NAVER_CALENDAR_CREATE_URL =
   "https://openapi.naver.com/calendar/createSchedule.json";
@@ -48,7 +49,22 @@ function toNaverLocalDateTime(value: string, timeZone: string): string {
     second: "2-digit",
   }).formatToParts(date);
 
-  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const byType = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  const required = [
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "second",
+  ] as const;
+  for (const key of required) {
+    if (!byType[key]) {
+      throw new Error(`날짜 포맷에서 ${key} 필드가 누락되었습니다.`);
+    }
+  }
   return `${byType.year}${byType.month}${byType.day}T${byType.hour}${byType.minute}${byType.second}`;
 }
 
@@ -59,6 +75,10 @@ function toIcsUtc(date = new Date()): string {
 /** Naver createSchedule API에 전달할 iCalendar 문자열을 만든다. */
 export function buildNaverScheduleIcal(input: NaverEventInput): string {
   const timeZone = input.timeZone ?? DEFAULT_TIME_ZONE;
+  // VTIMEZONE의 오프셋(+0900)이 Asia/Seoul 고정이므로 다른 타임존은 시간이 잘못 해석된다.
+  if (timeZone !== DEFAULT_TIME_ZONE) {
+    throw new Error(`현재 ${DEFAULT_TIME_ZONE} 타임존만 지원합니다.`);
+  }
   const uid = input.uid ?? `${randomUUID()}@moim.app`;
   const now = toIcsUtc();
 
@@ -128,12 +148,12 @@ export async function createEvent(
   if (!response.ok) {
     const error = await response.text();
     if (response.status === 401) {
-      throw new Error(
+      throw new NaverAuthError(
         `Naver Calendar API 인증 실패 (${response.status}): ${error}`,
       );
     }
     if (response.status === 403) {
-      throw new Error(
+      throw new NaverPermissionError(
         `Naver Calendar API 권한이 없습니다 (${response.status}): ${error}`,
       );
     }
@@ -141,8 +161,14 @@ export async function createEvent(
   }
 
   const data = (await response.json()) as NaverCreateScheduleResponse;
-  if (data.result !== "success" || !data.returnValue) {
-    throw new Error(data.message ?? "Naver 일정 생성 결과가 올바르지 않습니다.");
+  if (data.result !== "success") {
+    throw new Error(
+      data.message ?? "Naver 일정 생성 결과가 올바르지 않습니다.",
+    );
+  }
+  // discriminated union상 success면 returnValue가 보장되지만, API가 누락할 가능성에 대비한다.
+  if (!data.returnValue) {
+    throw new Error("Naver 일정 생성 결과가 올바르지 않습니다.");
   }
 
   return data.returnValue;

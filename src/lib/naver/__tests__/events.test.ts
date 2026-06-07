@@ -55,6 +55,48 @@ describe("buildNaverScheduleIcal", () => {
     expect(ical).toContain("DTSTART;TZID=Asia/Seoul:20260606T100000");
     expect(ical).toContain("DTEND;TZID=Asia/Seoul:20260606T113000");
   });
+
+  test("uid 미지정 시 랜덤 UUID를 생성한다", () => {
+    const ical = buildNaverScheduleIcal({
+      summary: "테스트",
+      startDateTime: "2026-06-06T10:00:00+09:00",
+      endDateTime: "2026-06-06T11:00:00+09:00",
+    });
+
+    expect(ical).toMatch(/UID:[a-f0-9-]+@moim\.app/);
+  });
+
+  test("선택 필드 누락 시 해당 라인이 포함되지 않는다", () => {
+    const ical = buildNaverScheduleIcal({
+      summary: "테스트",
+      startDateTime: "2026-06-06T10:00:00+09:00",
+      endDateTime: "2026-06-06T11:00:00+09:00",
+    });
+
+    expect(ical).not.toContain("LOCATION:");
+    expect(ical).not.toContain("DESCRIPTION:");
+  });
+
+  test("잘못된 날짜 형식 시 에러를 던진다", () => {
+    expect(() =>
+      buildNaverScheduleIcal({
+        summary: "테스트",
+        startDateTime: "invalid-date",
+        endDateTime: "2026-06-06T11:00:00+09:00",
+      }),
+    ).toThrow("날짜 형식");
+  });
+
+  test("Asia/Seoul 외 타임존은 에러를 던진다", () => {
+    expect(() =>
+      buildNaverScheduleIcal({
+        summary: "테스트",
+        startDateTime: "2026-06-06T10:00:00+09:00",
+        endDateTime: "2026-06-06T11:00:00+09:00",
+        timeZone: "America/New_York",
+      }),
+    ).toThrow("타임존");
+  });
 });
 
 describe("createEvent", () => {
@@ -87,9 +129,7 @@ describe("createEvent", () => {
     });
 
     const [url, options] = mockFetch.mock.calls[0];
-    expect(url).toBe(
-      "https://openapi.naver.com/calendar/createSchedule.json",
-    );
+    expect(url).toBe("https://openapi.naver.com/calendar/createSchedule.json");
     expect(options.method).toBe("POST");
     expect(options.headers.Authorization).toBe("Bearer access-token");
     expect(options.headers["Content-Type"]).toBe(
@@ -148,6 +188,22 @@ describe("createEvent", () => {
     ).rejects.toThrow("인증 실패");
   });
 
+  test("403 응답 시 권한 에러를 던진다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve("Forbidden"),
+    });
+
+    await expect(
+      createEvent("token", {
+        summary: "실패",
+        startDateTime: "2026-06-06T10:00:00+09:00",
+        endDateTime: "2026-06-06T11:00:00+09:00",
+      }),
+    ).rejects.toThrow("권한");
+  });
+
   test("실패 결과를 받으면 에러를 던진다", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -166,5 +222,25 @@ describe("createEvent", () => {
         endDateTime: "2026-06-06T11:00:00+09:00",
       }),
     ).rejects.toThrow("invalid schedule");
+  });
+
+  test("성공 응답이지만 returnValue가 없으면 에러를 던진다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          result: "success",
+          code: 200,
+          // returnValue 누락
+        }),
+    });
+
+    await expect(
+      createEvent("token", {
+        summary: "테스트",
+        startDateTime: "2026-06-06T10:00:00+09:00",
+        endDateTime: "2026-06-06T11:00:00+09:00",
+      }),
+    ).rejects.toThrow();
   });
 });

@@ -34,6 +34,27 @@ function getRedirectUri(): string {
   return `${base}/api/naver/callback`;
 }
 
+/**
+ * 토큰 응답에서 공통 필드(accessToken/tokenType/expiresAt)를 타입 안전하게 파싱한다.
+ * expires_in이 문자열/누락/0 등으로 들어와도 안전하게 검증한다.
+ */
+function parseTokenResponse(data: {
+  access_token: string;
+  token_type?: string;
+  expires_in: unknown;
+}): { accessToken: string; tokenType: string; expiresAt: number } {
+  const expiresIn = parseInt(String(data.expires_in), 10);
+  if (!expiresIn || expiresIn <= 0) {
+    throw new Error("토큰 응답의 expires_in이 유효하지 않습니다.");
+  }
+
+  return {
+    accessToken: data.access_token,
+    tokenType: data.token_type ?? "bearer",
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+}
+
 /** CSRF 방지를 위한 OAuth state 값을 생성한다. */
 export function createOAuthState(): string {
   return randomBytes(16).toString("hex");
@@ -74,7 +95,9 @@ export async function validateAndClearOAuthState(
   const expectedState = cookieStore.get(STATE_COOKIE_NAME)?.value;
   cookieStore.delete(STATE_COOKIE_NAME);
 
-  return Boolean(receivedState && expectedState && receivedState === expectedState);
+  return Boolean(
+    receivedState && expectedState && receivedState === expectedState,
+  );
 }
 
 /**
@@ -105,19 +128,21 @@ export async function exchangeCodeForTokens(
   const data = await response.json();
 
   return {
-    accessToken: data.access_token,
+    ...parseTokenResponse(data),
     refreshToken: data.refresh_token,
-    tokenType: data.token_type ?? "bearer",
-    expiresAt: Date.now() + Number(data.expires_in) * 1000,
   };
 }
 
 /**
  * refresh_token으로 새 access_token을 발급받는다.
+ * Naver는 갱신 응답에 새 refresh_token을 포함할 수 있으므로 함께 반환한다.
  */
-export async function refreshAccessToken(
-  refreshToken: string,
-): Promise<{ accessToken: string; tokenType: string; expiresAt: number }> {
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  accessToken: string;
+  tokenType: string;
+  expiresAt: number;
+  refreshToken?: string;
+}> {
   const response = await fetch(NAVER_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -137,9 +162,8 @@ export async function refreshAccessToken(
   const data = await response.json();
 
   return {
-    accessToken: data.access_token,
-    tokenType: data.token_type ?? "bearer",
-    expiresAt: Date.now() + Number(data.expires_in) * 1000,
+    ...parseTokenResponse(data),
+    refreshToken: data.refresh_token,
   };
 }
 
@@ -192,7 +216,8 @@ export async function getValidTokens(): Promise<NaverTokens | null> {
   let tokens: NaverTokens;
   try {
     tokens = JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.error("[naver.auth] 토큰 쿠키 파싱 실패 (손상 가능성):", err);
     return null;
   }
 
@@ -204,9 +229,12 @@ export async function getValidTokens(): Promise<NaverTokens | null> {
         accessToken: refreshed.accessToken,
         tokenType: refreshed.tokenType,
         expiresAt: refreshed.expiresAt,
+        // Naver는 갱신 시 새 refresh_token을 줄 수 있다. 있으면 최신 값으로 교체한다.
+        refreshToken: refreshed.refreshToken ?? tokens.refreshToken,
       };
       await saveTokensToCookie(tokens);
-    } catch {
+    } catch (err) {
+      console.error("[naver.auth] 토큰 갱신 실패:", err);
       return null;
     }
   }
@@ -219,4 +247,3 @@ export async function clearTokensCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(TOKEN_COOKIE_NAME);
 }
-
