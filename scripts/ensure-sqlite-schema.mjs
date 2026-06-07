@@ -1,5 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
+const dbUrl = process.env.DATABASE_URL || "";
+if (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://")) {
+  console.log("Using PostgreSQL database. Skipping SQLite schema auto-creation.");
+  process.exit(0);
+}
+
 if (process.env.NODE_ENV !== "production") {
   process.env.DATABASE_URL ||= "file:./dev.db";
 }
