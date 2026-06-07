@@ -16,11 +16,13 @@ export async function GET() {
 
   try {
     const supabase = await createClient();
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, email, nickname, phone_number")
       .eq("id", session.userId)
       .maybeSingle();
+    // DB 오류를 폴백값으로 가리지 않고 500으로 surface한다.
+    if (profileError) throw profileError;
 
     return NextResponse.json({
       success: true,

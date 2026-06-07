@@ -37,11 +37,13 @@ export async function POST(req: NextRequest) {
       email = loginId.trim().toLowerCase();
     } else {
       const admin = createAdminClient();
-      const { data: profile } = await admin
+      const { data: profile, error: profileError } = await admin
         .from("profiles")
         .select("email")
         .eq("nickname", loginId)
         .maybeSingle();
+      // DB/RLS 오류를 401(인증 실패)로 위장하지 않도록 분리해 처리한다.
+      if (profileError) throw profileError;
       email = profile?.email ?? null;
     }
 
@@ -58,7 +60,9 @@ export async function POST(req: NextRequest) {
       password,
     });
 
-    if (error || !data.user) {
+    // 이메일 확인(Confirm email)이 켜져 있으면 미인증 사용자는
+    // data.user가 있어도 data.session이 null이다. 세션까지 확인한다.
+    if (error || !data.user || !data.session) {
       return NextResponse.json(
         { success: false, message: AUTH_FAIL_MESSAGE },
         { status: 401 },

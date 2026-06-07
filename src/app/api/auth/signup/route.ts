@@ -69,12 +69,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    // 중복 가입(이미 등록된 이메일/닉네임/전화) 및 프로필 트리거 unique 위반
-    const status = /already|registered|exists|duplicate|unique/i.test(
-      error.message,
-    )
-      ? 409
-      : 400;
+    // 중복 가입(이미 등록된 이메일/닉네임/전화) 및 프로필 트리거 unique 위반.
+    // Supabase 에러 메시지 문구 변경에 취약하지 않도록 구조화된 status를 우선 사용하고,
+    // 없을 때만 메시지 정규식으로 fallback한다.
+    const status =
+      error.status === 409 ||
+      /already|registered|exists|duplicate|unique/i.test(error.message)
+        ? 409
+        : 400;
     const message =
       status === 409
         ? "이미 사용 중인 정보입니다."
