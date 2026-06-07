@@ -1,11 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["public", "auth"]
 }
 
 model User {
@@ -23,6 +25,8 @@ model User {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   socialAccounts   SocialAccount[]
+
+  @@schema("public")
 }
 
 model SocialAccount {
@@ -35,6 +39,7 @@ model SocialAccount {
   updatedAt      DateTime @updatedAt
 
   @@unique([provider, providerUserId])
+  @@schema("public")
 }
 
 model Schedule {
@@ -50,6 +55,8 @@ model Schedule {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   participants       ScheduleParticipant[]
+
+  @@schema("public")
 }
 
 model ScheduleParticipant {
@@ -61,4 +68,6 @@ model ScheduleParticipant {
   submittedAt DateTime @default(now())
 
   @@index([scheduleId])
+  @@schema("public")
 }
+
