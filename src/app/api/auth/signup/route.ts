@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcryptjs from "bcryptjs";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import {
   signupSchema,
   normalizePhoneNumber,
@@ -47,64 +45,51 @@ export async function POST(req: NextRequest) {
 
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
-  const now = new Date();
+  const now = new Date().toISOString();
 
-  try {
-    const passwordHash = await bcryptjs.hash(password, 12);
+  const supabase = await createClient();
 
-    const user = await prisma.user.create({
+  // Supabase Auth로 사용자 생성.
+  // 확장 필드는 user_metadata로 전달하면 handle_new_user 트리거가
+  // public.profiles에 채운다.
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password,
+    options: {
       data: {
-        email: normalizedEmail,
-        phoneNumber: normalizedPhone,
         nickname,
-        passwordHash,
-        isAgeOver14,
-        termsAgreedAt: termsAgreed ? now : new Date(0),
-        privacyAgreedAt: privacyAgreed ? now : new Date(0),
-        marketingAgreed,
-        eventSmsAgreed,
+        phone_number: normalizedPhone,
+        is_age_over_14: isAgeOver14,
+        terms_agreed_at: termsAgreed ? now : null,
+        privacy_agreed_at: privacyAgreed ? now : null,
+        marketing_agreed: marketingAgreed,
+        event_sms_agreed: eventSmsAgreed,
       },
-      select: {
-        id: true,
-        email: true,
-        phoneNumber: true,
-        nickname: true,
-      },
-    });
+    },
+  });
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "회원가입이 완료되었습니다.",
-        user,
-      },
-      { status: 201 },
-    );
-  } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2002"
-    ) {
-      const field = (err.meta?.target as string[] | undefined)?.[0];
-      const messages: Record<string, string> = {
-        email: "이미 사용 중인 이메일입니다.",
-        phoneNumber: "이미 사용 중인 전화번호입니다.",
-        nickname: "이미 사용 중인 닉네임입니다.",
-      };
-      return NextResponse.json(
-        {
-          success: false,
-          message: messages[field ?? ""] ?? "이미 사용 중인 정보입니다.",
-          field: field ?? null,
-        },
-        { status: 409 },
-      );
-    }
-
-    console.error("[auth.signup] 서버 오류:", err);
-    return NextResponse.json(
-      { success: false, message: "서버 오류가 발생했습니다." },
-      { status: 500 },
-    );
+  if (error) {
+    // 중복 가입(이미 등록된 이메일/닉네임/전화) 및 프로필 트리거 unique 위반
+    const status = /already|registered|exists|duplicate|unique/i.test(
+      error.message,
+    )
+      ? 409
+      : 400;
+    const message =
+      status === 409
+        ? "이미 사용 중인 정보입니다."
+        : "회원가입에 실패했습니다. 입력 정보를 확인해주세요.";
+    return NextResponse.json({ success: false, message }, { status });
   }
+
+  const user = data.user;
+
+  return NextResponse.json(
+    {
+      success: true,
+      message: "회원가입이 완료되었습니다.",
+      user: user ? { id: user.id, email: user.email, nickname } : null,
+    },
+    { status: 201 },
+  );
 }

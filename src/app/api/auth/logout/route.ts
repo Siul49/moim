@@ -1,21 +1,14 @@
 import { NextResponse } from "next/server";
-import { COOKIE_NAME } from "@/lib/auth/jwt";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const res = NextResponse.json(
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+
+  return NextResponse.json(
     { success: true, message: "로그아웃되었습니다." },
     { status: 200 },
   );
-
-  res.cookies.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  return res;
 }
