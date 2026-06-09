@@ -36,17 +36,17 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-16 text-[#222026]">
+    <main className="min-h-screen bg-white px-6 py-16 text-brand-text-primary">
       <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-[420px] flex-col justify-center">
         <div className="mb-12 text-center">
           <Link
             href="/"
-            className="text-6xl font-extrabold tracking-normal text-[#6252ac]"
+            className="text-6xl font-extrabold tracking-normal text-brand-purple"
           >
             MOIM
           </Link>
           <h1 className="mt-6 text-2xl font-extrabold">비밀번호 찾기</h1>
-          <p className="mt-3 text-base font-semibold text-[#6f6a73]">
+          <p className="mt-3 text-base font-semibold text-brand-text-secondary">
             가입하신 이메일 주소를 입력해 주시면
             <br />
             비밀번호 재설정 메일을 보내드립니다.
@@ -54,11 +54,11 @@ export default function ForgotPasswordPage() {
         </div>
 
         {isSent ? (
-          <div className="rounded-3xl border border-[#eee8f4] bg-white p-8 text-center shadow-[0_20px_50px_rgba(95,82,130,0.1)]">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-[#6252ac]" />
+          <div className="rounded-3xl border border-brand-border-muted bg-white p-8 text-center shadow-[0_20px_50px_rgba(95,82,130,0.1)]">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-brand-purple" />
             <h2 className="mt-5 text-xl font-extrabold">이메일 발송 완료</h2>
-            <p className="mt-3 text-base text-[#77727c]">
-              <strong className="text-[#6252ac]">{email}</strong>(으)로
+            <p className="mt-3 text-base text-brand-text-muted">
+              <strong className="text-brand-purple">{email}</strong>(으)로
               <br />
               비밀번호 재설정 링크를 전송했습니다.
               <br />
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
             </p>
             <Link
               href="/login"
-              className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] font-bold text-white hover:bg-[#7d68c9]"
+              className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple-light font-bold text-white hover:bg-brand-purple"
             >
               로그인 화면으로 이동
             </Link>
@@ -81,10 +81,10 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="example@email.com"
-                  className="h-16 w-full rounded-lg border border-[#dedbe3] px-5 pl-12 text-xl font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+                  className="h-16 w-full rounded-lg border border-brand-border-gray px-5 pl-12 text-xl font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring"
                   required
                 />
-                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#aaa5ad]" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-text-light" />
               </span>
             </label>
 
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
 
             <button
               type="submit"
-              className="mt-2 inline-flex h-14 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-lg font-bold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 inline-flex h-14 w-full items-center justify-center rounded-xl bg-brand-purple-light px-7 text-lg font-bold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-brand-purple disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isSubmitting}
             >
               {isSubmitting ? "메일 전송 중..." : "재설정 링크 보내기"}
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
 
             <Link
               href="/login"
-              className="mt-4 text-center text-base font-semibold text-[#6f6a73] hover:text-[#6252ac]"
+              className="mt-4 text-center text-base font-semibold text-brand-text-secondary hover:text-brand-purple"
             >
               로그인 화면으로 돌아가기
             </Link>

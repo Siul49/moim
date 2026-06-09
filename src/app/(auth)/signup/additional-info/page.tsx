@@ -48,23 +48,23 @@ export default function AdditionalInfoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-14 text-[#222026]">
+    <main className="min-h-screen bg-white px-6 py-14 text-brand-text-primary">
       <section className="mx-auto flex min-h-[calc(100vh-7rem)] w-full max-w-[420px] flex-col justify-center">
         <div className="mb-10 text-center">
           <Link
             href="/"
-            className="text-6xl font-extrabold tracking-normal text-[#6252ac]"
+            className="text-6xl font-extrabold tracking-normal text-brand-purple"
           >
             MOIM
           </Link>
-          <p className="mt-4 text-lg font-semibold text-[#6f6a73]">
+          <p className="mt-4 text-lg font-semibold text-brand-text-secondary">
             마지막 정보만 확인하면 바로 모임을 만들 수 있어요
           </p>
         </div>
 
-        <div className="mb-8 flex items-center gap-3 rounded-lg border border-[#eee8f4] bg-[#fbf7ff] p-4">
-          <CheckCircle2 className="h-6 w-6 shrink-0 text-[#6252ac]" />
-          <p className="text-base font-semibold text-[#5f5865]">
+        <div className="mb-8 flex items-center gap-3 rounded-lg border border-brand-border-muted bg-brand-bg-light p-4">
+          <CheckCircle2 className="h-6 w-6 shrink-0 text-brand-purple" />
+          <p className="text-base font-semibold text-brand-text-secondary">
             소셜 계정 연결이 완료되었습니다.
           </p>
         </div>
@@ -78,13 +78,13 @@ export default function AdditionalInfoPage() {
                 updateField("phoneNumber", event.target.value)
               }
               placeholder="010-0000-0000"
-              className="h-14 rounded-lg border border-[#dedbe3] px-4 text-lg font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb]"
+              className="h-14 rounded-lg border border-brand-border-gray px-4 text-lg font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring"
               autoComplete="tel"
               required
             />
           </label>
 
-          <fieldset className="rounded-lg border border-[#dedbe3] p-5">
+          <fieldset className="rounded-lg border border-brand-border-gray p-5">
             <legend className="px-1 text-lg font-bold">약관 동의</legend>
             <div className="grid gap-4">
               {[
@@ -96,7 +96,7 @@ export default function AdditionalInfoPage() {
               ].map(([name, label, required]) => (
                 <div
                   key={name}
-                  className="flex items-center justify-between gap-3 text-base font-semibold text-[#504b55]"
+                  className="flex items-center justify-between gap-3 text-base font-semibold text-brand-text-secondary"
                 >
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
@@ -113,15 +113,17 @@ export default function AdditionalInfoPage() {
                         name === "termsAgreed" ||
                         name === "privacyAgreed"
                       }
-                      className="h-5 w-5 rounded border-[#dedbe3]"
+                      className="h-5 w-5 rounded border-brand-border-gray"
                     />
                     {label}
-                    <span className="text-[#8f7bd6]">({required})</span>
+                    <span className="text-brand-purple-light">
+                      ({required})
+                    </span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setActiveTermsKey(name as TermsKey)}
-                    className="rounded p-1 hover:bg-[#fbf7ff] text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+                    className="rounded p-1 hover:bg-brand-bg-light text-brand-text-light hover:text-brand-purple-light focus:outline-none"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -138,7 +140,7 @@ export default function AdditionalInfoPage() {
 
           <button
             type="submit"
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple-light px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-brand-purple disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isSubmitting}
           >
             {isSubmitting ? "저장 중" : "모임 만들러 가기"}

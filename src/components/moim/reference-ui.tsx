@@ -73,36 +73,38 @@ export function MoimTopBar({
   };
 
   return (
-    <header className="relative border-b border-[#f0eaf6] bg-[#fcf7ff] z-50">
+    <header className="relative border-b border-brand-border-muted bg-brand-bg-light z-50">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-5">
           {closeHref ? (
             <Link
               href={closeHref}
               aria-label="닫기"
-              className="inline-flex h-9 w-9 items-center justify-center text-[#222]"
+              className="inline-flex h-9 w-9 items-center justify-center text-brand-text-primary"
             >
               <X className="h-5 w-5" />
             </Link>
           ) : null}
-          <Link href="/" className="text-2xl font-extrabold text-[#6252ac]">
+          <Link href="/" className="text-2xl font-extrabold text-brand-purple">
             MOIM
           </Link>
         </div>
 
         {help ? (
-          <HelpCircle className="h-6 w-6 text-[#6f6a73]" />
+          <HelpCircle className="h-6 w-6 text-brand-text-secondary" />
         ) : (
           <>
-            <nav className="hidden items-center gap-7 text-[#6f6a73] sm:flex">
+            <nav className="hidden items-center gap-7 text-brand-text-secondary sm:flex">
               {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   aria-label={item.label}
                   className={cn(
-                    "rounded-full p-2 transition-colors hover:bg-[#f0eaf8]",
-                    item.href === activeHref ? "text-[#6252ac]" : "",
+                    "inline-block rounded-full p-2 transition-all duration-200 hover:scale-110 active:scale-95",
+                    item.href === activeHref
+                      ? "text-brand-purple"
+                      : "text-brand-text-secondary hover:text-brand-purple",
                   )}
                 >
                   <item.icon className="h-6 w-6" />
@@ -110,13 +112,13 @@ export function MoimTopBar({
               ))}
 
               {loading ? (
-                <div className="h-10 w-10 animate-pulse rounded-full bg-[#f4f0fb] border border-[#eee8f4]" />
+                <div className="h-10 w-10 animate-pulse rounded-full bg-brand-bg-muted border border-brand-border-muted" />
               ) : user ? (
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowDropdown(!showDropdown)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#6252ac] text-lg font-semibold text-white transition-all hover:scale-105 active:scale-95 shadow-sm border border-[#524396]"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-purple text-lg font-semibold text-white transition-all hover:scale-105 active:scale-95 shadow-sm border border-brand-purple-dark"
                   >
                     {user.nickname ? user.nickname[0] : "유"}
                   </button>
@@ -126,12 +128,12 @@ export function MoimTopBar({
                         className="fixed inset-0 z-10"
                         onClick={() => setShowDropdown(false)}
                       />
-                      <div className="absolute right-0 mt-2.5 w-60 rounded-2xl border border-[#eee8f5] bg-white p-4.5 shadow-premium-lg z-20 animate-in fade-in-50 slide-in-from-top-1 duration-200">
-                        <div className="border-b border-[#f3eefd] pb-3">
-                          <p className="font-extrabold text-[#252329] text-base">
+                      <div className="absolute right-0 mt-2.5 w-60 rounded-2xl border border-brand-border-muted bg-white p-5 shadow-premium-lg z-20 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+                        <div className="border-b border-brand-border-muted pb-3">
+                          <p className="font-extrabold text-brand-text-primary text-base">
                             {user.nickname}
                           </p>
-                          <p className="text-xs font-semibold text-[#8a8490] mt-0.5 truncate">
+                          <p className="text-xs font-semibold text-brand-text-muted mt-0.5 truncate">
                             {user.email}
                           </p>
                         </div>
@@ -139,9 +141,9 @@ export function MoimTopBar({
                           <Link
                             href="/calendar/connect"
                             onClick={() => setShowDropdown(false)}
-                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-[#5f5865] hover:bg-[#f5effc] hover:text-[#6252ac] transition-colors"
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-brand-text-secondary hover:bg-brand-bg-muted hover:text-brand-purple transition-colors"
                           >
-                            <CalendarDays className="h-4.5 w-4.5" />
+                            <CalendarDays className="h-4 w-4" />
                             캘린더 연동 관리
                           </Link>
                           <button
@@ -159,7 +161,7 @@ export function MoimTopBar({
               ) : (
                 <Link
                   href="/login"
-                  className="rounded-xl bg-[#6252ac] px-4.5 py-2 text-sm font-bold text-white hover:bg-[#524396] transition-all hover:scale-[1.03] active:scale-95 shadow-sm"
+                  className="inline-block rounded-xl text-sm font-bold text-brand-purple hover:text-brand-purple-hover hover:scale-105 active:scale-95 transition-all duration-200 px-5 py-2 no-underline"
                 >
                   로그인
                 </Link>
@@ -169,7 +171,7 @@ export function MoimTopBar({
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#6f6a73] hover:bg-[#f0eaf8] sm:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-brand-text-secondary hover:scale-110 active:scale-95 transition-all duration-200 sm:hidden"
               aria-expanded={isOpen}
               aria-label="메뉴 토글"
             >
@@ -184,7 +186,7 @@ export function MoimTopBar({
       </div>
 
       {!help && isOpen && (
-        <nav className="absolute left-0 right-0 border-b border-[#f0eaf6] bg-[#fcf7ff] px-6 py-4 shadow-lg sm:hidden">
+        <nav className="absolute left-0 right-0 border-b border-brand-border-muted bg-brand-bg-light px-6 py-4 shadow-lg sm:hidden">
           <div className="grid gap-3">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -192,10 +194,10 @@ export function MoimTopBar({
                 href={item.href}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  "flex items-center gap-4 rounded-xl p-3 font-semibold transition-colors hover:bg-[#f0eaf8]",
+                  "flex items-center gap-4 rounded-xl p-3 font-semibold transition-colors hover:bg-brand-bg-muted",
                   item.href === activeHref
-                    ? "bg-[#e9ddff] text-[#6252ac]"
-                    : "text-[#6f6a73]",
+                    ? "bg-brand-purple-ring text-brand-purple"
+                    : "text-brand-text-secondary",
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -204,14 +206,14 @@ export function MoimTopBar({
             ))}
 
             {!loading && (
-              <div className="mt-2 border-t border-[#f0eaf6] pt-3">
+              <div className="mt-2 border-t border-brand-border-muted pt-3">
                 {user ? (
                   <div className="flex items-center justify-between px-3 py-2">
                     <div className="min-w-0 flex-1 pr-3">
-                      <p className="font-extrabold text-[#252329] truncate text-sm">
+                      <p className="font-extrabold text-brand-text-primary truncate text-sm">
                         {user.nickname}
                       </p>
-                      <p className="text-xs text-[#8a8490] truncate">
+                      <p className="text-xs text-brand-text-muted truncate">
                         {user.email}
                       </p>
                     </div>
@@ -230,7 +232,7 @@ export function MoimTopBar({
                   <Link
                     href="/login"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-center rounded-xl bg-[#6252ac] py-2.5 text-sm font-bold text-white hover:bg-[#524396]"
+                    className="flex items-center justify-center rounded-xl bg-brand-purple py-2.5 text-sm font-bold text-white hover:bg-brand-purple-hover transition-all active:scale-[0.98]"
                   >
                     로그인
                   </Link>
@@ -247,14 +249,13 @@ export function MoimTopBar({
 export function PurpleButton({
   children,
   className,
+  variant = "tintBrand",
   ...props
 }: ComponentProps<typeof Button>) {
   return (
     <Button
-      className={cn(
-        "h-12 rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9]",
-        className,
-      )}
+      variant={variant}
+      className={cn("h-12 rounded-xl px-7 text-base font-semibold", className)}
       {...props}
     >
       {children}
@@ -270,7 +271,9 @@ export function MoimShell({
   className?: string;
 }) {
   return (
-    <main className={cn("min-h-screen bg-white text-[#222026]", className)}>
+    <main
+      className={cn("min-h-screen bg-white text-brand-text-primary", className)}
+    >
       {children}
     </main>
   );
@@ -286,12 +289,12 @@ export function ProgressHeader({
   return (
     <div className="mx-auto w-full max-w-3xl px-6 pt-12">
       <div className="mb-3 flex items-center justify-between text-lg font-semibold">
-        <span className="text-[#7e68cd]">{label}</span>
-        <span className="text-[#77727c]">{progress} 진행</span>
+        <span className="text-brand-purple-light">{label}</span>
+        <span className="text-brand-text-muted">{progress} 진행</span>
       </div>
-      <div className="h-3 overflow-hidden rounded-full bg-[#e2e2e2]">
+      <div className="h-3 overflow-hidden rounded-full bg-brand-border-gray">
         <div
-          className="h-full rounded-full bg-[#927fd8]"
+          className="h-full rounded-full bg-brand-purple-light"
           style={{ width: progress }}
         />
       </div>
@@ -303,14 +306,14 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
   return (
     <section
       className={cn(
-        "rounded-[2rem] border border-[#ede7f3] bg-white shadow-[0_24px_60px_rgba(95,82,130,0.18)]",
+        "rounded-[2rem] border border-brand-border-muted bg-white shadow-[0_24px_60px_rgba(95,82,130,0.18)]",
         compact ? "p-5" : "p-8",
       )}
     >
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-normal">통합 스케줄러</h2>
-          <p className="mt-1 text-[#77727c]">
+          <p className="mt-1 text-brand-text-muted">
             선택한 기간의 일정을 한눈에 확인하세요.
           </p>
         </div>
@@ -318,13 +321,13 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
           {["10월 9일 (목)", "10월 11일 (목)"].map((date) => (
             <span
               key={date}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e7e0ee] bg-white px-4 text-sm font-semibold text-[#605b66]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border-muted bg-white px-4 text-sm font-semibold text-brand-text-secondary"
             >
-              <CalendarDays className="h-4 w-4 text-[#8f7bd6]" />
+              <CalendarDays className="h-4 w-4 text-brand-purple-light" />
               {date}
             </span>
           ))}
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#8f7bd6] text-white">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-purple-light text-white">
             <Search className="h-5 w-5" />
           </span>
         </div>
@@ -332,10 +335,12 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <CalendarBoard />
-        <div className="overflow-hidden rounded-[1.75rem] border border-[#f0eaf6] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#f0eaf6] p-6">
+        <div className="overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-brand-border-muted p-6">
             <h3 className="text-2xl font-bold">내 모임</h3>
-            <span className="font-semibold text-[#8f7bd6]">모두 보기</span>
+            <span className="font-semibold text-brand-purple-light">
+              모두 보기
+            </span>
           </div>
           <div className="grid gap-4 p-6">
             {[
@@ -345,42 +350,46 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
             ].map(([title, meta, icon], index) => (
               <div
                 key={title}
-                className="flex items-center gap-4 rounded-2xl border border-[#eeeaf3] bg-white p-4"
+                className="flex items-center gap-4 rounded-2xl border border-brand-border-muted bg-white p-4"
               >
                 <span
                   className={cn(
                     "inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white",
                     index === 0
-                      ? "bg-[#8f7bd6]"
+                      ? "bg-brand-purple-light"
                       : index === 1
-                        ? "bg-[#cbc3ef]"
-                        : "bg-[#5b5b63]",
+                        ? "bg-brand-purple-light/40"
+                        : "bg-brand-text-muted",
                   )}
                 >
                   {icon}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-lg font-bold">{title}</p>
-                  <p className="truncate text-sm text-[#77727c]">{meta}</p>
+                  <p className="truncate text-sm text-brand-text-muted">
+                    {meta}
+                  </p>
                 </div>
-                <span className="text-2xl text-[#c8c2cc]">›</span>
+                <span className="text-2xl text-brand-text-light">›</span>
               </div>
             ))}
             <Link
               href="/schedule/create"
-              className="inline-flex h-14 items-center justify-center rounded-2xl border border-dashed border-[#d9d2e3] text-[#9a95a1]"
+              className="inline-flex h-14 items-center justify-center rounded-2xl border border-dashed border-brand-border-muted text-brand-text-light"
             >
               + 새로운 모임 탐색하기
             </Link>
           </div>
-          <div className="grid grid-cols-2 bg-[#f8f2fb] py-5 text-center">
+          <div className="grid grid-cols-2 bg-brand-bg-muted py-5 text-center">
             <div>
-              <p className="text-2xl font-extrabold text-[#6252ac]">12</p>
-              <p className="text-sm text-[#77727c]">참여 중인 모임</p>
+              <p className="text-2xl font-extrabold text-brand-purple">12</p>
+              <p className="text-sm text-brand-text-muted">참여 중인 모임</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-[#333]">3</p>
-              <p className="text-sm text-[#77727c]">대기 중인 일정</p>
+              <p className="text-2xl font-extrabold text-brand-text-primary">
+                3
+              </p>
+              <p className="text-sm text-brand-text-muted">대기 중인 일정</p>
             </div>
           </div>
         </div>
@@ -397,7 +406,8 @@ export function CalendarBoard() {
       column: 0,
       row: 1,
       span: 1.4,
-      colorClass: "bg-[#f3eef8] text-[#232026] border-l-[#8f7bd6]",
+      colorClass:
+        "bg-brand-bg-light text-brand-text-primary border-l-brand-purple-light",
     },
     {
       title: "프론트엔드 코드 리뷰",
@@ -405,7 +415,8 @@ export function CalendarBoard() {
       column: 1,
       row: 2,
       span: 1.35,
-      colorClass: "bg-[#907ed6] text-white border-l-[#907ed6]",
+      colorClass:
+        "bg-brand-purple-light text-white border-l-brand-purple-light",
     },
     {
       title: "점심 식사 (마케팅팀)",
@@ -413,7 +424,8 @@ export function CalendarBoard() {
       column: 0,
       row: 3,
       span: 0.9,
-      colorClass: "bg-[#eee9ef] text-[#232026] border-l-[#999]",
+      colorClass:
+        "bg-brand-bg-muted text-brand-text-primary border-l-brand-text-light",
     },
     {
       title: "러닝 크루 번개",
@@ -421,22 +433,23 @@ export function CalendarBoard() {
       column: 2,
       row: 0,
       span: 0.9,
-      colorClass: "bg-[#e6e2f4] text-[#232026] border-l-[#8f7bd6]",
+      colorClass:
+        "bg-brand-bg-muted text-brand-text-primary border-l-brand-purple-light",
     },
   ];
 
   return (
     <div>
-      <div className="overflow-x-auto scroller-style rounded-t-2xl border border-[#f0eaf6] bg-white text-sm">
+      <div className="overflow-x-auto scroller-style rounded-t-2xl border border-brand-border-muted bg-white text-sm">
         <div className="relative min-w-[650px] select-none">
           <div className="grid grid-cols-[72px_repeat(3,minmax(0,1fr))]">
-            <div className="flex h-16 items-center justify-center bg-[#f5eff8] px-4 font-semibold text-[#8f8896]">
+            <div className="flex h-16 items-center justify-center bg-brand-bg-muted px-4 font-semibold text-brand-text-muted">
               Time
             </div>
             {["10/9 (수) 오늘", "10/10 (목)", "10/11 (금)"].map((day) => (
               <div
                 key={day}
-                className="flex h-16 items-center justify-center bg-[#f5eff8] px-4 text-center font-bold text-[#232026]"
+                className="flex h-16 items-center justify-center bg-brand-bg-muted px-4 text-center font-bold text-brand-text-primary"
               >
                 {day}
               </div>
@@ -449,16 +462,20 @@ export function CalendarBoard() {
               "13:00",
               "14:00",
               "15:00",
-            ].map((time) => (
-              <div key={time} className="contents">
-                <div className="flex h-20 items-center justify-center border-r border-t border-[#f0eaf6] px-2 text-xs font-semibold text-[#aaa5ad]">
-                  {time}
+              "16:00",
+              "17:00",
+            ]
+              .slice(0, 7)
+              .map((time) => (
+                <div key={time} className="contents">
+                  <div className="flex h-20 items-center justify-center border-r border-t border-brand-border-muted px-2 text-xs font-semibold text-brand-text-light">
+                    {time}
+                  </div>
+                  <div className="h-20 border-r border-t border-brand-border-muted" />
+                  <div className="h-20 border-r border-t border-brand-border-muted" />
+                  <div className="h-20 border-t border-brand-border-muted" />
                 </div>
-                <div className="h-20 border-r border-t border-[#f0eaf6]" />
-                <div className="h-20 border-r border-t border-[#f0eaf6]" />
-                <div className="h-20 border-t border-[#f0eaf6]" />
-              </div>
-            ))}
+              ))}
           </div>
           {blocks.map(({ title, time, column, row, span, colorClass }) => (
             <div
@@ -482,12 +499,13 @@ export function CalendarBoard() {
           ))}
         </div>
       </div>
-      <div className="mt-5 flex items-center gap-5 text-sm text-[#5f5865]">
+      <div className="mt-5 flex items-center gap-5 text-sm text-brand-text-secondary">
         <span className="flex items-center gap-2">
-          <i className="h-3 w-3 rounded-full bg-[#927fd8]" /> 업무: 3
+          <i className="h-3 w-3 rounded-full bg-brand-purple-light" /> 업무: 3
         </span>
         <span className="flex items-center gap-2">
-          <i className="h-3 w-3 rounded-full bg-[#cbc3ef]" /> 모임: 1
+          <i className="h-3 w-3 rounded-full bg-brand-purple-light/40" /> 모임:
+          1
         </span>
       </div>
     </div>
@@ -505,13 +523,17 @@ const DEFAULT_HEATMAP_ROWS = [
 ];
 const DEFAULT_HEATMAP_DAYS = ["11/23 (목)", "11/24 (금)", "11/25 (토)"];
 const DEFAULT_HEATMAP_COLORS = [
-  ["bg-[#f1eef9]", "bg-[#ded8f1]", "bg-[#f5f3f7]"],
-  ["bg-[#eeeaf7]", "bg-[#d6ceec]", "bg-[#f1eef9]"],
-  ["bg-[#f7f6f7]", "bg-[#9683d5]", "bg-[#a998dd]"],
-  ["bg-[#a998dd]", "bg-[#8f7bd6] ring-2 ring-white", "bg-[#b8ace4]"],
-  ["bg-[#b9afe3]", "bg-[#a998dd]", "bg-[#ac9fdf]"],
-  ["bg-[#c9c1eb]", "bg-[#ece8f7]", "bg-[#a99dde]"],
-  ["bg-[#eeeaf7]", "bg-[#f0edf7]", "bg-[#c6bce8]"],
+  ["bg-brand-purple/10", "bg-brand-purple/30", "bg-brand-purple/5"],
+  ["bg-brand-purple/15", "bg-brand-purple/40", "bg-brand-purple/10"],
+  ["bg-brand-purple/5", "bg-brand-purple/70", "bg-brand-purple/60"],
+  [
+    "bg-brand-purple/60",
+    "bg-brand-purple/90 ring-2 ring-white",
+    "bg-brand-purple/50",
+  ],
+  ["bg-brand-purple/50", "bg-brand-purple/60", "bg-brand-purple/55"],
+  ["bg-brand-purple/40", "bg-brand-purple/20", "bg-brand-purple/60"],
+  ["bg-brand-purple/15", "bg-brand-purple/10", "bg-brand-purple/45"],
 ];
 
 export function HeatmapGrid({
@@ -528,7 +550,7 @@ export function HeatmapGrid({
   cellTooltips?: string[][];
 }) {
   return (
-    <div className="overflow-x-auto scroller-style rounded-2xl border border-[#eee8f4] bg-[#fbf7ff] p-4 pt-5 shadow-inner">
+    <div className="overflow-x-auto scroller-style rounded-2xl border border-brand-border-muted bg-brand-bg-light p-4 pt-5 shadow-inner">
       <div
         className={cn("grid gap-2 select-none", className)}
         style={{
@@ -542,7 +564,7 @@ export function HeatmapGrid({
             key={day}
             className={cn(
               "pb-2 text-center text-sm font-bold flex items-center justify-center",
-              index === 1 ? "text-[#6f5ec8]" : "text-[#2b292f]",
+              index === 1 ? "text-brand-purple" : "text-brand-text-primary",
             )}
           >
             {day}
@@ -550,7 +572,7 @@ export function HeatmapGrid({
         ))}
         {rows.map((time, rowIndex) => (
           <div key={time} className="contents">
-            <div className="flex h-7 items-center justify-end pr-2 text-right text-xs font-semibold text-[#aaa5ad]">
+            <div className="flex h-7 items-center justify-end pr-2 text-right text-xs font-semibold text-brand-text-light">
               {time}
             </div>
             {days.map((day, dayIndex) => {
@@ -560,11 +582,11 @@ export function HeatmapGrid({
                   key={`${day}-${time}`}
                   className={cn(
                     "h-7 rounded-sm relative group cursor-pointer transition-all hover:scale-105 hover:shadow-sm",
-                    colors[rowIndex]?.[dayIndex] ?? "bg-[#f5f3f7]",
+                    colors[rowIndex]?.[dayIndex] ?? "bg-brand-purple/5",
                   )}
                 >
                   {tooltipText && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 bg-[#252329] text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-xl whitespace-nowrap pointer-events-none transition-all duration-200 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-[#252329]">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 bg-brand-text-primary text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-xl whitespace-nowrap pointer-events-none transition-all duration-200 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-brand-text-primary">
                       {tooltipText}
                     </div>
                   )}
@@ -584,7 +606,7 @@ export function ProviderGlyph({
   type: "google" | "apple" | "everytime" | "ics" | "kakao" | "naver";
 }) {
   const className = {
-    google: "bg-white border-[#ece6ef]",
+    google: "bg-white border-brand-border-muted",
     apple: "bg-[#111] text-white border-[#111]",
     everytime: "bg-[#f03c36] text-white border-[#f03c36]",
     ics: "bg-[#7c7484] text-white border-[#7c7484]",
@@ -700,7 +722,7 @@ export function ProviderGlyph({
 
 export function EmptyAvatar({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f2eef9] text-sm font-bold text-[#7e68cd]">
+    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-bg-muted text-sm font-bold text-brand-purple">
       {children}
     </span>
   );
@@ -708,28 +730,28 @@ export function EmptyAvatar({ children }: { children: ReactNode }) {
 
 export function CalendarInfoCard() {
   return (
-    <div className="rounded-[1.5rem] border border-[#eee8f4] bg-[#fbf7ff] p-6">
+    <div className="rounded-[1.5rem] border border-brand-border-muted bg-brand-bg-light p-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold">주말 독서 모임</h3>
-          <p className="mt-2 text-lg text-[#5f5865]">
-            <span className="font-bold text-[#6252ac]">김철수</span> 님이
+          <p className="mt-2 text-lg text-brand-text-secondary">
+            <span className="font-bold text-brand-purple">김철수</span> 님이
             호스트입니다
           </p>
         </div>
-        <span className="rounded-full bg-[#e6e0ea] px-5 py-2 text-[#6b6670]">
+        <span className="rounded-full bg-brand-bg-muted px-5 py-2 text-brand-text-secondary">
           현재 12명 중 8명 응답 완료
         </span>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <CalendarDays className="mb-4 h-7 w-7 text-[#6252ac]" />
-          <p className="text-[#6b6670]">희망 기간</p>
+          <CalendarDays className="mb-4 h-7 w-7 text-brand-purple" />
+          <p className="text-brand-text-secondary">희망 기간</p>
           <p className="mt-2 text-xl font-bold">10월 12일 ~ 10월 18일</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <CalendarPlus className="mb-4 h-7 w-7 text-[#6252ac]" />
-          <p className="text-[#6b6670]">소요 시간</p>
+          <CalendarPlus className="mb-4 h-7 w-7 text-brand-purple" />
+          <p className="text-brand-text-secondary">소요 시간</p>
           <p className="mt-2 text-xl font-bold">약 2시간 소요 예정</p>
         </div>
       </div>

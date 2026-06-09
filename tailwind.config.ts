@@ -58,6 +58,7 @@ const config: Config = {
         brand: {
           purple: {
             DEFAULT: "hsl(var(--brand-purple))",
+            dark: "hsl(var(--brand-purple-dark))",
             light: "hsl(var(--brand-purple-light))",
             bg: "hsl(var(--brand-purple-bg))",
             hover: "hsl(var(--brand-purple-hover))",
@@ -65,10 +66,18 @@ const config: Config = {
             ring: "hsl(var(--brand-purple-ring))",
           },
           border: {
+            muted: "hsl(var(--brand-border-muted))",
             gray: "hsl(var(--brand-border-gray))",
           },
           bg: {
             light: "hsl(var(--brand-bg-light))",
+            muted: "hsl(var(--brand-bg-muted))",
+          },
+          text: {
+            primary: "hsl(var(--brand-text-primary))",
+            secondary: "hsl(var(--brand-text-secondary))",
+            muted: "hsl(var(--brand-text-muted))",
+            light: "hsl(var(--brand-text-light))",
           },
         },
       },

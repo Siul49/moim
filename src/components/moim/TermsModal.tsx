@@ -94,20 +94,20 @@ export function TermsModal({ termsKey, onClose }: TermsModalProps) {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative z-10 w-full max-w-[500px] rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between border-b border-[#eee8f4] pb-4">
-          <h2 className="text-xl font-extrabold text-[#222026]">
+        <div className="flex items-center justify-between border-b border-brand-border-muted pb-4">
+          <h2 className="text-xl font-extrabold text-brand-text-primary">
             {data.title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-[#aaa5ad] hover:bg-[#fbf7ff] hover:text-[#6252ac]"
+            className="rounded-lg p-1 text-brand-text-light hover:bg-brand-bg-light hover:text-brand-purple"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
-        <div className="mt-4 max-h-[300px] overflow-y-auto whitespace-pre-wrap pr-2 text-base leading-7 text-[#504b55]">
+        <div className="mt-4 max-h-[300px] overflow-y-auto whitespace-pre-wrap pr-2 text-base leading-7 text-brand-text-secondary">
           {data.content}
         </div>
 
@@ -115,7 +115,7 @@ export function TermsModal({ termsKey, onClose }: TermsModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="h-12 w-full rounded-xl bg-[#8f7bd6] font-bold text-white shadow-[0_4px_12px_rgba(98,82,172,0.15)] hover:bg-[#7d68c9]"
+            className="h-12 w-full rounded-xl bg-brand-purple-light font-bold text-white shadow-sm hover:bg-brand-purple-hover"
           >
             확인
           </button>

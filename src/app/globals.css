@@ -27,13 +27,20 @@
     --ring: 0 0% 55%;
     --radius: 0.625rem;
     --brand-purple: 251 36% 50%;
+    --brand-purple-dark: 251 38% 42%;
     --brand-purple-light: 253 53% 66%;
     --brand-purple-bg: 270 100% 99%;
     --brand-purple-hover: 253 53% 60%;
     --brand-purple-accent: 253 53% 66%;
     --brand-purple-ring: 253 53% 95%;
-    --brand-border-gray: 255 10% 88%;
+    --brand-border-muted: 264 30% 94%;
+    --brand-border-gray: 260 8% 88%;
     --brand-bg-light: 270 100% 99%;
+    --brand-bg-muted: 277 35% 96%;
+    --brand-text-primary: 260 8% 15%;
+    --brand-text-secondary: 270 7% 37%;
+    --brand-text-muted: 270 4% 47%;
+    --brand-text-light: 280 4% 67%;
   }
 
   .dark {
@@ -56,6 +63,18 @@
     --border: 0 0% 17%;
     --input: 0 0% 17%;
     --ring: 0 0% 45%;
+    --brand-purple: 251 36% 60%;
+    --brand-purple-dark: 251 38% 50%;
+    --brand-purple-light: 253 53% 76%;
+    --brand-purple-bg: 270 20% 12%;
+    --brand-border-muted: 0 0% 17%;
+    --brand-border-gray: 0 0% 22%;
+    --brand-bg-light: 0 0% 12%;
+    --brand-bg-muted: 0 0% 15%;
+    --brand-text-primary: 0 0% 98%;
+    --brand-text-secondary: 0 0% 88%;
+    --brand-text-muted: 0 0% 70%;
+    --brand-text-light: 0 0% 55%;
   }
 }
 
@@ -101,6 +120,9 @@
   }
   .moim-select {
     @apply h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-accent focus:ring-2 focus:ring-brand-purple-ring transition-all duration-150;
+  }
+  .moim-btn-ghost {
+    @apply inline-block text-brand-purple hover:scale-105 hover:text-brand-purple-hover active:scale-95 transition-all duration-200 no-underline;
   }
 }
 

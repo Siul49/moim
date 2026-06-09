@@ -97,30 +97,30 @@ export function CreateScheduleClient() {
   }
 
   return (
-    <MoimShell className="bg-[#fcfaff]">
+    <MoimShell className="bg-brand-bg-light">
       <MoimTopBar closeHref="/" activeHref="/schedule/create" />
       <ProgressHeader label="1단계: 기본 정보" progress="25%" />
 
       <section className="mx-auto grid max-w-3xl gap-8 px-6 pb-24 pt-4">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-normal text-[#222026] sm:text-5xl bg-clip-text text-transparent bg-gradient-to-br from-[#222026] to-[#5f5865]">
+          <h1 className="text-4xl font-extrabold tracking-normal text-brand-text-primary sm:text-5xl bg-clip-text text-transparent bg-gradient-to-br from-brand-text-primary to-brand-text-secondary">
             어떤 모임을 만드시나요?
           </h1>
-          <p className="mt-4 text-lg font-medium leading-8 text-[#6f6a73]">
+          <p className="mt-4 text-lg font-medium leading-8 text-brand-text-secondary">
             모임 정보와 후보 시간을 정하면 초대 링크가 바로 만들어집니다.
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-6 rounded-[2rem] border border-[#eee8f4] bg-white p-6 shadow-premium-lg sm:p-8 transition-all hover:shadow-[0_30px_80px_rgba(95,82,130,0.14)]"
+          className="grid gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-6 shadow-premium-lg sm:p-8 transition-all hover:shadow-[0_30px_80px_rgba(95,82,130,0.14)]"
         >
-          <label className="grid gap-3 text-lg font-extrabold text-[#222026]">
+          <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
             모임 제목
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              className="h-12 rounded-xl border border-[#dedbe3] px-4 text-base font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
+              className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
               maxLength={80}
               placeholder="예: 제품 인터뷰"
               required
@@ -128,12 +128,12 @@ export function CreateScheduleClient() {
           </label>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <label className="grid gap-3 text-lg font-extrabold text-[#222026]">
+            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
               소요 시간
               <select
                 value={durationMinutes}
                 onChange={(event) => setDurationMinutes(event.target.value)}
-                className="h-12 rounded-xl border border-[#dedbe3] bg-white px-4 text-base font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
+                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
               >
                 <option value="30">30분</option>
                 <option value="60">60분</option>
@@ -142,12 +142,12 @@ export function CreateScheduleClient() {
               </select>
             </label>
 
-            <label className="grid gap-3 text-lg font-extrabold text-[#222026]">
+            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
               시작 시간
               <select
                 value={candidateStartHour}
                 onChange={(event) => setCandidateStartHour(event.target.value)}
-                className="h-12 rounded-xl border border-[#dedbe3] bg-white px-4 text-base font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
+                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
               >
                 {HOURS.map((hour) => (
                   <option key={hour} value={hour}>
@@ -157,12 +157,12 @@ export function CreateScheduleClient() {
               </select>
             </label>
 
-            <label className="grid gap-3 text-lg font-extrabold text-[#222026]">
+            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
               종료 시간
               <select
                 value={candidateEndHour}
                 onChange={(event) => setCandidateEndHour(event.target.value)}
-                className="h-12 rounded-xl border border-[#dedbe3] bg-white px-4 text-base font-normal outline-none focus:border-[#8f7bd6] focus:ring-2 focus:ring-[#ece7fb] transition-all"
+                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
               >
                 {HOURS.concat(22).map((hour) => (
                   <option key={hour} value={hour}>
@@ -174,7 +174,7 @@ export function CreateScheduleClient() {
           </div>
 
           <fieldset className="grid gap-3">
-            <legend className="text-lg font-extrabold text-[#222026]">
+            <legend className="text-lg font-extrabold text-brand-text-primary">
               후보 요일
             </legend>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -184,10 +184,10 @@ export function CreateScheduleClient() {
                   <label
                     key={day.value}
                     className={cn(
-                      "flex h-12 items-center gap-3 rounded-xl border px-4 text-base font-bold text-[#4f4a55] transition-all duration-150 cursor-pointer shadow-sm",
+                      "flex h-12 items-center gap-3 rounded-xl border px-4 text-base font-bold text-brand-text-secondary transition-all duration-150 cursor-pointer shadow-sm",
                       isChecked
-                        ? "border-[#8f7bd6] bg-gradient-to-r from-[#f5efff] to-[#fcfaff] text-[#6252ac] ring-1 ring-[#8f7bd6]/30"
-                        : "border-[#dedbe3] bg-white hover:bg-[#fbf9ff]",
+                        ? "border-brand-purple-light bg-gradient-to-r from-brand-purple-ring to-brand-bg-light text-brand-purple ring-1 ring-brand-purple-light/30"
+                        : "border-brand-border-gray bg-white hover:bg-brand-bg-light",
                     )}
                   >
                     <input
@@ -196,7 +196,7 @@ export function CreateScheduleClient() {
                       onChange={(event) =>
                         toggleDay(day.value, event.target.checked)
                       }
-                      className="h-5 w-5 rounded border-[#cfc8d9] accent-[#8f7bd6] cursor-pointer"
+                      className="h-5 w-5 rounded border-brand-border-gray accent-brand-purple-light cursor-pointer"
                     />
                     {day.label}
                   </label>
@@ -205,14 +205,14 @@ export function CreateScheduleClient() {
             </div>
           </fieldset>
 
-          <div className="grid gap-4 rounded-[1.5rem] bg-[#fbf9ff] p-5 sm:grid-cols-2 border border-[#eee8f4]">
+          <div className="grid gap-4 rounded-[1.5rem] bg-brand-bg-light p-5 sm:grid-cols-2 border border-brand-border-muted">
             <MiniInfo
-              icon={<CalendarDays className="h-5 w-5 text-[#6252ac]" />}
+              icon={<CalendarDays className="h-5 w-5 text-brand-purple" />}
               label="후보 기간"
               value={`${candidateDays.length}개 요일 · ${candidateStartHour}:00-${candidateEndHour}:00`}
             />
             <MiniInfo
-              icon={<CalendarPlus className="h-5 w-5 text-[#6252ac]" />}
+              icon={<CalendarPlus className="h-5 w-5 text-brand-purple" />}
               label="진행 방식"
               value="링크 공유 후 참여자 입력"
             />
@@ -234,14 +234,14 @@ export function CreateScheduleClient() {
         </form>
 
         {links ? (
-          <section className="rounded-[2rem] border border-[#eee8f4] bg-white p-5 sm:p-8 text-center shadow-premium-lg transition-all animate-bounceOnce">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f2eefd] text-[#6252ac] shadow-inner">
+          <section className="rounded-[2rem] border border-brand-border-muted bg-white p-5 sm:p-8 text-center shadow-premium-lg transition-all animate-bounceOnce">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner">
               <CheckCircle2 className="h-10 w-10" />
             </span>
-            <h2 className="mt-5 text-3xl font-extrabold text-[#222026]">
+            <h2 className="mt-5 text-3xl font-extrabold text-brand-text-primary">
               초대 링크가 준비됐습니다
             </h2>
-            <p className="mt-3 text-base font-medium leading-7 text-[#77727c]">
+            <p className="mt-3 text-base font-medium leading-7 text-brand-text-muted">
               참여자는 가능한 시간을 제출하고, 호스트는 결과 화면에서 최종
               시간을 확정합니다.
             </p>
@@ -260,21 +260,21 @@ export function CreateScheduleClient() {
             </div>
 
             {/* BM Nudge 1: 호스트 회원가입 유도 & 모임 저장 제안 */}
-            <div className="mt-8 rounded-2xl border border-[#ece7fb] bg-gradient-to-br from-[#fcfaff] via-[#f7f3ff] to-white p-5 text-left shadow-sm">
+            <div className="mt-8 rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
               <div className="flex items-start gap-3">
                 <span className="text-xl">💡</span>
                 <div className="flex-1">
-                  <p className="font-extrabold text-[#6252ac] text-sm sm:text-base">
+                  <p className="font-extrabold text-brand-purple text-sm sm:text-base">
                     이 모임을 대시보드에 저장할까요?
                   </p>
-                  <p className="mt-1 text-xs font-semibold leading-relaxed text-[#77727c]">
+                  <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
                     모임을 회원 대시보드에 저장해 두면 미응답 멤버 카톡 재촉 및
                     실시간 참여 메일 알림을 즉시 받아보실 수 있습니다.
                   </p>
                   <div className="mt-4">
                     <Link
                       href="/signup?redirect=/workspace"
-                      className="inline-flex h-9 items-center justify-center rounded-xl bg-[#8f7bd6] px-4.5 text-xs font-bold text-white hover:bg-[#7d68c9] transition-all hover:scale-[1.02] shadow-sm"
+                      className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple-light px-4.5 text-xs font-bold text-white hover:bg-brand-purple transition-all hover:scale-[1.02] shadow-sm"
                     >
                       3초 만에 모임 저장하고 시작하기
                     </Link>
@@ -296,7 +296,7 @@ export function CreateScheduleClient() {
                 href={links.participant}
                 className={cn(
                   buttonVariants({ variant: "outline" }),
-                  "h-12 w-full rounded-xl border-[#eee8f4] text-[#6252ac] font-bold shadow-sm hover:bg-[#fbf9ff]",
+                  "h-12 w-full rounded-xl border-brand-border-muted text-brand-purple font-bold shadow-sm hover:bg-brand-bg-light",
                 )}
               >
                 참여 화면 열기
@@ -305,7 +305,7 @@ export function CreateScheduleClient() {
                 href={links.host}
                 className={cn(
                   buttonVariants({ variant: "default" }),
-                  "h-12 w-full rounded-xl bg-[#8f7bd6] text-white hover:bg-[#7d68c9] font-bold shadow-sm",
+                  "h-12 w-full rounded-xl bg-brand-purple-light text-white hover:bg-brand-purple font-bold shadow-sm",
                 )}
               >
                 결과 화면 열기
@@ -357,8 +357,8 @@ function MiniInfo({
     <div className="flex items-center gap-3 rounded-2xl bg-white p-4">
       {icon}
       <div>
-        <p className="text-sm font-bold text-[#77727c]">{label}</p>
-        <p className="mt-1 font-extrabold text-[#222026]">{value}</p>
+        <p className="text-sm font-bold text-brand-text-muted">{label}</p>
+        <p className="mt-1 font-extrabold text-brand-text-primary">{value}</p>
       </div>
     </div>
   );
@@ -374,9 +374,9 @@ function LinkField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-[#4f4a55]">
+    <label className="grid gap-2 text-sm font-bold text-brand-text-secondary">
       <span className="flex items-center gap-2">
-        <Link2 className="h-4 w-4 text-[#6252ac]" />
+        <Link2 className="h-4 w-4 text-brand-purple" />
         {label}
       </span>
       <span className="relative">

@@ -15,6 +15,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        ghostBrand:
+          "text-brand-purple hover:scale-105 hover:text-brand-purple-hover active:scale-95 transition-all duration-200 no-underline",
+        solidBrand:
+          "bg-brand-purple text-white hover:bg-brand-purple-hover hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-sm no-underline",
+        tintBrand:
+          "bg-gradient-to-r from-brand-purple/[0.08] to-brand-purple/[0.03] text-brand-purple border border-brand-purple/15 shadow-[0_4px_10px_-2px_rgba(98,82,172,0.08)] hover:from-brand-purple/15 hover:to-brand-purple/8 hover:border-brand-purple/30 hover:shadow-[0_6px_16px_rgba(98,82,172,0.12)] hover:scale-[1.02] active:scale-95 transition-all duration-300 no-underline",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         link: "text-primary underline-offset-4 hover:underline",
