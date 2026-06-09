@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   CalendarCheck2,
   ChevronRight,
@@ -411,19 +412,21 @@ export default function CalendarConnectPage() {
 
         {/* 다음 단계: 모임 만들기로 진행 (현재는 건너뛰기 가능한 선택 단계) */}
         <div className="mt-10 flex flex-col items-center gap-3">
-          <a
+          <Link
             href="/schedule/create"
             className="inline-flex h-12 w-full max-w-[420px] items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-bold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] transition-all hover:scale-[1.01] hover:bg-[#7d68c9]"
           >
             모임 만들러 가기
-          </a>
+          </Link>
           {!hasAnyConnection ? (
-            <a
-              href="/schedule/create"
+            // 건너뛰기는 '연동 없이 진행' 의도를 쿼리로 남긴다.
+            // 추후 '연동 필수' 정책 시 이 값으로 분기/차단할 수 있다.
+            <Link
+              href="/schedule/create?skipped=true"
               className="text-sm font-semibold text-[#8b8593] underline-offset-4 transition-colors hover:text-[#6252ac] hover:underline"
             >
               나중에 연동할게요 (건너뛰기)
-            </a>
+            </Link>
           ) : null}
         </div>
       </section>

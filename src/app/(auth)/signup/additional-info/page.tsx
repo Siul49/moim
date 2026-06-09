@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 
 export default function AdditionalInfoPage() {
+  const router = useRouter();
   const [form, setForm] = useState({
     phoneNumber: "",
     isAgeOver14: false,
@@ -37,7 +39,7 @@ export default function AdditionalInfoPage() {
       if (!response.ok) {
         throw new Error(result.message ?? "추가 정보 저장에 실패했습니다.");
       }
-      window.location.href = "/calendar/connect";
+      router.push("/calendar/connect");
     } catch (caught) {
       setMessage(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
