@@ -20,6 +20,20 @@ concurrency:
 jobs:
   code_quality:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moim_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       NEXT_PUBLIC_SUPABASE_URL: https://example-project.supabase.co
@@ -31,7 +45,8 @@ jobs:
       GOOGLE_LOGIN_CLIENT_ID: test-google-login-client-id
       GOOGLE_LOGIN_CLIENT_SECRET: test-google-login-client-secret
       GOOGLE_LOGIN_REDIRECT_URI: http://localhost:3000/api/auth/google/callback
-      DATABASE_URL: file:./ci.db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/moim_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/moim_test
 
     steps:
       - name: 저장소 체크아웃 (Checkout Repository)
@@ -55,8 +70,10 @@ jobs:
             echo "ENCRYPTION_SECRET=$(openssl rand -hex 32)"
           } >> "$GITHUB_ENV"
 
-      - name: 데이터베이스 마이그레이션 (Database Migration)
-        run: npm run db:migrate
+      - name: 데이터베이스 스키마 동기화 (Prisma db push)
+        run: |
+          psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS auth;'
+          npx prisma db push --skip-generate
 
       - name: 코드 린트 검사 (Lint Check)
         run: npm run lint
