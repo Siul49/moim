@@ -190,6 +190,12 @@ export default function CalendarConnectPage() {
     }
   }
 
+  // 연동(또는 시간표 변환)을 하나라도 마쳤는지 여부.
+  // 지금은 건너뛰기가 가능한 '선택' 단계라 진행 버튼은 항상 활성화한다.
+  // 추후 '필수'로 전환하려면 아래 하단 버튼 영역에서 이 값으로 진행을 막으면 된다.
+  const hasAnyConnection =
+    googleConnected || icloudConnected || slots.length > 0;
+
   return (
     <MoimShell className="bg-[#fcfaff]">
       <MoimTopBar activeHref="/calendar/connect" help />
@@ -401,6 +407,24 @@ export default function CalendarConnectPage() {
             title="권한 관리"
             body="연동은 선택 사항이며, 실패해도 직접 입력이나 파일 업로드로 계속 진행할 수 있습니다."
           />
+        </div>
+
+        {/* 다음 단계: 모임 만들기로 진행 (현재는 건너뛰기 가능한 선택 단계) */}
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <a
+            href="/schedule/create"
+            className="inline-flex h-12 w-full max-w-[420px] items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-bold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] transition-all hover:scale-[1.01] hover:bg-[#7d68c9]"
+          >
+            모임 만들러 가기
+          </a>
+          {!hasAnyConnection ? (
+            <a
+              href="/schedule/create"
+              className="text-sm font-semibold text-[#8b8593] underline-offset-4 transition-colors hover:text-[#6252ac] hover:underline"
+            >
+              나중에 연동할게요 (건너뛰기)
+            </a>
+          ) : null}
         </div>
       </section>
     </MoimShell>
