@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { comparePassword } from "@/lib/auth/password";
-import { signAccessToken, COOKIE_NAME } from "@/lib/auth/jwt";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { loginSchema, isEmail } from "@/features/auth/login.schema";
 
 export const dynamic = "force-dynamic";
 
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7일
 const AUTH_FAIL_MESSAGE = "아이디 또는 비밀번호가 올바르지 않습니다.";
 
 export async function POST(req: NextRequest) {
@@ -28,54 +26,56 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { loginId, password, remember } = result.data;
+  const { loginId, password } = result.data;
 
   try {
-    const where = isEmail(loginId)
-      ? { email: loginId.trim().toLowerCase() }
-      : { nickname: loginId };
+    // Supabase signInWithPassword는 이메일을 요구한다.
+    // 닉네임으로 로그인한 경우 profiles에서 이메일을 먼저 조회한다.
+    let email: string | null = null;
 
-    const user = await prisma.user.findUnique({
-      where,
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        phoneNumber: true,
-        passwordHash: true,
-      },
-    });
+    if (isEmail(loginId)) {
+      email = loginId.trim().toLowerCase();
+    } else {
+      const admin = createAdminClient();
+      const { data: profile, error: profileError } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("nickname", loginId)
+        .maybeSingle();
+      // DB/RLS 오류를 401(인증 실패)로 위장하지 않도록 분리해 처리한다.
+      if (profileError) throw profileError;
+      email = profile?.email ?? null;
+    }
 
-    if (!user || !user.passwordHash) {
+    if (!email) {
       return NextResponse.json(
         { success: false, message: AUTH_FAIL_MESSAGE },
         { status: 401 },
       );
     }
 
-    const isMatch = await comparePassword(password, user.passwordHash);
-    if (!isMatch) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    // 이메일 확인(Confirm email)이 켜져 있으면 미인증 사용자는
+    // data.user가 있어도 data.session이 null이다. 세션까지 확인한다.
+    if (error || !data.user || !data.session) {
       return NextResponse.json(
         { success: false, message: AUTH_FAIL_MESSAGE },
         { status: 401 },
       );
     }
-
-    const token = await signAccessToken({
-      userId: user.id,
-      email: user.email,
-      nickname: user.nickname,
-    });
 
     const res = NextResponse.json(
       {
         success: true,
         message: "로그인에 성공했습니다.",
         user: {
-          id: user.id,
-          email: user.email,
-          nickname: user.nickname,
-          phoneNumber: user.phoneNumber,
+          id: data.user.id,
+          email: data.user.email,
         },
       },
       { status: 200 },
@@ -83,14 +83,6 @@ export async function POST(req: NextRequest) {
 
     const isProd =
       process.env.NODE_ENV === "production" && process.env.E2E_TEST !== "true";
-    res.cookies.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "lax",
-      path: "/",
-      maxAge: remember ? 60 * 60 * 24 * 30 : COOKIE_MAX_AGE,
-    });
-
     res.cookies.set("last_login_provider", "local", {
       httpOnly: false,
       secure: isProd,
