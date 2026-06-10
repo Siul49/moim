@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   CalendarClock,
   CheckCircle2,
@@ -78,6 +79,7 @@ export function ScheduleRoomClient({
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // 드래그 상태 관리
   const [isDragging, setIsDragging] = useState(false);
@@ -150,6 +152,28 @@ export function ScheduleRoomClient({
     };
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setIsLoggedIn(true);
+        supabase
+          .from("profiles")
+          .select("nickname")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            const nickname =
+              profile?.nickname ||
+              user.user_metadata?.nickname ||
+              user.email?.split("@")[0] ||
+              "";
+            if (nickname) setName(nickname);
+          });
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -453,6 +477,26 @@ export function ScheduleRoomClient({
                 </h2>
               </div>
 
+              {isLoggedIn && (
+                <div className="rounded-2xl bg-gradient-to-r from-brand-purple-ring/50 to-brand-bg-light p-4 border border-brand-purple-light/20 flex items-center justify-between gap-4 animate-fadeIn">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🗓️</span>
+                    <div>
+                      <p className="text-xs font-extrabold text-brand-purple">
+                        내 구글 캘린더 일정이 감지되었습니다! (시안 17)
+                      </p>
+                      <p className="text-[10px] font-semibold text-brand-text-muted mt-0.5">
+                        연동된 일정을 바탕으로 이미 바쁜 시간대를 제외하고 가용
+                        시간대만 표시하도록 준비했습니다.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-brand-purple bg-white px-2 py-0.5 rounded-full border border-brand-border-muted shadow-sm whitespace-nowrap">
+                    자동 연동됨
+                  </span>
+                </div>
+              )}
+
               {error ? (
                 <p
                   role="alert"
@@ -641,6 +685,38 @@ export function ScheduleRoomClient({
           </div>
         </div>
       )}
+
+      {/* 시간표 이미지/ICS 업로드 분석 상태 (시안 18 기반) */}
+      {(importMode === "image" || importMode === "file") && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-[2.5rem] border border-brand-border-muted bg-white p-8 shadow-premium-lg text-center relative animate-scaleIn">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand-purple-ring text-brand-purple shadow-inner mb-6 relative overflow-hidden">
+              <span className="text-3xl animate-bounce">🔍</span>
+              <div className="absolute inset-0 border-2 border-brand-purple rounded-full animate-ping opacity-30 pointer-events-none" />
+            </div>
+            <h3 className="text-xl font-extrabold text-brand-text-primary">
+              {importMode === "image"
+                ? "시간표 이미지 분석 중"
+                : "ICS 캘린더 파일 읽는 중"}
+            </h3>
+            <p className="mt-3 text-xs font-semibold leading-relaxed text-brand-text-muted">
+              {importMode === "image"
+                ? "이미지의 픽셀 격자를 스캔하여 수업 영역을 분석하고 있습니다. 잠시만 기다려 주세요..."
+                : "캘린더 파일의 일정 데이터를 추출하여 후보 일시에 매핑하고 있습니다..."}
+            </p>
+            {/* Shimmer loading bar */}
+            <div className="mt-6 h-2 w-full bg-brand-bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-brand-purple-light to-brand-purple animate-shimmer"
+                style={{ width: "80%" }}
+              />
+            </div>
+            <p className="mt-3 text-[10px] font-bold text-brand-purple-light">
+              스캔 진행률 80% · AI 레이아웃 매칭 중
+            </p>
+          </div>
+        </div>
+      )}
     </MoimShell>
   );
 }
@@ -747,6 +823,17 @@ function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
 }
 
 function SubmissionDonePanel({ name }: { name: string }) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setIsLoggedIn(true);
+      }
+    });
+  }, []);
+
   return (
     <section className="grid h-fit gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-8 text-center shadow-premium-lg">
       <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner">
@@ -762,29 +849,54 @@ function SubmissionDonePanel({ name }: { name: string }) {
         </p>
       </div>
 
-      {/* BM Nudge 3: 가입 유도 (시안 20 기반) */}
-      <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
-        <div className="flex gap-3">
-          <span className="text-xl">💡</span>
-          <div className="flex-1">
-            <p className="font-extrabold text-brand-purple text-sm">
-              매번 요일/시간 선택하기 귀찮으신가요?
-            </p>
-            <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
-              지금 가입하시면 다음 모임에는 번거롭게 캘린더나 시간표를 업로드할
-              필요 없이 1초 만에 가용 일정을 불러올 수 있습니다.
-            </p>
-            <div className="mt-4">
-              <Link
-                href="/signup?redirect=/dashboard"
-                className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
-              >
-                3초 간편 소셜 회원가입
-              </Link>
+      {isLoggedIn ? (
+        <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
+          <div className="flex gap-3">
+            <span className="text-xl">🏠</span>
+            <div className="flex-1">
+              <p className="font-extrabold text-brand-purple text-sm">
+                대시보드로 돌아가기
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
+                현재 생성 또는 참여 완료된 내 모든 모임의 현황을 한눈에 확인할
+                수 있습니다.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+                >
+                  마이 대시보드로 이동
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* BM Nudge 3: 가입 유도 (시안 20 기반) */
+        <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
+          <div className="flex gap-3">
+            <span className="text-xl">💡</span>
+            <div className="flex-1">
+              <p className="font-extrabold text-brand-purple text-sm">
+                매번 요일/시간 선택하기 귀찮으신가요?
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
+                지금 가입하시면 다음 모임에는 번거롭게 캘린더나 시간표를
+                업로드할 필요 없이 1초 만에 가용 일정을 불러올 수 있습니다.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href="/signup?redirect=/dashboard"
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+                >
+                  3초 간편 소셜 회원가입
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

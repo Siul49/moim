@@ -26,8 +26,9 @@ export default async function DashboardMeetingsPage() {
     return null;
   }
 
-  // Fetch all schedules in the system to list on this page
+  // Fetch schedules created by this user
   const schedules = await prisma.schedule.findMany({
+    where: { creatorId: user.id },
     orderBy: { createdAt: "desc" },
     include: {
       _count: {

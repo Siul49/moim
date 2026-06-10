@@ -34,8 +34,9 @@ export default async function DashboardPage() {
     user.email?.split("@")[0] ||
     "사용자";
 
-  // Fetch recent active schedules in the system for display
+  // Fetch recent active schedules created by this user
   const recentSchedules = await prisma.schedule.findMany({
+    where: { creatorId: user.id },
     take: 4,
     orderBy: { createdAt: "desc" },
     include: {

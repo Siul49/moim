@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -30,14 +30,36 @@ const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "SUN", label: "일요일" },
 ];
 
-const HOURS = Array.from({ length: 15 }, (_, index) => index + 7);
+const DAY_SHORT_LABELS: Record<DayCode, string> = {
+  MON: "월",
+  TUE: "화",
+  WED: "수",
+  THU: "목",
+  FRI: "금",
+  SAT: "토",
+  SUN: "일",
+};
+
+// 8:00 to 22:00 (14 hours range)
+const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
 
 export function CreateScheduleClient() {
   const [title, setTitle] = useState("제품 인터뷰");
   const [durationMinutes, setDurationMinutes] = useState("60");
-  const [candidateDays, setCandidateDays] = useState<DayCode[]>(["MON"]);
-  const [candidateStartHour, setCandidateStartHour] = useState("10");
-  const [candidateEndHour, setCandidateEndHour] = useState("18");
+  const [selectedSlots, setSelectedSlots] = useState<string[]>(() => {
+    // Default to Mon-Fri 9:00 - 18:00
+    const slots: string[] = [];
+    for (const day of ["MON", "TUE", "WED", "THU", "FRI"] as DayCode[]) {
+      for (let hour = 9; hour < 18; hour++) {
+        slots.push(`${day}-${hour}`);
+      }
+    }
+    return slots;
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
+    null,
+  );
   const [links, setLinks] = useState<{
     participant: string;
     host: string;
@@ -45,17 +67,151 @@ export function CreateScheduleClient() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Compute bounding parameters from selectedSlots under-the-hood
+  const candidateDays = useMemo(() => {
+    const days = new Set<DayCode>();
+    selectedSlots.forEach((slot) => {
+      const [day] = slot.split("-");
+      days.add(day as DayCode);
+    });
+    return DAY_OPTIONS.map((d) => d.value).filter((day) => days.has(day));
+  }, [selectedSlots]);
+
+  const { candidateStartHour, candidateEndHour } = useMemo(() => {
+    if (selectedSlots.length === 0) {
+      return { candidateStartHour: 9, candidateEndHour: 18 };
+    }
+    let minHour = 24;
+    let maxHour = 0;
+    selectedSlots.forEach((slot) => {
+      const [, hourStr] = slot.split("-");
+      const hour = Number(hourStr);
+      if (hour < minHour) minHour = hour;
+      if (hour > maxHour) maxHour = hour;
+    });
+    return {
+      candidateStartHour: minHour,
+      candidateEndHour: maxHour + 1,
+    };
+  }, [selectedSlots]);
+
+  // Mouse drag handlers
+  const handleMouseDown = (key: string) => {
+    setIsDragging(true);
+    const shouldSelect = !selectedSlots.includes(key);
+    setDragAction(shouldSelect ? "select" : "deselect");
+    setSelectedSlots((prev) =>
+      shouldSelect ? [...prev, key] : prev.filter((k) => k !== key),
+    );
+  };
+
+  const handleMouseEnter = (key: string) => {
+    if (!isDragging || !dragAction) return;
+    setSelectedSlots((prev) => {
+      if (dragAction === "select") {
+        return prev.includes(key) ? prev : [...prev, key];
+      } else {
+        return prev.filter((k) => k !== key);
+      }
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragAction(null);
+  };
+
+  // Touch drag handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent, key: string) => {
+    setIsDragging(true);
+    const shouldSelect = !selectedSlots.includes(key);
+    setDragAction(shouldSelect ? "select" : "deselect");
+    setSelectedSlots((prev) =>
+      shouldSelect ? [...prev, key] : prev.filter((k) => k !== key),
+    );
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !dragAction) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (element) {
+      const key = element.getAttribute("data-slot-key");
+      if (key) {
+        setSelectedSlots((prev) => {
+          if (dragAction === "select") {
+            return prev.includes(key) ? prev : [...prev, key];
+          } else {
+            return prev.filter((k) => k !== key);
+          }
+        });
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setDragAction(null);
+  };
+
+  // Preset selectors
+  const selectPreset = (preset: "weekday" | "weekend" | "all" | "clear") => {
+    if (preset === "clear") {
+      setSelectedSlots([]);
+    } else if (preset === "all") {
+      const slots: string[] = [];
+      DAY_OPTIONS.forEach((day) => {
+        for (let hour = 8; hour < 22; hour++) {
+          slots.push(`${day.value}-${hour}`);
+        }
+      });
+      setSelectedSlots(slots);
+    } else if (preset === "weekday") {
+      const slots: string[] = [];
+      (["MON", "TUE", "WED", "THU", "FRI"] as DayCode[]).forEach((day) => {
+        for (let hour = 9; hour < 18; hour++) {
+          slots.push(`${day}-${hour}`);
+        }
+      });
+      setSelectedSlots(slots);
+    } else if (preset === "weekend") {
+      const slots: string[] = [];
+      (["SAT", "SUN"] as DayCode[]).forEach((day) => {
+        for (let hour = 10; hour < 18; hour++) {
+          slots.push(`${day}-${hour}`);
+        }
+      });
+      setSelectedSlots(slots);
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setDragAction(null);
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLinks(null);
+
+    if (selectedSlots.length === 0) {
+      setError("후보 시간대를 최소 하나 이상 선택해 주세요.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       validateScheduleForm({
         candidateDays,
-        candidateStartHour,
-        candidateEndHour,
+        candidateStartHour: String(candidateStartHour),
+        candidateEndHour: String(candidateEndHour),
         durationMinutes,
       });
 
@@ -66,8 +222,8 @@ export function CreateScheduleClient() {
           title,
           durationMinutes: Number(durationMinutes),
           candidateDays,
-          candidateStartHour: Number(candidateStartHour),
-          candidateEndHour: Number(candidateEndHour),
+          candidateStartHour,
+          candidateEndHour,
         }),
       });
       const result = await response.json();
@@ -87,13 +243,6 @@ export function CreateScheduleClient() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  function toggleDay(day: DayCode, checked: boolean) {
-    setCandidateDays((current) => {
-      if (checked) return current.includes(day) ? current : [...current, day];
-      return current.filter((value) => value !== day);
-    });
   }
 
   return (
@@ -127,13 +276,13 @@ export function CreateScheduleClient() {
             />
           </label>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4">
             <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
               소요 시간
               <select
                 value={durationMinutes}
                 onChange={(event) => setDurationMinutes(event.target.value)}
-                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                className="h-12 w-full sm:w-1/3 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
               >
                 <option value="30">30분</option>
                 <option value="60">60분</option>
@@ -141,119 +290,100 @@ export function CreateScheduleClient() {
                 <option value="120">120분</option>
               </select>
             </label>
-
-            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-              시작 시간
-              <select
-                value={candidateStartHour}
-                onChange={(event) => setCandidateStartHour(event.target.value)}
-                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-              >
-                {HOURS.map((hour) => (
-                  <option key={hour} value={hour}>
-                    {hour}:00
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-              종료 시간
-              <select
-                value={candidateEndHour}
-                onChange={(event) => setCandidateEndHour(event.target.value)}
-                className="h-12 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-              >
-                {HOURS.concat(22).map((hour) => (
-                  <option key={hour} value={hour}>
-                    {hour}:00
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
-          <fieldset className="grid gap-3">
-            <legend className="text-lg font-extrabold text-brand-text-primary">
-              후보 요일
-            </legend>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {DAY_OPTIONS.map((day) => {
-                const isChecked = candidateDays.includes(day.value);
-                return (
-                  <label
-                    key={day.value}
-                    className={cn(
-                      "flex h-12 items-center gap-3 rounded-xl border px-4 text-base font-bold text-brand-text-secondary transition-all duration-150 cursor-pointer shadow-sm",
-                      isChecked
-                        ? "border-brand-purple-light bg-gradient-to-r from-brand-purple-ring to-brand-bg-light text-brand-purple ring-1 ring-brand-purple-light/30"
-                        : "border-brand-border-gray bg-white hover:bg-brand-bg-light",
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={(event) =>
-                        toggleDay(day.value, event.target.checked)
-                      }
-                      className="h-5 w-5 rounded border-brand-border-gray accent-brand-purple-light cursor-pointer"
-                    />
-                    {day.label}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          {/* 선택한 시간대 비주얼 미리보기 (시안 13 기반) */}
-          <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30 space-y-3">
-            <p className="text-sm font-extrabold text-brand-text-primary flex items-center gap-1.5">
-              📅 개설 시간대 비주얼 미리보기
+          <div className="grid gap-3">
+            <span className="text-lg font-extrabold text-brand-text-primary flex items-center gap-1.5">
+              📅 후보 시간대 설정
+            </span>
+            <p className="text-xs text-brand-text-muted">
+              조율 후보로 삼고 싶은 요일과 시간대를 드래그하거나 클릭하여
+              칠해주세요. (시안 13)
             </p>
-            <div className="overflow-x-auto scroller-style">
-              <div className="min-w-[280px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center">
-                {/* Header col */}
-                <div className="h-6 flex items-center justify-center text-brand-text-muted">
-                  시간
-                </div>
-                {DAY_OPTIONS.map((day) => (
-                  <div
-                    key={day.value}
-                    className="h-6 flex items-center justify-center text-brand-text-muted"
-                  >
-                    {day.label.slice(0, 1)}
-                  </div>
-                ))}
 
-                {/* Time Rows */}
-                {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => {
-                  const isHourActive =
-                    hour >= Number(candidateStartHour) &&
-                    hour < Number(candidateEndHour);
-                  return (
-                    <div key={hour} className="contents">
-                      <div className="h-7 flex items-center justify-center text-[10px] text-brand-text-light font-medium border-t border-brand-border-muted/30">
-                        {hour}:00
-                      </div>
-                      {DAY_OPTIONS.map((day) => {
-                        const isSelected =
-                          candidateDays.includes(day.value) && isHourActive;
-                        return (
-                          <div
-                            key={day.value}
-                            className={cn(
-                              "h-7 rounded transition-all border",
-                              isSelected
-                                ? "bg-brand-purple/20 border-brand-purple-light/20 shadow-sm"
-                                : "bg-gray-50 border-gray-100/30",
-                            )}
-                            title={`${day.label} ${hour}:00 - ${hour + 1}:00`}
-                          />
-                        );
-                      })}
+            {/* Presets */}
+            <div className="flex flex-wrap gap-2 my-2">
+              <button
+                type="button"
+                onClick={() => selectPreset("weekday")}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+              >
+                평일 9-18시
+              </button>
+              <button
+                type="button"
+                onClick={() => selectPreset("weekend")}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+              >
+                주말 10-18시
+              </button>
+              <button
+                type="button"
+                onClick={() => selectPreset("all")}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+              >
+                전체 선택
+              </button>
+              <button
+                type="button"
+                onClick={() => selectPreset("clear")}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+              >
+                전체 해제
+              </button>
+            </div>
+
+            {/* Interactive Grid */}
+            <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30">
+              <div className="overflow-x-auto scroller-style">
+                <div className="min-w-[320px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center select-none">
+                  {/* Header col */}
+                  <div className="h-6 flex items-center justify-center text-brand-text-muted">
+                    시간
+                  </div>
+                  {DAY_OPTIONS.map((day) => (
+                    <div
+                      key={day.value}
+                      className="h-6 flex items-center justify-center text-brand-text-muted"
+                    >
+                      {DAY_SHORT_LABELS[day.value]}
                     </div>
-                  );
-                })}
+                  ))}
+
+                  {/* Time Rows */}
+                  {HOURS.map((hour) => {
+                    return (
+                      <div key={hour} className="contents">
+                        <div className="h-8 flex items-center justify-center text-[10px] text-brand-text-light font-medium border-t border-brand-border-muted/30">
+                          {hour}:00
+                        </div>
+                        {DAY_OPTIONS.map((day) => {
+                          const key = `${day.value}-${hour}`;
+                          const isSelected = selectedSlots.includes(key);
+                          return (
+                            <div
+                              key={day.value}
+                              data-slot-key={key}
+                              onMouseDown={() => handleMouseDown(key)}
+                              onMouseEnter={() => handleMouseEnter(key)}
+                              onMouseUp={handleMouseUp}
+                              onTouchStart={(e) => handleTouchStart(e, key)}
+                              onTouchMove={handleTouchMove}
+                              onTouchEnd={handleTouchEnd}
+                              className={cn(
+                                "h-8 rounded transition-all border cursor-pointer touch-none select-none",
+                                isSelected
+                                  ? "bg-brand-purple text-white border-brand-purple shadow-sm hover:bg-brand-purple-hover"
+                                  : "bg-white border-brand-border-gray hover:bg-brand-bg-light",
+                              )}
+                              title={`${day.label} ${hour}:00 - ${hour + 1}:00`}
+                            />
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

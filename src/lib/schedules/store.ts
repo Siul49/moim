@@ -15,6 +15,7 @@ export interface CreateScheduleInput {
   candidateDays: DayCode[];
   candidateStartHour: number;
   candidateEndHour: number;
+  creatorId?: string | null;
 }
 
 export interface AddParticipantAvailabilityInput {
@@ -246,6 +247,7 @@ function normalizeScheduleInput(
     candidateDays,
     candidateStartHour: input.candidateStartHour,
     candidateEndHour: input.candidateEndHour,
+    creatorId: input.creatorId,
   };
 }
 
