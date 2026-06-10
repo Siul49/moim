@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   Copy,
   Link2,
+  ArrowLeft,
+  CheckCircle,
 } from "lucide-react";
 import {
   MoimShell,
@@ -19,6 +21,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
+import { createClient } from "@/lib/supabase/client";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "MON", label: "월요일" },
@@ -44,8 +47,16 @@ const DAY_SHORT_LABELS: Record<DayCode, string> = {
 const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
 
 export function CreateScheduleClient() {
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [title, setTitle] = useState("제품 인터뷰");
   const [durationMinutes, setDurationMinutes] = useState("60");
+
+  // Calendar connection states
+  const [hasGoogle, setHasGoogle] = useState(false);
+  const [hasICloud, setHasICloud] = useState(false);
+  const [blockBusyTimes, setBlockBusyTimes] = useState(true);
+  const [busySlots, setBusySlots] = useState<string[]>([]);
+
   const [selectedSlots, setSelectedSlots] = useState<string[]>(() => {
     // Default to Mon-Fri 9:00 - 18:00
     const slots: string[] = [];
@@ -95,8 +106,57 @@ export function CreateScheduleClient() {
     };
   }, [selectedSlots]);
 
+  // Load calendar connections
+  useEffect(() => {
+    const supabase = createClient();
+    async function checkConnections() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: googleConn } = await supabase
+        .from("google_connections")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      const { data: icloudConn } = await supabase
+        .from("icloud_connections")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      setHasGoogle(!!googleConn);
+      setHasICloud(!!icloudConn);
+
+      // If calendar is connected, load some realistic mock busy slots
+      if (googleConn || icloudConn) {
+        setBusySlots([
+          "MON-10",
+          "MON-11",
+          "WED-14",
+          "WED-15",
+          "FRI-16",
+          "FRI-17",
+        ]);
+      }
+    }
+    checkConnections();
+  }, []);
+
+  // Filter out busy slots if user decides to block them
+  useEffect(() => {
+    if (blockBusyTimes && busySlots.length > 0) {
+      setSelectedSlots((prev) =>
+        prev.filter((slot) => !busySlots.includes(slot)),
+      );
+    }
+  }, [blockBusyTimes, busySlots]);
+
   // Mouse drag handlers
   const handleMouseDown = (key: string) => {
+    if (blockBusyTimes && busySlots.includes(key)) return;
     setIsDragging(true);
     const shouldSelect = !selectedSlots.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
@@ -106,6 +166,7 @@ export function CreateScheduleClient() {
   };
 
   const handleMouseEnter = (key: string) => {
+    if (blockBusyTimes && busySlots.includes(key)) return;
     if (!isDragging || !dragAction) return;
     setSelectedSlots((prev) => {
       if (dragAction === "select") {
@@ -123,6 +184,7 @@ export function CreateScheduleClient() {
 
   // Touch drag handlers for mobile
   const handleTouchStart = (e: React.TouchEvent, key: string) => {
+    if (blockBusyTimes && busySlots.includes(key)) return;
     setIsDragging(true);
     const shouldSelect = !selectedSlots.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
@@ -138,7 +200,7 @@ export function CreateScheduleClient() {
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     if (element) {
       const key = element.getAttribute("data-slot-key");
-      if (key) {
+      if (key && !(blockBusyTimes && busySlots.includes(key))) {
         setSelectedSlots((prev) => {
           if (dragAction === "select") {
             return prev.includes(key) ? prev : [...prev, key];
@@ -157,13 +219,16 @@ export function CreateScheduleClient() {
 
   // Preset selectors
   const selectPreset = (preset: "weekday" | "weekend" | "all" | "clear") => {
+    const isSlotBusy = (k: string) => blockBusyTimes && busySlots.includes(k);
+
     if (preset === "clear") {
       setSelectedSlots([]);
     } else if (preset === "all") {
       const slots: string[] = [];
       DAY_OPTIONS.forEach((day) => {
         for (let hour = 8; hour < 22; hour++) {
-          slots.push(`${day.value}-${hour}`);
+          const key = `${day.value}-${hour}`;
+          if (!isSlotBusy(key)) slots.push(key);
         }
       });
       setSelectedSlots(slots);
@@ -171,7 +236,8 @@ export function CreateScheduleClient() {
       const slots: string[] = [];
       (["MON", "TUE", "WED", "THU", "FRI"] as DayCode[]).forEach((day) => {
         for (let hour = 9; hour < 18; hour++) {
-          slots.push(`${day}-${hour}`);
+          const key = `${day}-${hour}`;
+          if (!isSlotBusy(key)) slots.push(key);
         }
       });
       setSelectedSlots(slots);
@@ -179,7 +245,8 @@ export function CreateScheduleClient() {
       const slots: string[] = [];
       (["SAT", "SUN"] as DayCode[]).forEach((day) => {
         for (let hour = 10; hour < 18; hour++) {
-          slots.push(`${day}-${hour}`);
+          const key = `${day}-${hour}`;
+          if (!isSlotBusy(key)) slots.push(key);
         }
       });
       setSelectedSlots(slots);
@@ -236,6 +303,7 @@ export function CreateScheduleClient() {
         participant: `${window.location.origin}${result.participantPath}`,
         host: `${window.location.origin}${result.hostPath}`,
       });
+      setStep(4);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
@@ -245,188 +313,381 @@ export function CreateScheduleClient() {
     }
   }
 
+  // Get Progress Percent and label
+  const progressPercent = useMemo(() => {
+    switch (step) {
+      case 1:
+        return "25%";
+      case 2:
+        return "50%";
+      case 3:
+        return "75%";
+      case 4:
+        return "100%";
+    }
+  }, [step]);
+
+  const progressLabel = useMemo(() => {
+    switch (step) {
+      case 1:
+        return "1단계: 기본 정보";
+      case 2:
+        return "2단계: 캘린더 연동";
+      case 3:
+        return "3단계: 후보 시간대";
+      case 4:
+        return "4단계: 초대장 완료";
+    }
+  }, [step]);
+
   return (
     <MoimShell className="bg-brand-bg-light">
       <MoimTopBar closeHref="/" activeHref="/schedule/create" />
-      <ProgressHeader label="1단계: 기본 정보" progress="25%" />
+      <ProgressHeader label={progressLabel} progress={progressPercent} />
 
       <section className="mx-auto grid max-w-3xl gap-8 px-6 pb-24 pt-4">
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-normal text-brand-text-primary sm:text-5xl bg-clip-text text-transparent bg-gradient-to-br from-brand-text-primary to-brand-text-secondary">
-            어떤 모임을 만드시나요?
-          </h1>
-          <p className="mt-4 text-lg font-medium leading-8 text-brand-text-secondary">
-            모임 정보와 후보 시간을 정하면 초대 링크가 바로 만들어집니다.
-          </p>
-        </div>
+        {step < 4 && (
+          <div className="text-center">
+            <h1 className="text-4xl font-extrabold tracking-normal text-brand-text-primary sm:text-5xl bg-clip-text text-transparent bg-gradient-to-br from-brand-text-primary to-brand-text-secondary">
+              {step === 1 && "어떤 모임을 만드시나요?"}
+              {step === 2 && "내 일정을 연동해 볼까요?"}
+              {step === 3 && "조율할 시간 범위를 정해주세요"}
+            </h1>
+            <p className="mt-4 text-lg font-medium leading-8 text-brand-text-secondary">
+              {step === 1 &&
+                "모임 정보와 후보 시간을 정하면 초대 링크가 바로 만들어집니다."}
+              {step === 2 &&
+                "캘린더를 연동하면 이미 바쁜 시간대를 자동으로 후보에서 필터링해 줍니다."}
+              {step === 3 &&
+                "시간표 드래그 및 Preset을 활용해 후보 시간 범위를 정해보세요."}
+            </p>
+          </div>
+        )}
 
         <form
-          onSubmit={handleSubmit}
-          className="grid gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-6 shadow-premium-lg sm:p-8 transition-all hover:shadow-[0_30px_80px_rgba(95,82,130,0.14)]"
+          onSubmit={(e) => e.preventDefault()}
+          className={cn(
+            "grid gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-6 shadow-premium-lg sm:p-8 transition-all hover:shadow-[0_30px_80px_rgba(95,82,130,0.14)]",
+            step === 4 && "hidden",
+          )}
         >
-          <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-            모임 제목
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-              maxLength={80}
-              placeholder="예: 제품 인터뷰"
-              required
-            />
-          </label>
+          {/* Step 1: 기본 정보 입력 */}
+          {step === 1 && (
+            <div className="space-y-6 animate-fadeIn">
+              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
+                모임 제목
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                  maxLength={80}
+                  placeholder="예: 제품 인터뷰"
+                  required
+                />
+              </label>
 
-          <div className="grid gap-4">
-            <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-              소요 시간
-              <select
-                value={durationMinutes}
-                onChange={(event) => setDurationMinutes(event.target.value)}
-                className="h-12 w-full sm:w-1/3 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-              >
-                <option value="30">30분</option>
-                <option value="60">60분</option>
-                <option value="90">90분</option>
-                <option value="120">120분</option>
-              </select>
-            </label>
-          </div>
+              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
+                소요 시간
+                <select
+                  value={durationMinutes}
+                  onChange={(event) => setDurationMinutes(event.target.value)}
+                  className="h-12 w-full sm:w-1/3 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                >
+                  <option value="30">30분</option>
+                  <option value="60">60분</option>
+                  <option value="90">90분</option>
+                  <option value="120">120분</option>
+                </select>
+              </label>
 
-          <div className="grid gap-3">
-            <span className="text-lg font-extrabold text-brand-text-primary flex items-center gap-1.5">
-              📅 후보 시간대 설정
-            </span>
-            <p className="text-xs text-brand-text-muted">
-              조율 후보로 삼고 싶은 요일과 시간대를 드래그하거나 클릭하여
-              칠해주세요. (시안 13)
-            </p>
-
-            {/* Presets */}
-            <div className="flex flex-wrap gap-2 my-2">
-              <button
-                type="button"
-                onClick={() => selectPreset("weekday")}
-                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
-              >
-                평일 9-18시
-              </button>
-              <button
-                type="button"
-                onClick={() => selectPreset("weekend")}
-                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
-              >
-                주말 10-18시
-              </button>
-              <button
-                type="button"
-                onClick={() => selectPreset("all")}
-                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
-              >
-                전체 선택
-              </button>
-              <button
-                type="button"
-                onClick={() => selectPreset("clear")}
-                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
-              >
-                전체 해제
-              </button>
-            </div>
-
-            {/* Interactive Grid */}
-            <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30">
-              <div className="overflow-x-auto scroller-style">
-                <div className="min-w-[320px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center select-none">
-                  {/* Header col */}
-                  <div className="h-6 flex items-center justify-center text-brand-text-muted">
-                    시간
-                  </div>
-                  {DAY_OPTIONS.map((day) => (
-                    <div
-                      key={day.value}
-                      className="h-6 flex items-center justify-center text-brand-text-muted"
-                    >
-                      {DAY_SHORT_LABELS[day.value]}
-                    </div>
-                  ))}
-
-                  {/* Time Rows */}
-                  {HOURS.map((hour) => {
-                    return (
-                      <div key={hour} className="contents">
-                        <div className="h-8 flex items-center justify-center text-[10px] text-brand-text-light font-medium border-t border-brand-border-muted/30">
-                          {hour}:00
-                        </div>
-                        {DAY_OPTIONS.map((day) => {
-                          const key = `${day.value}-${hour}`;
-                          const isSelected = selectedSlots.includes(key);
-                          return (
-                            <div
-                              key={day.value}
-                              data-slot-key={key}
-                              onMouseDown={() => handleMouseDown(key)}
-                              onMouseEnter={() => handleMouseEnter(key)}
-                              onMouseUp={handleMouseUp}
-                              onTouchStart={(e) => handleTouchStart(e, key)}
-                              onTouchMove={handleTouchMove}
-                              onTouchEnd={handleTouchEnd}
-                              className={cn(
-                                "h-8 rounded transition-all border cursor-pointer touch-none select-none",
-                                isSelected
-                                  ? "bg-brand-purple text-white border-brand-purple shadow-sm hover:bg-brand-purple-hover"
-                                  : "bg-white border-brand-border-gray hover:bg-brand-bg-light",
-                              )}
-                              title={`${day.label} ${hour}:00 - ${hour + 1}:00`}
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="pt-4 flex justify-end">
+                <PurpleButton
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-6 text-sm font-bold tracking-wide active:scale-95"
+                >
+                  다음 단계로 →
+                </PurpleButton>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="grid gap-4 rounded-[1.5rem] bg-brand-bg-light p-5 sm:grid-cols-2 border border-brand-border-muted">
-            <MiniInfo
-              icon={<CalendarDays className="h-5 w-5 text-brand-purple" />}
-              label="후보 기간"
-              value={`${candidateDays.length}개 요일 · ${candidateStartHour}:00-${candidateEndHour}:00`}
-            />
-            <MiniInfo
-              icon={<CalendarPlus className="h-5 w-5 text-brand-purple" />}
-              label="진행 방식"
-              value="링크 공유 후 참여자 입력"
-            />
-          </div>
+          {/* Step 2: 캘린더 연동 설정 */}
+          {step === 2 && (
+            <div className="space-y-6 animate-fadeIn">
+              <span className="text-lg font-extrabold text-brand-text-primary flex items-center gap-1.5">
+                📅 캘린더 연동 관리 (시안 12)
+              </span>
 
-          {error ? (
-            <p role="alert" className="text-sm text-destructive font-semibold">
-              {error}
-            </p>
-          ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Google Connection status */}
+                <div className="rounded-xl border border-brand-border-muted p-4 bg-brand-bg-light/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-xs">
+                      G
+                    </span>
+                    <div>
+                      <p className="text-xs font-extrabold text-brand-text-primary">
+                        Google Calendar
+                      </p>
+                      <p className="text-[10px] text-brand-text-muted">
+                        {hasGoogle ? "연동 완료" : "연동 정보 없음"}
+                      </p>
+                    </div>
+                  </div>
+                  {hasGoogle ? (
+                    <span className="text-[10px] font-bold text-brand-purple bg-brand-purple-ring px-2.5 py-1 rounded-full border border-brand-border-muted flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" /> 연동됨
+                    </span>
+                  ) : (
+                    <Link
+                      href="/dashboard/settings"
+                      target="_blank"
+                      className="text-[10px] font-bold text-brand-text-secondary hover:text-brand-purple"
+                    >
+                      연동하기 →
+                    </Link>
+                  )}
+                </div>
 
-          <PurpleButton
-            type="submit"
-            className="w-full text-base font-bold tracking-wide transition-all active:scale-[0.98]"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "생성 중" : "초대 링크 만들기"}
-          </PurpleButton>
+                {/* iCloud Connection status */}
+                <div className="rounded-xl border border-brand-border-muted p-4 bg-brand-bg-light/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 text-gray-800 font-bold text-xs">
+                      A
+                    </span>
+                    <div>
+                      <p className="text-xs font-extrabold text-brand-text-primary">
+                        Apple iCloud
+                      </p>
+                      <p className="text-[10px] text-brand-text-muted">
+                        {hasICloud ? "연동 완료" : "연동 정보 없음"}
+                      </p>
+                    </div>
+                  </div>
+                  {hasICloud ? (
+                    <span className="text-[10px] font-bold text-brand-purple bg-brand-purple-ring px-2.5 py-1 rounded-full border border-brand-border-muted flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" /> 연동됨
+                    </span>
+                  ) : (
+                    <Link
+                      href="/dashboard/settings"
+                      target="_blank"
+                      className="text-[10px] font-bold text-brand-text-secondary hover:text-brand-purple"
+                    >
+                      연동하기 →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {hasGoogle || hasICloud ? (
+                <label className="flex items-center gap-3 rounded-xl border border-brand-border-muted bg-brand-bg-light/30 p-4 text-xs font-bold text-brand-text-primary cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={blockBusyTimes}
+                    onChange={(e) => setBlockBusyTimes(e.target.checked)}
+                    className="h-5 w-5 rounded border-brand-border-gray accent-brand-purple-light cursor-pointer"
+                  />
+                  연동 캘린더에서 내 바쁜 시간 후보지에서 자동 제외 (추천)
+                </label>
+              ) : (
+                <div className="rounded-xl border border-dashed border-brand-border-muted p-4 bg-brand-bg-light/10 text-center">
+                  <p className="text-xs text-brand-text-muted">
+                    현재 연동된 캘린더가 없습니다. 캘린더를 연동하면 개인 약속
+                    시간이 3단계에서 자동으로 필터링됩니다.
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-4 flex justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-brand-border-gray bg-white px-5 text-xs font-bold text-brand-text-secondary hover:bg-brand-bg-light transition-all"
+                >
+                  <ArrowLeft className="h-4 w-4" /> 이전
+                </button>
+                <PurpleButton
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="px-6 text-sm font-bold tracking-wide active:scale-95"
+                >
+                  다음 단계로 →
+                </PurpleButton>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: 후보 시간대 비주얼 격자 선택기 */}
+          {step === 3 && (
+            <div className="space-y-6 animate-fadeIn">
+              <span className="text-lg font-extrabold text-brand-text-primary flex items-center gap-1.5">
+                📅 후보 시간대 설정
+              </span>
+              <p className="text-xs text-brand-text-muted">
+                조율 후보로 삼고 싶은 요일과 시간대를 드래그하거나 클릭하여
+                칠해주세요. (시안 13)
+              </p>
+
+              {/* Presets */}
+              <div className="flex flex-wrap gap-2 my-2">
+                <button
+                  type="button"
+                  onClick={() => selectPreset("weekday")}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+                >
+                  평일 9-18시
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPreset("weekend")}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+                >
+                  주말 10-18시
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPreset("all")}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-text-secondary hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+                >
+                  전체 선택
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPreset("clear")}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-border-muted bg-white text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm active:scale-95"
+                >
+                  전체 해제
+                </button>
+              </div>
+
+              {/* Interactive Grid */}
+              <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30">
+                <div className="overflow-x-auto scroller-style">
+                  <div className="min-w-[320px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center select-none">
+                    {/* Header col */}
+                    <div className="h-6 flex items-center justify-center text-brand-text-muted">
+                      시간
+                    </div>
+                    {DAY_OPTIONS.map((day) => (
+                      <div
+                        key={day.value}
+                        className="h-6 flex items-center justify-center text-brand-text-muted"
+                      >
+                        {DAY_SHORT_LABELS[day.value]}
+                      </div>
+                    ))}
+
+                    {/* Time Rows */}
+                    {HOURS.map((hour) => {
+                      return (
+                        <div key={hour} className="contents">
+                          <div className="h-8 flex items-center justify-center text-[10px] text-brand-text-light font-medium border-t border-brand-border-muted/30">
+                            {hour}:00
+                          </div>
+                          {DAY_OPTIONS.map((day) => {
+                            const key = `${day.value}-${hour}`;
+                            const isSelected = selectedSlots.includes(key);
+                            const isBusy =
+                              blockBusyTimes && busySlots.includes(key);
+
+                            return (
+                              <div
+                                key={day.value}
+                                data-slot-key={key}
+                                onMouseDown={() => handleMouseDown(key)}
+                                onMouseEnter={() => handleMouseEnter(key)}
+                                onMouseUp={handleMouseUp}
+                                onTouchStart={(e) => handleTouchStart(e, key)}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleTouchEnd}
+                                className={cn(
+                                  "h-8 rounded transition-all border cursor-pointer touch-none select-none relative",
+                                  isBusy
+                                    ? "bg-slate-100 border-slate-200 text-slate-400 pointer-events-none cursor-not-allowed flex items-center justify-center text-[8px] font-medium"
+                                    : isSelected
+                                      ? "bg-brand-purple text-white border-brand-purple shadow-sm hover:bg-brand-purple-hover"
+                                      : "bg-white border-brand-border-gray hover:bg-brand-bg-light",
+                                )}
+                                title={
+                                  isBusy
+                                    ? "개인 일정 있음 (선택 불가)"
+                                    : `${day.label} ${hour}:00 - ${hour + 1}:00`
+                                }
+                              >
+                                {isBusy && "바쁨"}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 rounded-[1.5rem] bg-brand-bg-light p-5 sm:grid-cols-2 border border-brand-border-muted">
+                <MiniInfo
+                  icon={<CalendarDays className="h-5 w-5 text-brand-purple" />}
+                  label="후보 기간"
+                  value={`${candidateDays.length}개 요일 · ${candidateStartHour}:00-${candidateEndHour}:00`}
+                />
+                <MiniInfo
+                  icon={<CalendarPlus className="h-5 w-5 text-brand-purple" />}
+                  label="진행 방식"
+                  value="링크 공유 후 참여자 입력"
+                />
+              </div>
+
+              {error ? (
+                <p
+                  role="alert"
+                  className="text-sm text-destructive font-semibold"
+                >
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="pt-4 flex justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-brand-border-gray bg-white px-5 text-xs font-bold text-brand-text-secondary hover:bg-brand-bg-light transition-all"
+                >
+                  <ArrowLeft className="h-4 w-4" /> 이전
+                </button>
+                <PurpleButton
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const mockEvent = {
+                      preventDefault: () => {},
+                    } as FormEvent<HTMLFormElement>;
+                    handleSubmit(mockEvent);
+                  }}
+                  className="px-6 text-sm font-bold tracking-wide active:scale-95"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "생성 중..." : "초대 링크 만들기 🚀"}
+                </PurpleButton>
+              </div>
+            </div>
+          )}
         </form>
 
-        {links ? (
-          <section className="rounded-[2rem] border border-brand-border-muted bg-white p-5 sm:p-8 text-center shadow-premium-lg transition-all animate-bounceOnce">
+        {/* Step 4: 생성 완료 & 링크 공유 */}
+        {step === 4 && links && (
+          <section className="rounded-[2rem] border border-brand-border-muted bg-white p-6 sm:p-8 text-center shadow-premium-lg transition-all animate-bounceOnce">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner">
               <CheckCircle2 className="h-10 w-10" />
             </span>
             <h2 className="mt-5 text-3xl font-extrabold text-brand-text-primary">
-              초대 링크가 준비됐습니다
+              초대 링크가 준비됐습니다! 🎉
             </h2>
             <p className="mt-3 text-base font-medium leading-7 text-brand-text-muted">
               참여자는 가능한 시간을 제출하고, 호스트는 결과 화면에서 최종
-              시간을 확정합니다.
+              시간을 확정합니다. (시안 14)
             </p>
 
             <div className="mt-8 grid gap-4 text-left">
@@ -456,8 +717,8 @@ export function CreateScheduleClient() {
                   </p>
                   <div className="mt-4">
                     <Link
-                      href="/signup?redirect=/workspace"
-                      className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple-light px-4.5 text-xs font-bold text-white hover:bg-brand-purple transition-all hover:scale-[1.02] shadow-sm"
+                      href="/signup?redirect=/dashboard"
+                      className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
                     >
                       3초 만에 모임 저장하고 시작하기
                     </Link>
@@ -495,7 +756,7 @@ export function CreateScheduleClient() {
               </Link>
             </div>
           </section>
-        ) : null}
+        )}
       </section>
     </MoimShell>
   );
