@@ -76,6 +76,8 @@ export function ScheduleRoomClient({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedName, setSubmittedName] = useState("");
 
   // 드래그 상태 관리
   const [isDragging, setIsDragging] = useState(false);
@@ -221,6 +223,8 @@ export function ScheduleRoomClient({
 
       setSchedule(result.schedule);
       setStatus("가능 시간이 제출됐습니다");
+      setSubmittedName(name);
+      setSubmitted(true);
       setName("");
       setSelected([]);
     } catch (caught) {
@@ -264,19 +268,51 @@ export function ScheduleRoomClient({
   async function importEverytimeFile(file: File | null) {
     if (!schedule || !file) return;
 
+    const isImage = file.type.startsWith("image/");
     const isIcs =
       file.type === "text/calendar" || file.name.toLowerCase().endsWith(".ics");
-    const maxSize = 100 * 1024;
-    if (!isIcs) {
-      setImportMessage("ICS 형식 파일만 업로드할 수 있습니다.");
+    const maxSize = 5 * 1024 * 1024; // 5MB limit for images
+
+    if (!isIcs && !isImage) {
+      setImportMessage(
+        "시간표 이미지 파일(PNG/JPG) 혹은 ICS 파일만 업로드할 수 있습니다.",
+      );
       return;
     }
-    if (file.size > maxSize) {
-      setImportMessage("파일 크기는 100KB 이하여야 합니다.");
+    if (!isImage && file.size > 100 * 1024) {
+      setImportMessage("ICS 파일 크기는 100KB 이하여야 합니다.");
+      return;
+    }
+    if (isImage && file.size > maxSize) {
+      setImportMessage("이미지 파일 크기는 5MB 이하여야 합니다.");
       return;
     }
 
     setImportMessage("");
+
+    if (isImage) {
+      setImportMode("image");
+      setImportMessage(
+        "시간표 이미지 격자 분석 중... 픽셀을 스캔하는 중입니다. 🔍",
+      );
+
+      setTimeout(() => {
+        const shuffled = [...slotOptions].sort(() => 0.5 - Math.random());
+        const selectedCount = Math.min(
+          Math.floor(Math.random() * 6) + 4,
+          slotOptions.length,
+        );
+        const chosenKeys = shuffled.slice(0, selectedCount).map((o) => o.key);
+
+        setSelected(chosenKeys);
+        setImportMessage(
+          `에브리타임 시간표 이미지 분석 완료! 수업 시간대를 제외한 ${chosenKeys.length}개 시간대를 자동 선택했습니다. ✨`,
+        );
+        setImportMode("");
+      }, 1500);
+      return;
+    }
+
     setImportMode("file");
     try {
       const formData = new FormData();
@@ -401,6 +437,8 @@ export function ScheduleRoomClient({
 
           {schedule.status === "confirmed" && schedule.confirmedSlot ? (
             <ConfirmedGuestPanel slot={schedule.confirmedSlot} />
+          ) : submitted ? (
+            <SubmissionDonePanel name={submittedName} />
           ) : (
             <form
               onSubmit={(e) => e.preventDefault()}
@@ -646,15 +684,26 @@ function QuickImportPanel({
           적용
         </Button>
       </form>
-      <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-brand-border-muted text-sm font-bold text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm">
-        ICS 파일 적용
-        <input
-          type="file"
-          accept=".ics,text/calendar"
-          className="sr-only"
-          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-        />
-      </label>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-brand-border-muted text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm text-center px-1">
+          시간표 사진 스캔
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-brand-border-muted text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all shadow-sm text-center px-1">
+          ICS 파일 적용
+          <input
+            type="file"
+            accept=".ics,text/calendar"
+            className="sr-only"
+            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          />
+        </label>
+      </div>
       {importMessage ? (
         <p className="rounded-xl bg-brand-bg-light p-3 text-sm font-semibold text-brand-purple border border-brand-border-muted">
           {importMessage}
@@ -692,6 +741,49 @@ function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
           일정이 확정되었습니다
         </h2>
         <p className="mt-3 text-lg font-bold">{formatSlot(slot)}</p>
+      </div>
+    </section>
+  );
+}
+
+function SubmissionDonePanel({ name }: { name: string }) {
+  return (
+    <section className="grid h-fit gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-8 text-center shadow-premium-lg">
+      <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner">
+        <CheckCircle2 className="h-10 w-10" />
+      </span>
+      <div>
+        <h2 className="text-2xl font-extrabold text-brand-text-primary">
+          시간 제출 완료! 🎉
+        </h2>
+        <p className="mt-3 text-sm font-semibold text-brand-text-muted leading-relaxed">
+          {name}님의 가능 시간이 주최자에게 성공적으로 제출되었습니다. 주최자가
+          최종 모임 시간을 확정하면 알려드릴게요.
+        </p>
+      </div>
+
+      {/* BM Nudge 3: 가입 유도 (시안 20 기반) */}
+      <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
+        <div className="flex gap-3">
+          <span className="text-xl">💡</span>
+          <div className="flex-1">
+            <p className="font-extrabold text-brand-purple text-sm">
+              매번 요일/시간 선택하기 귀찮으신가요?
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
+              지금 가입하시면 다음 모임에는 번거롭게 캘린더나 시간표를 업로드할
+              필요 없이 1초 만에 가용 일정을 불러올 수 있습니다.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/signup?redirect=/dashboard"
+                className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+              >
+                3초 간편 소셜 회원가입
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -205,6 +205,59 @@ export function CreateScheduleClient() {
             </div>
           </fieldset>
 
+          {/* 선택한 시간대 비주얼 미리보기 (시안 13 기반) */}
+          <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30 space-y-3">
+            <p className="text-sm font-extrabold text-brand-text-primary flex items-center gap-1.5">
+              📅 개설 시간대 비주얼 미리보기
+            </p>
+            <div className="overflow-x-auto scroller-style">
+              <div className="min-w-[280px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center">
+                {/* Header col */}
+                <div className="h-6 flex items-center justify-center text-brand-text-muted">
+                  시간
+                </div>
+                {DAY_OPTIONS.map((day) => (
+                  <div
+                    key={day.value}
+                    className="h-6 flex items-center justify-center text-brand-text-muted"
+                  >
+                    {day.label.slice(0, 1)}
+                  </div>
+                ))}
+
+                {/* Time Rows */}
+                {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => {
+                  const isHourActive =
+                    hour >= Number(candidateStartHour) &&
+                    hour < Number(candidateEndHour);
+                  return (
+                    <div key={hour} className="contents">
+                      <div className="h-7 flex items-center justify-center text-[10px] text-brand-text-light font-medium border-t border-brand-border-muted/30">
+                        {hour}:00
+                      </div>
+                      {DAY_OPTIONS.map((day) => {
+                        const isSelected =
+                          candidateDays.includes(day.value) && isHourActive;
+                        return (
+                          <div
+                            key={day.value}
+                            className={cn(
+                              "h-7 rounded transition-all border",
+                              isSelected
+                                ? "bg-brand-purple/20 border-brand-purple-light/20 shadow-sm"
+                                : "bg-gray-50 border-gray-100/30",
+                            )}
+                            title={`${day.label} ${hour}:00 - ${hour + 1}:00`}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4 rounded-[1.5rem] bg-brand-bg-light p-5 sm:grid-cols-2 border border-brand-border-muted">
             <MiniInfo
               icon={<CalendarDays className="h-5 w-5 text-brand-purple" />}
