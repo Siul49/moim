@@ -4,6 +4,7 @@ import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -56,9 +57,20 @@ export default function LoginPage() {
     }
   }
 
-  function handleGoogleLogin() {
-    window.location.href = "/api/auth/google/login";
-  }
+  const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`${provider} 로그인 에러:`, err);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-brand-text-primary">
@@ -167,8 +179,9 @@ export default function LoginPage() {
         </div>
 
         <div className="grid gap-3.5">
-          <a
-            href="/api/auth/kakao/login"
+          <button
+            type="button"
+            onClick={() => handleOAuthLogin("kakao")}
             className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#fee500] text-lg font-bold text-[#191919] transition-all hover:opacity-90 active:scale-[0.99]"
           >
             <AuthProviderGlyph type="kakao" className="h-5 w-5" /> 카카오로
@@ -178,11 +191,11 @@ export default function LoginPage() {
                 최근 사용
               </span>
             )}
-          </a>
+          </button>
           <button
             type="button"
             className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl border border-brand-border-gray bg-white text-lg font-bold text-brand-text-primary transition-all hover:bg-brand-bg-light active:scale-[0.99] shadow-sm"
-            onClick={handleGoogleLogin}
+            onClick={() => handleOAuthLogin("google")}
           >
             <AuthProviderGlyph type="google" className="h-5 w-5" /> 구글로
             시작하기
@@ -204,8 +217,9 @@ export default function LoginPage() {
               </span>
             )}
           </a>
-          <a
-            href="/api/auth/apple/login"
+          <button
+            type="button"
+            onClick={() => handleOAuthLogin("apple")}
             className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-black text-lg font-bold text-white transition-all hover:bg-[#1c1c1e] active:scale-[0.99]"
           >
             <AuthProviderGlyph type="apple" className="h-5 w-5" /> Apple로
@@ -215,7 +229,7 @@ export default function LoginPage() {
                 최근 사용
               </span>
             )}
-          </a>
+          </button>
         </div>
 
         <p className="mt-12 text-center text-lg font-semibold text-brand-text-secondary">

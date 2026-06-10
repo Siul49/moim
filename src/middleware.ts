@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "@/lib/supabase/env";
-import { COOKIE_NAME } from "@/lib/auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { url, anonKey } = getSupabaseConfig();
@@ -39,8 +38,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    const hasLocalToken = request.cookies.has(COOKIE_NAME);
-    if (!hasLocalToken && !hasSupabaseUser) {
+    if (!hasSupabaseUser) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("next", request.nextUrl.pathname);
 
