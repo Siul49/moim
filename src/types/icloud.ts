@@ -62,31 +62,3 @@ export interface CreateEventResult {
   href: string;
   etag: string;
 }
-
-/** DB의 icloud_connections 행 */
-export interface ICloudConnectionRow {
-  id: string;
-  profile_id: string;
-  apple_id: string;
-  encrypted_password: string;
-  encryption_iv: string;
-  principal_url: string | null;
-  calendar_home_url: string | null;
-  is_active: boolean;
-  last_verified_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** DB의 icloud_calendars 행 */
-export interface ICloudCalendarRow {
-  id: string;
-  connection_id: string;
-  display_name: string;
-  calendar_url: string;
-  color: string | null;
-  ctag: string | null;
-  synced_at: string | null;
-  created_at: string;
-  updated_at: string;
-}

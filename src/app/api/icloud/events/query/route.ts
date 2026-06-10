@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession, UnauthorizedError } from "@/lib/auth/session";
-import { decrypt, deserializeEncrypted } from "@/lib/crypto";
+import { maskEmail } from "@/lib/crypto";
 import { queryEvents } from "@/lib/caldav/query";
 import { parseIcsToEvents } from "@/lib/ics/parser";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/lib/supabase/server";
-import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
+import { getConnectionAuth } from "@/lib/caldav/connection-cookie";
 
 export const dynamic = "force-dynamic";
 
 const QuerySchema = z.object({
-  calendarId: z.string().uuid("calendarId는 UUID 형식이어야 합니다."),
+  calendarUrl: z
+    .string()
+    .url("calendarUrl은 올바른 URL 형식이어야 합니다.")
+    .startsWith("https://", "calendarUrl은 https URL이어야 합니다."),
   startDate: z
     .string()
     .datetime({ message: "startDate는 ISO 8601 형식이어야 합니다." }),
@@ -21,18 +22,13 @@ const QuerySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // ── 1. 인증 검증 ──────────────────────────────────────────
-  let session;
-  try {
-    session = await requireSession();
-  } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 },
-      );
-    }
-    throw e;
+  // ── 1. 연결 정보 확인 ─────────────────────────────────────
+  const connection = await getConnectionAuth();
+  if (!connection) {
+    return NextResponse.json(
+      { error: "연결된 iCloud 계정이 없습니다. 먼저 계정을 연결해주세요." },
+      { status: 404 },
+    );
   }
 
   // ── 2. 입력 검증 ──────────────────────────────────────────
@@ -44,7 +40,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  const { calendarId, startDate, endDate } = parsed.data;
+  const { calendarUrl, startDate, endDate } = parsed.data;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -55,53 +51,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 3. 캘린더 + 연결 정보 조회 (소유권 확인) ──────────────
-  const supabase = await createClient();
-
-  const { data: calendar, error: calError } = await supabase
-    .from("icloud_calendars")
-    .select("*, icloud_connections(*)")
-    .eq("id", calendarId)
-    .single();
-
-  if (calError || !calendar) {
-    return NextResponse.json(
-      { error: "캘린더를 찾을 수 없습니다." },
-      { status: 404 },
-    );
-  }
-
-  // RLS로 보호되지만 소유권을 한 번 더 확인
-  const connection = (
-    calendar as ICloudCalendarRow & {
-      icloud_connections: ICloudConnectionRow;
-    }
-  ).icloud_connections;
-
-  if (!connection || connection.profile_id !== session.userId) {
-    return NextResponse.json(
-      { error: "접근 권한이 없습니다." },
-      { status: 403 },
-    );
-  }
-
-  // ── 4. CalDAV REPORT ──────────────────────────────────────
+  // ── 3. CalDAV REPORT ──────────────────────────────────────
   try {
-    const plainPassword = decrypt(
-      deserializeEncrypted(
-        connection.encrypted_password,
-        connection.encryption_iv,
-      ),
-    );
-
     const rawEvents = await queryEvents(
-      (calendar as ICloudCalendarRow).calendar_url,
-      { username: connection.apple_id, password: plainPassword },
+      calendarUrl,
+      { username: connection.appleId, password: connection.password },
       start,
       end,
     );
 
-    // ── 5. ICS 파싱 ───────────────────────────────────────
+    // ── 4. ICS 파싱 ───────────────────────────────────────
     const events = rawEvents.flatMap((raw) =>
       parseIcsToEvents(raw.icsData).map((e) => ({
         uid: e.uid,
@@ -125,8 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.error("[icloud.events.query] 오류", {
-      userId: session.userId,
-      calendarId,
+      appleId: maskEmail(connection.appleId),
       error: err instanceof Error ? err.message : "unknown",
     });
     return NextResponse.json(
