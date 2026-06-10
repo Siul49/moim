@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession, UnauthorizedError } from "@/lib/auth/session";
-import { encrypt, serializeEncrypted, maskEmail } from "@/lib/crypto";
+import { maskEmail } from "@/lib/crypto";
 import { discoverCalDAV } from "@/lib/caldav/discovery";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/lib/supabase/server";
-import type { CalendarInfo } from "@/types/icloud";
+import { saveConnection } from "@/lib/caldav/connection-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -22,21 +20,7 @@ const ConnectSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // ── 1. 인증 검증 ──────────────────────────────────────────
-  let session;
-  try {
-    session = await requireSession();
-  } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 },
-      );
-    }
-    throw e;
-  }
-
-  // ── 2. 입력 검증 ──────────────────────────────────────────
+  // ── 1. 입력 검증 ──────────────────────────────────────────
   const body = await req.json().catch(() => null);
   const parsed = ConnectSchema.safeParse(body);
   if (!parsed.success) {
@@ -47,82 +31,28 @@ export async function POST(req: NextRequest) {
   }
   const { appleId, appPassword } = parsed.data;
 
-  // ── 3. CalDAV Discovery ───────────────────────────────────
+  // ── 2. CalDAV Discovery (자격증명 검증 + 엔드포인트 탐색) ──
   try {
     const discovery = await discoverCalDAV({
       username: appleId,
       password: appPassword,
     });
 
-    // ── 4. 앱 전용 암호 암호화 ───────────────────────────────
-    const encryptedData = encrypt(appPassword);
-    const encryptedPassword = serializeEncrypted(encryptedData);
-    const encryptionIv = encryptedData.iv;
-
-    // ── 5. DB upsert ─────────────────────────────────────────
-    const supabase = await createClient();
-
-    const { data: connection, error: connError } = await supabase
-      .from("icloud_connections")
-      .upsert(
-        {
-          profile_id: session.userId,
-          apple_id: appleId,
-          encrypted_password: encryptedPassword,
-          encryption_iv: encryptionIv,
-          principal_url: discovery.principalUrl,
-          calendar_home_url: discovery.calendarHomeUrl,
-          is_active: true,
-          last_verified_at: new Date().toISOString(),
-        },
-        { onConflict: "profile_id,apple_id" },
-      )
-      .select("id")
-      .single();
-
-    if (connError || !connection) {
-      console.error("[icloud.connect] DB upsert 실패", {
-        userId: session.userId,
-        appleId: maskEmail(appleId),
-        error: connError?.message,
-      });
-      return NextResponse.json(
-        { error: "연결 정보 저장 중 오류가 발생했습니다." },
-        { status: 500 },
-      );
-    }
-
-    // ── 6. 캘린더 목록 upsert ─────────────────────────────────
-    if (discovery.calendars.length > 0) {
-      const calendarRows = discovery.calendars.map((c: CalendarInfo) => ({
-        connection_id: connection.id,
-        display_name: c.displayName,
-        calendar_url: c.url,
-        color: c.color ?? null,
-        ctag: c.ctag ?? null,
-        synced_at: new Date().toISOString(),
-      }));
-
-      const { error: calError } = await supabase
-        .from("icloud_calendars")
-        .upsert(calendarRows, { onConflict: "connection_id,calendar_url" });
-
-      if (calError) {
-        console.warn("[icloud.connect] 캘린더 목록 저장 실패 (연결은 성공)", {
-          userId: session.userId,
-          error: calError.message,
-        });
-      }
-    }
+    // ── 3. 연결 정보를 암호화해 HttpOnly 쿠키에 저장 ──────────
+    await saveConnection({
+      appleId,
+      appPassword,
+      principalUrl: discovery.principalUrl,
+      calendarHomeUrl: discovery.calendarHomeUrl,
+    });
 
     console.info("[icloud.connect] 연결 성공", {
-      userId: session.userId,
       appleId: maskEmail(appleId),
       calendarsCount: discovery.calendars.length,
     });
 
     return NextResponse.json({
-      connectionId: connection.id,
+      appleId,
       principalUrl: discovery.principalUrl,
       calendarHomeUrl: discovery.calendarHomeUrl,
       calendarsCount: discovery.calendars.length,
@@ -139,7 +69,6 @@ export async function POST(req: NextRequest) {
         );
       }
       console.error("[icloud.connect] CalDAV 오류", {
-        userId: session.userId,
         appleId: maskEmail(appleId),
         statusCode: err.statusCode,
         message: err.message,
@@ -153,7 +82,6 @@ export async function POST(req: NextRequest) {
     }
 
     console.error("[icloud.connect] 예상치 못한 오류", {
-      userId: session.userId,
       appleId: maskEmail(appleId),
       error: err instanceof Error ? err.message : "unknown",
     });
