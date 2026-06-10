@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import {
   signupSchema,
   normalizePhoneNumber,
@@ -46,6 +47,39 @@ export async function POST(req: NextRequest) {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const now = new Date().toISOString();
+
+  if (process.env.E2E_TEST === "true") {
+    const mockUid = `e2e_user_${Date.now()}`;
+    await prisma.user.create({
+      data: {
+        id: mockUid,
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        nickname,
+        passwordHash: "$2a$10$abcdefghijklmnopqrstuv",
+        isAgeOver14: true,
+        termsAgreedAt: new Date(),
+        privacyAgreedAt: new Date(),
+        marketingAgreed: false,
+        eventSmsAgreed: false,
+      },
+    });
+
+    const res = NextResponse.json(
+      {
+        success: true,
+        message: "회원가입이 완료되었습니다. (E2E MOCK)",
+        user: { id: mockUid, email: normalizedEmail, nickname },
+      },
+      { status: 201 },
+    );
+
+    res.cookies.set("e2e_mock_uid", mockUid, { path: "/" });
+    res.cookies.set("e2e_mock_email", normalizedEmail, { path: "/" });
+    res.cookies.set("e2e_mock_nickname", nickname, { path: "/" });
+
+    return res;
+  }
 
   const supabase = await createClient();
 

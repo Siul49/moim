@@ -74,10 +74,17 @@ test("host can create a schedule and receive safe participant and host links", a
   await titleInput.waitFor({ state: "visible", timeout: 15000 });
   await titleInput.fill("제품 인터뷰");
   await page.getByLabel("소요 시간").selectOption("60");
-  await page.getByRole("checkbox", { name: "월요일" }).check();
-  await page.getByLabel("시작 시간").selectOption("10");
-  await page.getByLabel("종료 시간").selectOption("18");
-  await page.getByRole("button", { name: "초대 링크 만들기" }).click();
+
+  // Step 1 -> Step 2 이동
+  await page.getByRole("button", { name: "다음 단계로 →" }).click();
+  await page.waitForTimeout(1000);
+
+  // Step 2 -> Step 3 이동
+  await page.getByRole("button", { name: "다음 단계로 →" }).click();
+  await page.waitForTimeout(1000);
+
+  // Step 3 -> 생성 완료 (초대 링크 만들기)
+  await page.getByRole("button", { name: "초대 링크 만들기 🚀" }).click();
 
   await expect(page.getByText("초대 링크가 준비됐습니다")).toBeVisible();
 

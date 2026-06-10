@@ -26,7 +26,7 @@ test("participant can submit availability from an invite link and host can confi
   await page.locator('[data-slot-key="MON-11"]').click();
   await page.getByRole("button", { name: "가능 시간 제출" }).click();
 
-  await expect(page.getByText("가능 시간이 제출됐습니다")).toBeVisible({
+  await expect(page.getByText("시간 제출 완료! 🎉")).toBeVisible({
     timeout: 15000,
   });
 

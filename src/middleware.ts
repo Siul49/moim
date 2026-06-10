@@ -28,8 +28,15 @@ export async function middleware(request: NextRequest) {
   });
 
   // This will refresh session if expired
-  const supabaseUserRes = await supabase.auth.getUser();
-  const hasSupabaseUser = !!supabaseUserRes.data.user;
+  let hasSupabaseUser = false;
+  if (process.env.E2E_TEST === "true") {
+    const mockUid = request.cookies.get("e2e_mock_uid")?.value;
+    const mockEmail = request.cookies.get("e2e_mock_email")?.value;
+    hasSupabaseUser = !!mockUid && !!mockEmail;
+  } else {
+    const supabaseUserRes = await supabase.auth.getUser();
+    hasSupabaseUser = !!supabaseUserRes.data.user;
+  }
 
   // 보호 대상 경로 리스트
   const PROTECTED_ROUTES = ["/schedule/create", "/calendar/connect"];
