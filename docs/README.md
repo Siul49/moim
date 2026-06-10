@@ -24,6 +24,7 @@
 
 ## 보존 및 아카이브 문서
 
+- `docs/v1/prd.md`: v1 제품 요구사항 정의서 (Supabase Auth 통합 및 MVP 기준).
 - `docs/v1/user-flow.md`: guest-first, invite-link-first 제품 원칙을 정리한 원본 기준 문서입니다.
 - `docs/v1/provided-documents-summary.md`: 이전 제공 문서 요약입니다.
 - `docs/archive/legacy-business-plans/`: 과거 팀원들의 예전 사업계획서 및 예창패 양식 파일(HWPX)을 보존해둔 아카이브입니다.
