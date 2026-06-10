@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, CheckCircle, Clock, Globe, Save, User } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  Globe,
+  Save,
+  User,
+  X,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardSettingsPage() {
@@ -14,6 +22,18 @@ export default function DashboardSettingsPage() {
   const [endHour, setEndHour] = useState("18");
   const [timezone, setTimezone] = useState("Asia/Seoul");
   const [message, setMessage] = useState("");
+
+  const [hasGoogle, setHasGoogle] = useState(false);
+  const [hasICloud, setHasICloud] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
+  const [icloudAppleId, setIcloudAppleId] = useState("");
+
+  // iCloud modal states
+  const [showICloudModal, setShowICloudModal] = useState(false);
+  const [appleIdInput, setAppleIdInput] = useState("");
+  const [appPasswordInput, setAppPasswordInput] = useState("");
+  const [icloudError, setIcloudError] = useState("");
+  const [icloudConnecting, setIcloudConnecting] = useState(false);
 
   const supabase = createClient();
 
@@ -35,9 +55,33 @@ export default function DashboardSettingsPage() {
       if (profile) {
         setNickname(profile.nickname || user.user_metadata?.nickname || "");
         setPhoneNumber(profile.phone_number || "");
+        setStartHour(profile.preferred_start_hour || "09");
+        setEndHour(profile.preferred_end_hour || "18");
+        setTimezone(profile.preferred_timezone || "Asia/Seoul");
       } else {
         setNickname(user.user_metadata?.nickname || "");
       }
+
+      // Check Google Connection
+      const { data: googleConn } = await supabase
+        .from("google_connections")
+        .select("id, google_email")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      setHasGoogle(!!googleConn);
+      setGoogleEmail(googleConn?.google_email || "");
+
+      // Check iCloud Connection
+      const { data: icloudConn } = await supabase
+        .from("icloud_connections")
+        .select("id, apple_id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      setHasICloud(!!icloudConn);
+      setIcloudAppleId(icloudConn?.apple_id || "");
+
       setLoading(false);
     }
 
@@ -63,6 +107,9 @@ export default function DashboardSettingsPage() {
         email,
         nickname,
         phone_number: phoneNumber,
+        preferred_start_hour: startHour,
+        preferred_end_hour: endHour,
+        preferred_timezone: timezone,
         updated_at: new Date().toISOString(),
       });
 
@@ -83,6 +130,70 @@ export default function DashboardSettingsPage() {
       );
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    if (!confirm("Google Calendar 연동을 해제하시겠습니까?")) return;
+    try {
+      const response = await fetch("/api/google/disconnect", {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "해제 실패");
+      setHasGoogle(false);
+      setGoogleEmail("");
+      setMessage("Google Calendar 연동이 해제되었습니다. 🔌");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
+    }
+  };
+
+  const handleDisconnectICloud = async () => {
+    if (!confirm("iCloud Calendar 연동을 해제하시겠습니까?")) return;
+    try {
+      const response = await fetch("/api/icloud/disconnect", {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "해제 실패");
+      setHasICloud(false);
+      setIcloudAppleId("");
+      setMessage("iCloud Calendar 연동이 해제되었습니다. 🔌");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
+    }
+  };
+
+  const handleConnectICloud = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIcloudError("");
+    setIcloudConnecting(true);
+    try {
+      const response = await fetch("/api/icloud/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appleId: appleIdInput,
+          appPassword: appPasswordInput,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "iCloud 연동에 실패했습니다.");
+      }
+      setHasICloud(true);
+      setIcloudAppleId(appleIdInput);
+      setShowICloudModal(false);
+      setAppleIdInput("");
+      setAppPasswordInput("");
+      setMessage("iCloud Calendar 연동에 성공했습니다! 🎉");
+    } catch (err) {
+      setIcloudError(
+        err instanceof Error ? err.message : "연동 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setIcloudConnecting(false);
     }
   };
 
@@ -232,7 +343,8 @@ export default function DashboardSettingsPage() {
           </h2>
 
           <div className="divide-y divide-brand-border-muted">
-            <div className="flex items-center justify-between py-3">
+            {/* Google Calendar */}
+            <div className="flex items-center justify-between py-3 flex-wrap gap-2">
               <div className="flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-xs">
                   G
@@ -242,16 +354,39 @@ export default function DashboardSettingsPage() {
                     Google Calendar
                   </p>
                   <p className="text-[10px] text-brand-text-muted">
-                    내 캘린더 일정 실시간 차단용 연동
+                    {hasGoogle
+                      ? `${googleEmail} · 연동 완료`
+                      : "내 캘린더 일정 실시간 차단용 연동"}
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                <CheckCircle className="h-3.5 w-3.5" /> 연동됨
-              </span>
+              <div className="flex items-center gap-2">
+                {hasGoogle ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                      <CheckCircle className="h-3.5 w-3.5" /> 연동됨
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectGoogle}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-[10px] font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                    >
+                      해제하기
+                    </button>
+                  </>
+                ) : (
+                  <a
+                    href="/api/google/auth"
+                    className="inline-flex h-8 items-center justify-center rounded-lg border border-brand-border-gray bg-white px-3 text-[10px] font-bold text-brand-text-primary hover:border-brand-purple hover:bg-brand-bg-light transition-all no-underline"
+                  >
+                    연동하기
+                  </a>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-between py-3">
+            {/* Apple iCloud Calendar */}
+            <div className="flex items-center justify-between py-3 flex-wrap gap-2">
               <div className="flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 text-gray-800 font-bold text-xs">
                   A
@@ -261,17 +396,36 @@ export default function DashboardSettingsPage() {
                     Apple iCloud Calendar
                   </p>
                   <p className="text-[10px] text-brand-text-muted">
-                    iCloud 스케줄 가져오기
+                    {hasICloud
+                      ? `${icloudAppleId} · 연동 완료`
+                      : "iCloud 스케줄 가져오기"}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => alert("애플 iCloud 연동은 준비 중입니다.")}
-                className="inline-flex h-8 items-center justify-center rounded-lg border border-brand-border-gray bg-white px-3 text-[10px] font-bold text-brand-text-primary hover:border-brand-purple hover:bg-brand-bg-light transition-all"
-              >
-                연동하기
-              </button>
+              <div className="flex items-center gap-2">
+                {hasICloud ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                      <CheckCircle className="h-3.5 w-3.5" /> 연동됨
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectICloud}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-[10px] font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                    >
+                      해제하기
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowICloudModal(true)}
+                    className="inline-flex h-8 items-center justify-center rounded-lg border border-brand-border-gray bg-white px-3 text-[10px] font-bold text-brand-text-primary hover:border-brand-purple hover:bg-brand-bg-light transition-all cursor-pointer"
+                  >
+                    연동하기
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -288,6 +442,95 @@ export default function DashboardSettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* iCloud 연동 모달 */}
+      {showICloudModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-[2.5rem] border border-brand-border-muted bg-white p-8 shadow-premium-lg relative animate-scaleIn">
+            <button
+              type="button"
+              onClick={() => {
+                setShowICloudModal(false);
+                setIcloudError("");
+              }}
+              className="absolute right-6 top-6 rounded-full p-1.5 text-brand-text-light hover:bg-brand-bg-muted hover:text-brand-text-primary transition-colors"
+              aria-label="닫기"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-2xl text-brand-purple shadow-inner mb-6">
+              ☁️
+            </span>
+            <h3 className="text-xl font-extrabold text-brand-text-primary text-center">
+              iCloud 캘린더 연동
+            </h3>
+            <p className="mt-2 text-xs font-semibold leading-relaxed text-brand-text-muted text-center max-w-sm mx-auto">
+              Apple ID와 앱 전용 암호를 입력하여 iCloud 일정을 MOIM에
+              동기화하세요.
+            </p>
+            <div className="mt-4 rounded-xl bg-brand-bg-light p-3 text-[11px] font-semibold text-brand-purple border border-brand-border-muted leading-relaxed">
+              ⚠️ **중요**: Apple ID의 실제 비밀번호가 아닌, Apple 계정 관리
+              페이지에서 생성한 **앱 전용 암호(App-Specific Password)**를
+              입력해야 연동할 수 있습니다.
+            </div>
+
+            <form onSubmit={handleConnectICloud} className="mt-6 space-y-4">
+              <label className="grid gap-2 text-xs font-bold text-brand-text-secondary">
+                Apple ID (이메일)
+                <input
+                  type="email"
+                  value={appleIdInput}
+                  onChange={(e) => setAppleIdInput(e.target.value)}
+                  placeholder="example@icloud.com"
+                  className="moim-input text-sm font-normal"
+                  required
+                />
+              </label>
+
+              <label className="grid gap-2 text-xs font-bold text-brand-text-secondary">
+                앱 전용 암호 (xxxx-xxxx-xxxx-xxxx)
+                <input
+                  type="text"
+                  value={appPasswordInput}
+                  onChange={(e) => setAppPasswordInput(e.target.value)}
+                  placeholder="abcd-efgh-ijkl-mnop"
+                  className="moim-input text-sm font-normal"
+                  required
+                />
+              </label>
+
+              {icloudError && (
+                <p
+                  role="alert"
+                  className="text-xs text-destructive font-semibold"
+                >
+                  {icloudError}
+                </p>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowICloudModal(false);
+                    setIcloudError("");
+                  }}
+                  className="flex-1 h-11 rounded-xl border border-brand-border-muted text-xs font-bold text-brand-text-secondary hover:bg-brand-bg-light transition-all cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={icloudConnecting}
+                  className="flex-1 h-11 rounded-xl bg-brand-purple text-xs font-bold text-white shadow-md hover:bg-brand-purple-hover transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {icloudConnecting ? "연결 중..." : "연동 완료"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
