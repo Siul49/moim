@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -87,6 +87,8 @@ export function ScheduleRoomClient({
     null,
   );
 
+  const gridRef = useRef<HTMLDivElement>(null);
+
   const handleMouseDown = (key: string) => {
     setIsDragging(true);
     const shouldSelect = !selected.includes(key);
@@ -145,13 +147,38 @@ export function ScheduleRoomClient({
     setDragAction(null);
   };
 
+  // 터치 드래그 중 스크롤 방지용 native event listener 바인딩
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const gridEl = gridRef.current;
+    if (!gridEl) return;
+
+    const preventDefaultTouch = (e: TouchEvent) => {
+      if (isDragging) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    gridEl.addEventListener("touchmove", preventDefaultTouch, {
+      passive: false,
+    });
+    return () => {
+      gridEl.removeEventListener("touchmove", preventDefaultTouch);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    const handleGlobalUp = () => {
       setIsDragging(false);
       setDragAction(null);
     };
-    window.addEventListener("mouseup", handleGlobalMouseUp);
-    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+    window.addEventListener("mouseup", handleGlobalUp);
+    window.addEventListener("touchend", handleGlobalUp);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalUp);
+      window.removeEventListener("touchend", handleGlobalUp);
+    };
   }, []);
 
   useEffect(() => {
@@ -528,6 +555,7 @@ export function ScheduleRoomClient({
                 </div>
                 <div className="overflow-x-auto scroller-style rounded-2xl border border-brand-border-muted bg-brand-bg-light p-4 shadow-inner">
                   <div
+                    ref={gridRef}
                     className="grid gap-1 select-none"
                     style={{
                       gridTemplateColumns: `60px repeat(${schedule.candidateDays.length}, minmax(0, 1fr))`,
@@ -690,10 +718,41 @@ export function ScheduleRoomClient({
       {(importMode === "image" || importMode === "file") && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-md rounded-[2.5rem] border border-brand-border-muted bg-white p-8 shadow-premium-lg text-center relative animate-scaleIn">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand-purple-ring text-brand-purple shadow-inner mb-6 relative overflow-hidden">
-              <span className="text-3xl animate-bounce">🔍</span>
-              <div className="absolute inset-0 border-2 border-brand-purple rounded-full animate-ping opacity-30 pointer-events-none" />
+            <style>{`
+              @keyframes scan-beam {
+                0% { top: 0%; opacity: 0.3; }
+                50% { top: 100%; opacity: 1; }
+                100% { top: 0%; opacity: 0.3; }
+              }
+              .animate-scan-beam {
+                animation: scan-beam 2.2s infinite ease-in-out;
+              }
+            `}</style>
+
+            <div className="mx-auto flex h-24 w-40 items-center justify-center rounded-3xl bg-brand-bg-muted border border-brand-border-muted mb-6 relative overflow-hidden shadow-inner">
+              {/* 시간표 격자를 모사하는 프리미엄 시각적 요소 */}
+              <div className="grid grid-cols-5 gap-1.5 w-full h-full p-4 opacity-40">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "rounded-md bg-brand-purple/20 h-full w-full",
+                      i % 4 === 0 && "bg-brand-purple/60",
+                      i % 6 === 0 && "bg-brand-purple",
+                    )}
+                  />
+                ))}
+              </div>
+
+              {/* 스캔 라인 레이저 빔 */}
+              <div className="absolute inset-x-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent shadow-[0_0_12px_#5f5282] animate-scan-beam" />
+
+              {/* 로딩 표시 */}
+              <div className="absolute inset-0 flex items-center justify-center bg-white/20 backdrop-blur-[0.5px]">
+                <span className="text-3xl animate-pulse">🔍</span>
+              </div>
             </div>
+
             <h3 className="text-xl font-extrabold text-brand-text-primary">
               {importMode === "image"
                 ? "시간표 이미지 분석 중"
@@ -705,13 +764,13 @@ export function ScheduleRoomClient({
                 : "캘린더 파일의 일정 데이터를 추출하여 후보 일시에 매핑하고 있습니다..."}
             </p>
             {/* Shimmer loading bar */}
-            <div className="mt-6 h-2 w-full bg-brand-bg-muted rounded-full overflow-hidden">
+            <div className="mt-6 h-2.5 w-full bg-brand-bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-brand-purple-light to-brand-purple animate-shimmer"
                 style={{ width: "80%" }}
               />
             </div>
-            <p className="mt-3 text-[10px] font-bold text-brand-purple-light">
+            <p className="mt-3.5 text-[10px] font-bold text-brand-purple-light">
               스캔 진행률 80% · AI 레이아웃 매칭 중
             </p>
           </div>
@@ -835,36 +894,38 @@ function SubmissionDonePanel({ name }: { name: string }) {
   }, []);
 
   return (
-    <section className="grid h-fit gap-6 rounded-[2rem] border border-brand-border-muted bg-white p-8 text-center shadow-premium-lg">
-      <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner">
-        <CheckCircle2 className="h-10 w-10" />
+    <section className="grid h-fit gap-6 rounded-[2.5rem] border border-brand-border-muted bg-white p-8 sm:p-10 text-center shadow-premium-lg transition-all animate-bounceOnce hover:shadow-[0_30px_80px_rgba(95,82,130,0.14)]">
+      <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand-bg-muted text-brand-purple shadow-inner animate-pulse">
+        <CheckCircle2 className="h-12 w-12" />
       </span>
       <div>
-        <h2 className="text-2xl font-extrabold text-brand-text-primary">
+        <h2 className="text-3xl font-extrabold tracking-tight text-brand-text-primary">
           시간 제출 완료! 🎉
         </h2>
-        <p className="mt-3 text-sm font-semibold text-brand-text-muted leading-relaxed">
-          {name}님의 가능 시간이 주최자에게 성공적으로 제출되었습니다. 주최자가
-          최종 모임 시간을 확정하면 알려드릴게요.
+        <p className="mt-4 text-base font-semibold leading-relaxed text-brand-text-muted">
+          <strong className="text-brand-purple font-extrabold">{name}</strong>
+          님의 가능 시간이 주최자에게 성공적으로 제출되었습니다.
+          <br className="hidden sm:inline" /> 주최자가 최종 모임 시간을 확정하면
+          대시보드 및 카카오톡으로 안내해 드릴게요.
         </p>
       </div>
 
       {isLoggedIn ? (
-        <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
-          <div className="flex gap-3">
-            <span className="text-xl">🏠</span>
+        <div className="rounded-[2rem] border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-6 text-left shadow-sm">
+          <div className="flex gap-4">
+            <span className="text-2xl">🏠</span>
             <div className="flex-1">
-              <p className="font-extrabold text-brand-purple text-sm">
+              <p className="font-black text-brand-purple text-base">
                 대시보드로 돌아가기
               </p>
               <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
                 현재 생성 또는 참여 완료된 내 모든 모임의 현황을 한눈에 확인할
                 수 있습니다.
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-brand-purple px-5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
                 >
                   마이 대시보드로 이동
                 </Link>
@@ -874,23 +935,24 @@ function SubmissionDonePanel({ name }: { name: string }) {
         </div>
       ) : (
         /* BM Nudge 3: 가입 유도 (시안 20 기반) */
-        <div className="rounded-2xl border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-5 text-left shadow-sm">
-          <div className="flex gap-3">
-            <span className="text-xl">💡</span>
+        <div className="rounded-[2rem] border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-6 text-left shadow-sm">
+          <div className="flex gap-4">
+            <span className="text-2xl">💡</span>
             <div className="flex-1">
-              <p className="font-extrabold text-brand-purple text-sm">
+              <p className="font-black text-brand-purple text-base">
                 매번 요일/시간 선택하기 귀찮으신가요?
               </p>
-              <p className="mt-1 text-xs font-semibold leading-relaxed text-brand-text-muted">
-                지금 가입하시면 다음 모임에는 번거롭게 캘린더나 시간표를
-                업로드할 필요 없이 1초 만에 가용 일정을 불러올 수 있습니다.
+              <p className="mt-1.5 text-xs font-semibold leading-relaxed text-brand-text-muted">
+                지금 간편 가입하고 내 캘린더를 연동해 두면, 다음 모임에는
+                시간표나 번거로운 일정 업로드 과정 없이 **1초 만에** 가능한
+                시간대를 불러와 제출할 수 있습니다!
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <Link
                   href="/signup?redirect=/dashboard"
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-brand-purple-light to-brand-purple px-6 text-xs font-bold text-white hover:opacity-95 transition-all hover:scale-[1.02] shadow-md hover:shadow-brand-purple-ring/30 no-underline active:scale-95"
                 >
-                  3초 간편 소셜 회원가입
+                  3초 간편 소셜 회원가입 🚀
                 </Link>
               </div>
             </div>

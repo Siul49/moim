@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useMemo } from "react";
+import { FormEvent, useState, useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -77,6 +77,8 @@ export function CreateScheduleClient() {
   } | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Compute bounding parameters from selectedSlots under-the-hood
   const candidateDays = useMemo(() => {
@@ -216,6 +218,40 @@ export function CreateScheduleClient() {
     setIsDragging(false);
     setDragAction(null);
   };
+
+  // 터치 드래그 중 스크롤 방지용 native event listener 바인딩
+  useEffect(() => {
+    const gridEl = gridRef.current;
+    if (!gridEl) return;
+
+    const preventDefaultTouch = (e: TouchEvent) => {
+      if (isDragging) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    gridEl.addEventListener("touchmove", preventDefaultTouch, {
+      passive: false,
+    });
+    return () => {
+      gridEl.removeEventListener("touchmove", preventDefaultTouch);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    const handleGlobalUp = () => {
+      setIsDragging(false);
+      setDragAction(null);
+    };
+    window.addEventListener("mouseup", handleGlobalUp);
+    window.addEventListener("touchend", handleGlobalUp);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalUp);
+      window.removeEventListener("touchend", handleGlobalUp);
+    };
+  }, []);
 
   // Preset selectors
   const selectPreset = (preset: "weekday" | "weekend" | "all" | "clear") => {
@@ -565,7 +601,10 @@ export function CreateScheduleClient() {
               {/* Interactive Grid */}
               <div className="rounded-[1.5rem] border border-brand-border-muted p-5 bg-brand-bg-light/30">
                 <div className="overflow-x-auto scroller-style">
-                  <div className="min-w-[320px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center select-none">
+                  <div
+                    ref={gridRef}
+                    className="min-w-[320px] grid grid-cols-8 gap-1 text-[10px] font-bold text-center select-none"
+                  >
                     {/* Header col */}
                     <div className="h-6 flex items-center justify-center text-brand-text-muted">
                       시간
