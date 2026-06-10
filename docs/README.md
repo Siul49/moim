@@ -6,12 +6,12 @@
 
 ## 현재 기준
 
-1. `docs/v2/user-flow.md`
-   - 최신 사용자 흐름과 수익화 넛지 위치를 설명합니다.
-2. `docs/v2/prd.md`
-   - v2 제품 요구사항 초안입니다. 아직 `Draft` 상태라 구현 확정 문서로 보지는 않습니다.
-3. `docs/v2/monetization-strategy.md`
-   - BM/요금제/확장 전략 정리본입니다.
+1. `docs/v1/prd.md`
+   - v1 제품 요구사항 정의서 (Supabase Auth 통합 및 MVP 기준).
+2. `docs/v1/ui-screen-modification-plan.md`
+   - docs/MOIM_role_screen 시안 기반 화면 수정 및 보완 계획서.
+3. `docs/v1/user-flow.md`
+   - guest-first, invite-link-first 제품 원칙을 정리한 원본 기준 문서입니다.
 4. `docs/v1/codex-work-context.md`
    - 현재 개발 상태, 검증 명령, 다음 세션 시작 프롬프트를 담은 handoff 문서입니다.
 5. `docs/business-plan/MOIM_2026_학생창업유망팀300_사업계획서.docx`

@@ -9,16 +9,14 @@
 1. `README.md`
    - 로컬 실행, 검증 명령, 현재 안정성 기준을 확인하는 첫 문서다.
 2. `docs/README.md`
-   - `docs/v1`과 `docs/v2`의 역할을 구분하는 문서 인덱스다.
-3. `docs/v2/user-flow.md`
-   - 최신 사용자 흐름과 수익화 연결안을 정리한 문서다.
-4. `docs/v1/user-flow.md`
+   - `docs/v1` 중심의 문서 인덱스다.
+3. `docs/v1/user-flow.md`
    - guest-first, 초대 링크 문맥 우선이라는 제품 원칙의 원본 기준 문서다.
-5. `convention.md`
+4. `convention.md`
    - 커밋, 브랜치, 이슈, PR 규칙의 기준이다.
-6. `ARCHITECTURE.md`
+5. `ARCHITECTURE.md`
    - 코드 구조와 테스트 전략을 볼 때의 기준 문서다.
-7. `prototype/moim.html`
+6. `prototype/moim.html`
    - 사용자 테스트용 단일 HTML 프로토타입의 중심 파일이다.
 
 ## 제품 방향
