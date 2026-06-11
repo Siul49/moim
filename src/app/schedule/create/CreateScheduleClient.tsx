@@ -67,7 +67,6 @@ export function CreateScheduleClient() {
     }
     return slots;
   });
-  const [isDragging, setIsDragging] = useState(false);
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
     null,
   );
@@ -79,6 +78,7 @@ export function CreateScheduleClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   // Compute bounding parameters from selectedSlots under-the-hood
   const candidateDays = useMemo(() => {
@@ -159,7 +159,7 @@ export function CreateScheduleClient() {
   // Mouse drag handlers
   const handleMouseDown = (key: string) => {
     if (blockBusyTimes && busySlots.includes(key)) return;
-    setIsDragging(true);
+    isDraggingRef.current = true;
     const shouldSelect = !selectedSlots.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
     setSelectedSlots((prev) =>
@@ -169,7 +169,7 @@ export function CreateScheduleClient() {
 
   const handleMouseEnter = (key: string) => {
     if (blockBusyTimes && busySlots.includes(key)) return;
-    if (!isDragging || !dragAction) return;
+    if (!isDraggingRef.current || !dragAction) return;
     setSelectedSlots((prev) => {
       if (dragAction === "select") {
         return prev.includes(key) ? prev : [...prev, key];
@@ -180,14 +180,14 @@ export function CreateScheduleClient() {
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    isDraggingRef.current = false;
     setDragAction(null);
   };
 
   // Touch drag handlers for mobile
   const handleTouchStart = (e: React.TouchEvent, key: string) => {
     if (blockBusyTimes && busySlots.includes(key)) return;
-    setIsDragging(true);
+    isDraggingRef.current = true;
     const shouldSelect = !selectedSlots.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
     setSelectedSlots((prev) =>
@@ -196,7 +196,7 @@ export function CreateScheduleClient() {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !dragAction) return;
+    if (!isDraggingRef.current || !dragAction) return;
     const touch = e.touches[0];
     if (!touch) return;
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -215,7 +215,7 @@ export function CreateScheduleClient() {
   };
 
   const handleTouchEnd = () => {
-    setIsDragging(false);
+    isDraggingRef.current = false;
     setDragAction(null);
   };
 
@@ -225,7 +225,7 @@ export function CreateScheduleClient() {
     if (!gridEl) return;
 
     const preventDefaultTouch = (e: TouchEvent) => {
-      if (isDragging) {
+      if (isDraggingRef.current) {
         if (e.cancelable) {
           e.preventDefault();
         }
@@ -238,11 +238,11 @@ export function CreateScheduleClient() {
     return () => {
       gridEl.removeEventListener("touchmove", preventDefaultTouch);
     };
-  }, [isDragging]);
+  }, []);
 
   useEffect(() => {
     const handleGlobalUp = () => {
-      setIsDragging(false);
+      isDraggingRef.current = false;
       setDragAction(null);
     };
     window.addEventListener("mouseup", handleGlobalUp);
@@ -288,15 +288,6 @@ export function CreateScheduleClient() {
       setSelectedSlots(slots);
     }
   };
-
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      setIsDragging(false);
-      setDragAction(null);
-    };
-    window.addEventListener("mouseup", handleGlobalMouseUp);
-    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

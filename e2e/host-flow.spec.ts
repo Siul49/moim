@@ -27,11 +27,11 @@ test("host can create a schedule and receive safe participant and host links", a
   const nicknameInput = page.locator("#nickname");
   await nicknameInput.fill(`host_${Date.now().toString().slice(-6)}`);
 
-  const pwInput = page.locator('input[type="password"]').first();
+  const pwInput = page.locator("#password");
   await pwInput.fill("Test1234!");
   await expect(pwInput).toHaveValue("Test1234!");
 
-  const pwConfirmInput = page.locator('input[type="password"]').last();
+  const pwConfirmInput = page.locator("#passwordConfirm");
   await pwConfirmInput.fill("Test1234!");
   await expect(pwConfirmInput).toHaveValue("Test1234!");
 
@@ -77,11 +77,15 @@ test("host can create a schedule and receive safe participant and host links", a
 
   // Step 1 -> Step 2 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await page.waitForTimeout(1000);
+  await expect(page.getByText("내 일정을 연동해 볼까요?")).toBeVisible({
+    timeout: 5000,
+  });
 
   // Step 2 -> Step 3 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await page.waitForTimeout(1000);
+  await expect(page.getByText("후보 시간대 설정")).toBeVisible({
+    timeout: 5000,
+  });
 
   // Step 3 -> 생성 완료 (초대 링크 만들기)
   await page.getByRole("button", { name: "초대 링크 만들기 🚀" }).click();
