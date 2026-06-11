@@ -217,7 +217,10 @@ export async function getValidTokens(): Promise<NaverTokens | null> {
   try {
     tokens = JSON.parse(raw);
   } catch (err) {
-    console.error("[naver.auth] 토큰 쿠키 파싱 실패 (손상 가능성):", err);
+    console.error(
+      `[naver.auth] 토큰 쿠키 파싱 실패 (cookie: ${TOKEN_COOKIE_NAME}):`,
+      err instanceof Error ? err.stack : err,
+    );
     return null;
   }
 
@@ -234,7 +237,13 @@ export async function getValidTokens(): Promise<NaverTokens | null> {
       };
       await saveTokensToCookie(tokens);
     } catch (err) {
-      console.error("[naver.auth] 토큰 갱신 실패:", err);
+      const redacted = tokens.refreshToken
+        ? tokens.refreshToken.slice(0, 10) + "..."
+        : "null";
+      console.error(
+        `[naver.auth] 토큰 갱신 실패 (refreshToken: ${redacted}):`,
+        err instanceof Error ? err.stack : err,
+      );
       return null;
     }
   }
