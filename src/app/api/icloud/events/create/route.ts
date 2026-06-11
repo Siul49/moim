@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession, UnauthorizedError } from "@/lib/auth/session";
-import { decrypt, deserializeEncrypted, maskEmail } from "@/lib/crypto";
+import { maskEmail } from "@/lib/crypto";
 import { createEvent } from "@/lib/caldav/create";
 import { buildIcs } from "@/lib/ics/builder";
 import { CalDAVError } from "@/lib/caldav/client";
-import { createClient } from "@/lib/supabase/server";
-import type { ICloudConnectionRow, ICloudCalendarRow } from "@/types/icloud";
+import { getConnectionAuth } from "@/lib/caldav/connection-cookie";
 
 export const dynamic = "force-dynamic";
 
 const CreateEventSchema = z.object({
-  calendarId: z.string().uuid("calendarId는 UUID 형식이어야 합니다."),
+  calendarUrl: z
+    .string()
+    .url("calendarUrl은 올바른 URL 형식이어야 합니다.")
+    .startsWith("https://", "calendarUrl은 https URL이어야 합니다."),
   title: z
     .string()
     .min(1, "제목을 입력해주세요.")
@@ -27,18 +28,13 @@ const CreateEventSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // ── 1. 인증 검증 ──────────────────────────────────────────
-  let session;
-  try {
-    session = await requireSession();
-  } catch (e) {
-    if (e instanceof UnauthorizedError) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 },
-      );
-    }
-    throw e;
+  // ── 1. 연결 정보 확인 ─────────────────────────────────────
+  const connection = await getConnectionAuth();
+  if (!connection) {
+    return NextResponse.json(
+      { error: "연결된 iCloud 계정이 없습니다. 먼저 계정을 연결해주세요." },
+      { status: 404 },
+    );
   }
 
   // ── 2. 입력 검증 ──────────────────────────────────────────
@@ -50,7 +46,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  const { calendarId, title, startAt, endAt, location, description } =
+  const { calendarUrl, title, startAt, endAt, location, description } =
     parsed.data;
 
   const start = new Date(startAt);
@@ -62,36 +58,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 3. 캘린더 + 연결 정보 조회 (소유권 확인) ──────────────
-  const supabase = await createClient();
-
-  const { data: calendar, error: calError } = await supabase
-    .from("icloud_calendars")
-    .select("*, icloud_connections(*)")
-    .eq("id", calendarId)
-    .single();
-
-  if (calError || !calendar) {
-    return NextResponse.json(
-      { error: "캘린더를 찾을 수 없습니다." },
-      { status: 404 },
-    );
-  }
-
-  const connection = (
-    calendar as ICloudCalendarRow & {
-      icloud_connections: ICloudConnectionRow;
-    }
-  ).icloud_connections;
-
-  if (!connection || connection.profile_id !== session.userId) {
-    return NextResponse.json(
-      { error: "접근 권한이 없습니다." },
-      { status: 403 },
-    );
-  }
-
-  // ── 4. ICS 빌드 ───────────────────────────────────────────
+  // ── 3. ICS 빌드 ───────────────────────────────────────────
   const { uid, icsContent } = buildIcs({
     title,
     startAt: start,
@@ -100,25 +67,17 @@ export async function POST(req: NextRequest) {
     description,
   });
 
-  // ── 5. CalDAV PUT ─────────────────────────────────────────
+  // ── 4. CalDAV PUT ─────────────────────────────────────────
   try {
-    const plainPassword = decrypt(
-      deserializeEncrypted(
-        connection.encrypted_password,
-        connection.encryption_iv,
-      ),
-    );
-
     const result = await createEvent(
-      (calendar as ICloudCalendarRow).calendar_url,
-      { username: connection.apple_id, password: plainPassword },
+      calendarUrl,
+      { username: connection.appleId, password: connection.password },
       uid,
       icsContent,
     );
 
     console.info("[icloud.events.create] 일정 생성 성공", {
-      userId: session.userId,
-      calendarId,
+      appleId: maskEmail(connection.appleId),
       uid,
     });
 
@@ -144,9 +103,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.error("[icloud.events.create] 오류", {
-      userId: session.userId,
-      calendarId,
-      appleId: maskEmail(connection.apple_id),
+      appleId: maskEmail(connection.appleId),
       error: err instanceof Error ? err.message : "unknown",
     });
     return NextResponse.json(

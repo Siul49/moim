@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 
 export default function AdditionalInfoPage() {
+  const router = useRouter();
   const [form, setForm] = useState({
     phoneNumber: "",
     isAgeOver14: false,
@@ -37,7 +39,7 @@ export default function AdditionalInfoPage() {
       if (!response.ok) {
         throw new Error(result.message ?? "추가 정보 저장에 실패했습니다.");
       }
-      window.location.href = "/schedule/create";
+      router.push("/calendar/connect");
     } catch (caught) {
       setMessage(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
@@ -143,7 +145,7 @@ export default function AdditionalInfoPage() {
             className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple-light px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-brand-purple disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "저장 중" : "모임 만들러 가기"}
+            {isSubmitting ? "저장 중" : "캘린더 연동하러 가기"}
           </button>
         </form>
       </section>
