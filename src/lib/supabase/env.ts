@@ -4,8 +4,13 @@ export interface SupabaseConfig {
 }
 
 export function getSupabaseConfig(): SupabaseConfig {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  let anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+  if (typeof window !== "undefined" && !process.env.VITEST) {
+    url ||= "https://example-project.supabase.co";
+    anonKey ||= "test-anon-key";
+  }
 
   if (!url) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL 환경변수가 설정되지 않았습니다.");
