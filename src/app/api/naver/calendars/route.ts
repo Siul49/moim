@@ -31,4 +31,3 @@ export async function GET() {
     note: "Naver Open API는 캘린더 목록 조회를 제공하지 않아 기본 캘린더만 사용할 수 있습니다.",
   });
 }
-

@@ -1,11 +1,19 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useMemo, useRef } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
   CalendarPlus,
+  Check,
   CheckCircle2,
   Copy,
   Link2,
@@ -76,6 +84,8 @@ export function CreateScheduleClient() {
   } | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { copied: participantCopied, copy: copyParticipant } =
+    useCopyFeedback();
 
   const gridRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -757,14 +767,34 @@ export function CreateScheduleClient() {
               </div>
             </div>
 
+            {/* 스크린 리더 전용 복사 완료 알림 */}
+            <div aria-live="polite" className="sr-only">
+              {participantCopied && "참여자 링크가 클립보드에 복사되었습니다"}
+            </div>
+
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
-                onClick={() => copyText(links.participant)}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#fee500] text-sm font-bold text-[#191919] hover:bg-[#ebd200] transition-colors shadow-sm"
+                data-testid="copy-participant-link-bottom"
+                onClick={() => copyParticipant(links.participant)}
+                className={cn(
+                  "inline-flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors shadow-sm",
+                  participantCopied
+                    ? "bg-[#e7f8ee] text-[#1f9254]"
+                    : "bg-[#fee500] text-[#191919] hover:bg-[#ebd200]",
+                )}
               >
-                <Copy className="h-4 w-4" />
-                참여자 링크 복사
+                {participantCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    참여자 링크 복사
+                  </>
+                )}
               </button>
               <Link
                 href={links.participant}
@@ -814,8 +844,61 @@ function validateScheduleForm({
   }
 }
 
-async function copyText(value: string) {
-  await navigator.clipboard?.writeText(value);
+function useCopyFeedback(resetMs = 1800) {
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetMsRef = useRef(resetMs);
+
+  useEffect(() => {
+    resetMsRef.current = resetMs;
+  }, [resetMs]);
+
+  const copy = useCallback(async (value: string) => {
+    const ok = await copyText(value);
+    if (ok) {
+      setCopied(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(
+        () => setCopied(false),
+        resetMsRef.current,
+      );
+    }
+    return ok;
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    },
+    [],
+  );
+
+  return { copied, copy };
+}
+
+async function copyText(value: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // 보안 컨텍스트가 아니거나 권한이 없으면 아래 레거시 방식으로 폴백
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function MiniInfo({
@@ -847,11 +930,19 @@ function LinkField({
   testId: string;
   value: string;
 }) {
+  const { copied, copy } = useCopyFeedback();
+
   return (
     <label className="grid gap-2 text-sm font-bold text-brand-text-secondary">
       <span className="flex items-center gap-2">
         <Link2 className="h-4 w-4 text-brand-purple" />
         {label}
+        {copied ? (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-[#1f9254]">
+            <Check className="h-3.5 w-3.5" />
+            복사됨
+          </span>
+        ) : null}
       </span>
       <span className="relative">
         <input
@@ -862,11 +953,18 @@ function LinkField({
         />
         <button
           type="button"
-          aria-label={`${label} 복사`}
-          onClick={() => copyText(value)}
-          className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#6252ac] hover:bg-white"
+          aria-label={copied ? `${label} 복사됨` : `${label} 복사`}
+          onClick={() => copy(value)}
+          className={cn(
+            "absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors",
+            copied ? "text-[#1f9254]" : "text-[#6252ac] hover:bg-white",
+          )}
         >
-          <Copy className="h-4 w-4" />
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </button>
       </span>
     </label>
