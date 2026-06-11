@@ -58,13 +58,36 @@ export async function GET(req: NextRequest) {
     const authEmail = resolveEmail(naverId, email);
     const admin = createAdminClient();
 
-    // 1) 기존 사용자 조회 (이메일 = auth.users 식별자)
-    const { data: existingProfile, error: lookupError } = await admin
+    // 1) 기존 사용자 조회: 변하지 않는 naver_id를 1차 식별자로 사용한다.
+    //    (이메일은 미제공/변경될 수 있어 단독 키로 쓰면 같은 계정이 갈라진다)
+    const { data: byNaverId, error: lookupError } = await admin
       .from("profiles")
       .select("id, phone_number, terms_agreed_at")
-      .eq("email", authEmail)
+      .eq("naver_id", naverId)
       .maybeSingle();
     if (lookupError) throw lookupError;
+
+    let existingProfile = byNaverId;
+
+    // naver_id가 아직 없던 기존 사용자(이메일 가입자 등)는 이메일로 한 번 더
+    // 찾아 매칭하고, 찾으면 naver_id를 백필해 다음부터 1차 키로 잡히게 한다.
+    if (!existingProfile) {
+      const { data: byEmail, error: byEmailError } = await admin
+        .from("profiles")
+        .select("id, phone_number, terms_agreed_at")
+        .eq("email", authEmail)
+        .maybeSingle();
+      if (byEmailError) throw byEmailError;
+
+      if (byEmail) {
+        const { error: backfillError } = await admin
+          .from("profiles")
+          .update({ naver_id: naverId })
+          .eq("id", byEmail.id);
+        if (backfillError) throw backfillError;
+        existingProfile = byEmail;
+      }
+    }
 
     let isNewUser = false;
     let profileComplete =

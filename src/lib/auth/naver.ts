@@ -141,8 +141,10 @@ export function extractNaverUserInfo(naverUser: NaverUser): {
   nickname: string;
 } {
   const naverId = naverUser.id;
-  const email = naverUser.email;
-  const nickname = naverUser.nickname ?? naverUser.name ?? `naver_${naverId}`;
+  // 빈 문자열/공백은 "값 없음"으로 취급해 fallback이 동작하도록 한다.
+  const email = naverUser.email?.trim() || undefined;
+  const nickname =
+    naverUser.nickname?.trim() || naverUser.name?.trim() || `naver_${naverId}`;
 
   return { naverId, email, nickname };
 }
