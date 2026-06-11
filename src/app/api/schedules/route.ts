@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       {
         schedule,
         participantPath: `/schedule/${created.id}`,
-        hostPath: `/schedule/${created.id}`,
+        hostPath: `/schedule/${created.id}?hostToken=${created.hostToken}`,
         hostToken: created.hostToken,
       },
       { status: 201 },

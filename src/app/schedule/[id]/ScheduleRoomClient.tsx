@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import {
   CalendarClock,
   CheckCircle2,
@@ -33,6 +34,7 @@ interface PublicSchedule {
   participantCount: number;
   status: "open" | "confirmed";
   confirmedSlot?: TimeSlot;
+  creatorId?: string | null;
 }
 
 interface HostParticipant {
@@ -80,6 +82,7 @@ export function ScheduleRoomClient({
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // 드래그 상태 관리
   const [isDragging, setIsDragging] = useState(false);
@@ -186,6 +189,7 @@ export function ScheduleRoomClient({
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setIsLoggedIn(true);
+        setCurrentUser(user);
         supabase
           .from("profiles")
           .select("nickname")
@@ -202,6 +206,39 @@ export function ScheduleRoomClient({
       }
     });
   }, []);
+
+  // 로그인 사용자의 에브리타임 기본 일정 자동 매핑
+  useEffect(() => {
+    if (!schedule || !currentUser || submitted) return;
+    const metadataSlots = currentUser.user_metadata?.everytime_slots;
+    if (
+      metadataSlots &&
+      Array.isArray(metadataSlots) &&
+      selected.length === 0
+    ) {
+      const preselected: string[] = [];
+      for (const slot of metadataSlots) {
+        if (!slot) continue;
+        const start = Number(slot.startHour);
+        const end = Number(slot.endHour);
+        for (let h = start; h < end; h++) {
+          preselected.push(`${slot.day}-${h}`);
+        }
+      }
+      const validPreselected = preselected.filter((key) => {
+        const [day, hourStr] = key.split("-");
+        const hour = Number(hourStr);
+        return (
+          schedule.candidateDays.includes(day as DayCode) &&
+          hour >= schedule.candidateStartHour &&
+          hour < schedule.candidateEndHour
+        );
+      });
+      if (validPreselected.length > 0) {
+        setSelected(validPreselected);
+      }
+    }
+  }, [schedule, currentUser, submitted, selected.length]);
 
   useEffect(() => {
     const query = hostToken
@@ -243,7 +280,12 @@ export function ScheduleRoomClient({
     return slots;
   }, [schedule]);
 
-  const isHostView = Boolean(schedule && "participants" in schedule);
+  const isHostView = useMemo(() => {
+    if (!schedule || !("participants" in schedule)) return false;
+    if (hostToken) return true;
+    if (currentUser && schedule.creatorId === currentUser.id) return true;
+    return false;
+  }, [schedule, hostToken, currentUser]);
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     if (event) event.preventDefault();

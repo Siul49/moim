@@ -125,18 +125,42 @@ export default function SignupPage() {
               이제 캘린더를 연동하거나 바로 모임을 만들 수 있습니다.
             </p>
             <div className="mt-8 grid gap-3">
-              <Link
-                href="/calendar/connect"
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-purple-light font-bold text-white"
-              >
-                캘린더 연동하기
-              </Link>
-              <Link
-                href="/schedule/create"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-brand-border-muted font-bold text-brand-purple"
-              >
-                모임 만들기
-              </Link>
+              {(() => {
+                let redirectUrl = "";
+                if (typeof window !== "undefined") {
+                  const params = new URLSearchParams(window.location.search);
+                  const next = params.get("redirect") ?? params.get("next");
+                  if (next && (next.startsWith("/") || !next.includes("://"))) {
+                    redirectUrl = next;
+                  }
+                }
+                if (redirectUrl) {
+                  return (
+                    <Link
+                      href={redirectUrl}
+                      className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-purple font-bold text-white transition-all hover:scale-[1.02]"
+                    >
+                      모임 저장 완료 (대시보드로 이동)
+                    </Link>
+                  );
+                }
+                return (
+                  <>
+                    <Link
+                      href="/calendar/connect"
+                      className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-purple-light font-bold text-white"
+                    >
+                      캘린더 연동하기
+                    </Link>
+                    <Link
+                      href="/schedule/create"
+                      className="inline-flex h-12 items-center justify-center rounded-xl border border-brand-border-muted font-bold text-brand-purple"
+                    >
+                      모임 만들기
+                    </Link>
+                  </>
+                );
+              })()}
             </div>
           </div>
         ) : (

@@ -16,6 +16,7 @@ import {
   ProviderGlyph,
   PurpleButton,
 } from "@/components/moim/reference-ui";
+import { createClient } from "@/lib/supabase/client";
 import type { TimeSlot } from "@/types/schedule";
 
 export default function CalendarConnectPage() {
@@ -30,6 +31,8 @@ export default function CalendarConnectPage() {
   const [googleEmail, setGoogleEmail] = useState("");
   const [icloudConnected, setIcloudConnected] = useState(false);
   const [icloudConnectedId, setIcloudConnectedId] = useState("");
+  const [everytimeConnected, setEverytimeConnected] = useState(false);
+  const [everytimeConnectedUrl, setEverytimeConnectedUrl] = useState("");
 
   async function loadStatus() {
     try {
@@ -40,6 +43,20 @@ export default function CalendarConnectPage() {
         setGoogleEmail(data.googleEmail ?? "");
         setIcloudConnected(data.icloudConnected);
         setIcloudConnectedId(data.icloudAppleId ?? "");
+      }
+
+      // Supabase user_metadata에서 에브리타임 연동 조회
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user && user.user_metadata) {
+        const url = user.user_metadata.everytime_url;
+        if (url) {
+          setEverytimeConnected(true);
+          setEverytimeConnectedUrl(url);
+          setSlots(user.user_metadata.everytime_slots ?? []);
+        }
       }
     } catch (err) {
       console.error("연동 상태 조회 실패:", err);
@@ -66,6 +83,7 @@ export default function CalendarConnectPage() {
       }
       setSlots(result.freeSlots ?? []);
       setMessage("Everytime 시간표를 가능한 시간으로 변환했습니다.");
+      await loadStatus();
     } catch (caught) {
       setMessage(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
@@ -104,6 +122,39 @@ export default function CalendarConnectPage() {
       }
       setSlots(result.freeSlots ?? []);
       setMessage("ICS 파일을 가능한 시간으로 변환했습니다.");
+      await loadStatus();
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error ? caught.message : "요청에 실패했습니다.",
+      );
+    } finally {
+      setIsLoading("");
+    }
+  }
+
+  async function disconnectEverytime() {
+    setMessage("");
+    setIsLoading("everytime-disconnect");
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            everytime_url: null,
+            everytime_slots: null,
+          },
+        });
+        if (error) throw error;
+      }
+      setEverytimeConnected(false);
+      setEverytimeConnectedUrl("");
+      setSlots([]);
+      setMessage(
+        "Everytime 연동이 해제되고 모든 데이터가 안전하게 파기되었습니다.",
+      );
     } catch (caught) {
       setMessage(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
@@ -328,25 +379,46 @@ export default function CalendarConnectPage() {
             title="Everytime"
             description="공유 URL을 가능한 시간 블록으로 변환합니다."
             action={
-              <form
-                onSubmit={submitEverytimeUrl}
-                className="flex w-full gap-2 md:w-[420px]"
-              >
-                <input
-                  value={everytimeUrl}
-                  onChange={(event) => setEverytimeUrl(event.target.value)}
-                  placeholder="https://everytime.kr/@..."
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-brand-border-gray bg-white px-3 text-sm outline-none focus:border-brand-purple-accent focus:ring-2 focus:ring-brand-purple-ring transition-all"
-                  required
-                />
-                <PurpleButton
-                  type="submit"
-                  className="h-11 px-5 text-sm shadow-sm"
-                  disabled={isLoading === "everytime-url"}
+              everytimeConnected ? (
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                  <span className="text-sm font-semibold text-brand-purple bg-brand-purple/10 px-3 py-1.5 rounded-lg border border-brand-border-muted max-w-[240px] truncate">
+                    {everytimeConnectedUrl === "file_upload"
+                      ? "파일 업로드 연동"
+                      : everytimeConnectedUrl}{" "}
+                    (연동됨)
+                  </span>
+                  <PurpleButton
+                    type="button"
+                    onClick={disconnectEverytime}
+                    className="h-11 px-5 text-sm bg-destructive hover:bg-destructive/90 shadow-none text-white"
+                    disabled={isLoading === "everytime-disconnect"}
+                  >
+                    {isLoading === "everytime-disconnect"
+                      ? "해제 중"
+                      : "연동 해제"}
+                  </PurpleButton>
+                </div>
+              ) : (
+                <form
+                  onSubmit={submitEverytimeUrl}
+                  className="flex w-full gap-2 md:w-[420px]"
                 >
-                  가져오기
-                </PurpleButton>
-              </form>
+                  <input
+                    value={everytimeUrl}
+                    onChange={(event) => setEverytimeUrl(event.target.value)}
+                    placeholder="https://everytime.kr/@..."
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-brand-border-gray bg-white px-3 text-sm outline-none focus:border-brand-purple-accent focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                    required
+                  />
+                  <PurpleButton
+                    type="submit"
+                    className="h-11 px-5 text-sm shadow-sm"
+                    disabled={isLoading === "everytime-url"}
+                  >
+                    가져오기
+                  </PurpleButton>
+                </form>
+              )
             }
           />
 

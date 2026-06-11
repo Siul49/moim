@@ -47,7 +47,15 @@ export default function LoginPage() {
       // Webkit/Safari 쿠키 디스크 동기화 대기 시간 부여
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      window.location.href = "/schedule/create";
+      let redirectUrl = "/schedule/create";
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("redirect") ?? params.get("next");
+        if (next && (next.startsWith("/") || !next.includes("://"))) {
+          redirectUrl = next;
+        }
+      }
+      window.location.href = redirectUrl;
     } catch (caught) {
       setMessage(
         caught instanceof Error ? caught.message : "요청에 실패했습니다.",
@@ -59,11 +67,22 @@ export default function LoginPage() {
 
   const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
     const supabase = createClient();
+    let next = "/schedule/create";
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const nextParam = params.get("redirect") ?? params.get("next");
+      if (
+        nextParam &&
+        (nextParam.startsWith("/") || !nextParam.includes("://"))
+      ) {
+        next = nextParam;
+      }
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
       if (error) throw error;

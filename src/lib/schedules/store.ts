@@ -39,6 +39,7 @@ export interface PublicSchedule {
   status: "open" | "confirmed";
   confirmedSlot?: TimeSlot;
   createdAt: string;
+  creatorId?: string | null;
 }
 
 export interface ScheduleParticipant {
@@ -112,6 +113,21 @@ export async function getScheduleForHost(
   return toHostSchedule(schedule);
 }
 
+export async function getScheduleForCreator(
+  id: string,
+  creatorId: string,
+): Promise<HostSchedule | null> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id },
+    include: { participants: true },
+  });
+  if (!schedule || schedule.creatorId !== creatorId) {
+    return null;
+  }
+
+  return toHostSchedule(schedule);
+}
+
 export async function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,
@@ -134,11 +150,28 @@ export async function addParticipantAvailability(
         throw new Error("schedule is not open");
       }
 
+      const normName = normalizeParticipantName(input.name);
+      const existing = await tx.scheduleParticipant.findFirst({
+        where: { scheduleId, name: normName },
+      });
+
+      if (existing) {
+        return tx.scheduleParticipant.update({
+          where: { id: existing.id },
+          data: {
+            available: JSON.stringify(
+              normalizeAvailability(schedule, input.available),
+            ),
+            submittedAt: new Date(),
+          },
+        });
+      }
+
       return tx.scheduleParticipant.create({
         data: {
           id: createToken(12),
           scheduleId,
-          name: normalizeParticipantName(input.name),
+          name: normName,
           available: JSON.stringify(
             normalizeAvailability(schedule, input.available),
           ),
@@ -166,6 +199,51 @@ export async function confirmSchedule(
       });
       if (!schedule) throw new Error("schedule not found");
       if (!tokenMatches(schedule.hostTokenHash, hostToken)) {
+        throw new Error("invalid host token");
+      }
+      if (schedule.status !== "open") {
+        throw new Error("schedule is not open");
+      }
+
+      const normalizedSlot = normalizeConfirmedSlot(schedule, confirmedSlot);
+      const updateResult = await tx.schedule.updateMany({
+        where: { id, status: "open" },
+        data: {
+          status: "confirmed",
+          confirmedSlot: JSON.stringify(normalizedSlot),
+        },
+      });
+      if (updateResult.count !== 1) {
+        throw new Error("schedule is not open");
+      }
+
+      return tx.schedule.findUnique({
+        where: { id },
+        include: { participants: true },
+      });
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
+  );
+
+  if (!updated) throw new Error("schedule not found");
+  return toHostSchedule(updated);
+}
+
+export async function confirmScheduleByCreator(
+  id: string,
+  creatorId: string,
+  confirmedSlot: TimeSlot,
+): Promise<HostSchedule> {
+  const updated = await prisma.$transaction(
+    async (tx) => {
+      const schedule = await tx.schedule.findUnique({
+        where: { id },
+        include: { participants: true },
+      });
+      if (!schedule) throw new Error("schedule not found");
+      if (schedule.creatorId !== creatorId) {
         throw new Error("invalid host token");
       }
       if (schedule.status !== "open") {
@@ -352,6 +430,7 @@ function toPublicSchedule(
     status: schedule.status === "confirmed" ? "confirmed" : "open",
     confirmedSlot: parseOptionalTimeSlot(schedule.confirmedSlot),
     createdAt: schedule.createdAt.toISOString(),
+    creatorId: schedule.creatorId,
   };
 }
 
