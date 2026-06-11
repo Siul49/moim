@@ -767,11 +767,16 @@ export function CreateScheduleClient() {
               </div>
             </div>
 
+            {/* 스크린 리더 전용 복사 완료 알림 */}
+            <div aria-live="polite" className="sr-only">
+              {participantCopied && "참여자 링크가 클립보드에 복사되었습니다"}
+            </div>
+
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
+                data-testid="copy-participant-link-bottom"
                 onClick={() => copyParticipant(links.participant)}
-                aria-live="polite"
                 className={cn(
                   "inline-flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors shadow-sm",
                   participantCopied
@@ -842,19 +847,24 @@ function validateScheduleForm({
 function useCopyFeedback(resetMs = 1800) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetMsRef = useRef(resetMs);
 
-  const copy = useCallback(
-    async (value: string) => {
-      const ok = await copyText(value);
-      if (ok) {
-        setCopied(true);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => setCopied(false), resetMs);
-      }
-      return ok;
-    },
-    [resetMs],
-  );
+  useEffect(() => {
+    resetMsRef.current = resetMs;
+  }, [resetMs]);
+
+  const copy = useCallback(async (value: string) => {
+    const ok = await copyText(value);
+    if (ok) {
+      setCopied(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(
+        () => setCopied(false),
+        resetMsRef.current,
+      );
+    }
+    return ok;
+  }, []);
 
   useEffect(
     () => () => {
