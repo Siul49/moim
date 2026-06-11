@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -331,16 +332,32 @@ function SocialButton({
   label: string;
   dark?: boolean;
 }) {
-  const href =
-    type === "kakao"
-      ? "/api/auth/kakao/login"
-      : type === "apple"
-        ? "/api/auth/apple/login"
-        : type === "google"
-          ? "/api/auth/google/login"
-          : type === "naver"
-            ? "/api/auth/naver/login"
-            : undefined;
+  const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
+    const supabase = createClient();
+    let next = "/schedule/create";
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const nextParam = params.get("redirect") ?? params.get("next");
+      if (
+        nextParam &&
+        (nextParam.startsWith("/") || !nextParam.includes("://"))
+      ) {
+        next = nextParam;
+      }
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`${provider} 로그인 에러:`, err);
+    }
+  };
+
   const className = dark
     ? "bg-[#171717] text-white"
     : type === "kakao"
@@ -354,10 +371,10 @@ function SocialButton({
       {label}
     </>
   );
-  if (href) {
+  if (type === "naver") {
     return (
       <a
-        href={href}
+        href="/api/auth/naver/login"
         className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg text-lg font-bold ${className}`}
       >
         {content}
@@ -367,6 +384,7 @@ function SocialButton({
   return (
     <button
       type="button"
+      onClick={() => handleOAuthLogin(type)}
       className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg text-lg font-bold ${className}`}
     >
       {content}
