@@ -117,15 +117,35 @@ export async function GET(req: NextRequest) {
           naver_id: naverId,
         },
       });
-      // 동시 요청 등으로 이미 생성됐다면 무시하고 로그인으로 진행
-      if (
-        createError &&
-        !/already|registered|exists/i.test(createError.message)
-      ) {
-        throw createError;
+
+      if (createError) {
+        if (!/already|registered|exists/i.test(createError.message)) {
+          throw createError;
+        }
+        // 동시 요청 race: 다른 요청이 먼저 생성을 끝낸 기존 사용자다.
+        // 신규로 오판해 추가정보 페이지로 보내지 않도록, 실제 프로필 상태를
+        // naver_id(없으면 이메일)로 재조회해 profileComplete를 정확히 잡는다.
+        const { data: raced } = await admin
+          .from("profiles")
+          .select("phone_number, terms_agreed_at")
+          .eq("naver_id", naverId)
+          .maybeSingle();
+        const racedProfile =
+          raced ??
+          (
+            await admin
+              .from("profiles")
+              .select("phone_number, terms_agreed_at")
+              .eq("email", authEmail)
+              .maybeSingle()
+          ).data;
+        isNewUser = false;
+        profileComplete =
+          !!racedProfile?.phone_number && !!racedProfile?.terms_agreed_at;
+      } else {
+        isNewUser = true;
+        profileComplete = false;
       }
-      isNewUser = !createError;
-      profileComplete = false;
     }
 
     // 3) magiclink 토큰 발급 → 서버 클라이언트에서 verifyOtp로 세션 쿠키 설정
