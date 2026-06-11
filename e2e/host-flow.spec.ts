@@ -68,13 +68,17 @@ test("host can create a schedule and receive safe participant and host links", a
 
   // Step 1 -> Step 2 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await expect(page.getByText("내 일정을 연동해 볼까요?")).toBeVisible({
+  await expect(
+    page.getByText("내 일정을 연동해 볼까요?", { exact: true }),
+  ).toBeVisible({
     timeout: 5000,
   });
 
   // Step 2 -> Step 3 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await expect(page.getByText("후보 시간대 설정")).toBeVisible({
+  await expect(
+    page.getByText("조율할 시간 범위를 정해주세요", { exact: true }),
+  ).toBeVisible({
     timeout: 5000,
   });
 

@@ -1,5 +1,8 @@
 import { fetchWithTimeout } from "./fetch-with-timeout";
 
+export const STATE_COOKIE = "naver_oauth_state";
+export const STATE_MAX_AGE = 600; // 10분
+
 interface NaverTokenResponse {
   access_token: string;
   token_type: string;
@@ -54,10 +57,10 @@ export async function getNaverToken(
   code: string,
   state: string,
 ): Promise<NaverTokenResponse> {
-  if (!code.trim()) {
+  if (!code?.trim()) {
     throw new Error("Naver authorization code is empty.");
   }
-  if (!state.trim()) {
+  if (!state?.trim()) {
     throw new Error("Naver OAuth state is empty.");
   }
 
@@ -106,6 +109,9 @@ export async function getNaverToken(
 export async function getNaverUser(
   naverAccessToken: string,
 ): Promise<NaverUser> {
+  if (!naverAccessToken?.trim()) {
+    throw new Error("invalid or empty Naver access token");
+  }
   const res = await fetchWithTimeout("https://openapi.naver.com/v1/nid/me", {
     method: "GET",
     headers: {

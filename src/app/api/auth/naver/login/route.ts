@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNaverAuthUrl } from "@/lib/auth/naver";
+import { getNaverAuthUrl, STATE_COOKIE, STATE_MAX_AGE } from "@/lib/auth/naver";
 
 export const dynamic = "force-dynamic";
-
-const STATE_COOKIE = "naver_oauth_state";
-const STATE_MAX_AGE = 600; // 10분
 
 export async function GET(request: NextRequest) {
   try {
