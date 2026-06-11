@@ -85,15 +85,15 @@ export function ScheduleRoomClient({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // 드래그 상태 관리
-  const [isDragging, setIsDragging] = useState(false);
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
     null,
   );
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   const handleMouseDown = (key: string) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     const shouldSelect = !selected.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
     setSelected((prev) =>
@@ -102,7 +102,7 @@ export function ScheduleRoomClient({
   };
 
   const handleMouseEnter = (key: string) => {
-    if (!isDragging || !dragAction) return;
+    if (!isDraggingRef.current || !dragAction) return;
     setSelected((prev) => {
       if (dragAction === "select") {
         return prev.includes(key) ? prev : [...prev, key];
@@ -113,12 +113,12 @@ export function ScheduleRoomClient({
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    isDraggingRef.current = false;
     setDragAction(null);
   };
 
   const handleTouchStart = (e: React.TouchEvent, key: string) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     const shouldSelect = !selected.includes(key);
     setDragAction(shouldSelect ? "select" : "deselect");
     setSelected((prev) =>
@@ -127,7 +127,7 @@ export function ScheduleRoomClient({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !dragAction) return;
+    if (!isDraggingRef.current || !dragAction) return;
     const touch = e.touches[0];
     if (!touch) return;
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -146,7 +146,7 @@ export function ScheduleRoomClient({
   };
 
   const handleTouchEnd = () => {
-    setIsDragging(false);
+    isDraggingRef.current = false;
     setDragAction(null);
   };
 
@@ -156,7 +156,7 @@ export function ScheduleRoomClient({
     if (!gridEl) return;
 
     const preventDefaultTouch = (e: TouchEvent) => {
-      if (isDragging) {
+      if (isDraggingRef.current) {
         if (e.cancelable) {
           e.preventDefault();
         }
@@ -169,11 +169,11 @@ export function ScheduleRoomClient({
     return () => {
       gridEl.removeEventListener("touchmove", preventDefaultTouch);
     };
-  }, [isDragging]);
+  }, []);
 
   useEffect(() => {
     const handleGlobalUp = () => {
-      setIsDragging(false);
+      isDraggingRef.current = false;
       setDragAction(null);
     };
     window.addEventListener("mouseup", handleGlobalUp);

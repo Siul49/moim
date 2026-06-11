@@ -12,9 +12,6 @@ test("host can create a schedule and receive safe participant and host links", a
   // 1. 회원가입 진행
   await page.goto("/signup");
 
-  // React Hydration 안정화를 위해 페이지 로드 후 대기
-  await page.waitForTimeout(2000);
-
   const emailInput = page.locator("#email");
   await emailInput.waitFor({ state: "visible", timeout: 10000 });
   await emailInput.fill(testEmail);
@@ -27,11 +24,13 @@ test("host can create a schedule and receive safe participant and host links", a
   const nicknameInput = page.locator("#nickname");
   await nicknameInput.fill(`host_${Date.now().toString().slice(-6)}`);
 
-  const pwInput = page.locator('input[type="password"]').first();
+  const pwInput = page.locator("#password");
+  await pwInput.waitFor({ state: "visible", timeout: 10000 });
   await pwInput.fill("Test1234!");
   await expect(pwInput).toHaveValue("Test1234!");
 
-  const pwConfirmInput = page.locator('input[type="password"]').last();
+  const pwConfirmInput = page.locator("#passwordConfirm");
+  await pwConfirmInput.waitFor({ state: "visible", timeout: 10000 });
   await pwConfirmInput.fill("Test1234!");
   await expect(pwConfirmInput).toHaveValue("Test1234!");
 
@@ -41,17 +40,11 @@ test("host can create a schedule and receive safe participant and host links", a
   await page.getByRole("button", { name: "회원가입" }).click();
   await expect(page.getByText("회원가입 완료")).toBeVisible({ timeout: 20000 });
 
-  // 리다이렉션 인터럽트 및 클라이언트 상태 안정을 위한 충분한 대기
-  await page.waitForTimeout(2000);
-
   // Webkit 히스토리/라우터 충돌 방지를 위한 컨텍스트 초기화 네비게이션
   await page.goto("about:blank");
 
   // 2. 로그인 진행
   await page.goto("/login");
-
-  // 로그인 페이지 Hydration 안정 대기
-  await page.waitForTimeout(2000);
 
   const loginEmailInput = page.locator("#loginId");
   await loginEmailInput.waitFor({ state: "visible", timeout: 10000 });
@@ -59,6 +52,7 @@ test("host can create a schedule and receive safe participant and host links", a
   await expect(loginEmailInput).toHaveValue(testEmail);
 
   const loginPwInput = page.locator("#password");
+  await loginPwInput.waitFor({ state: "visible", timeout: 10000 });
   await loginPwInput.fill("Test1234!");
   await expect(loginPwInput).toHaveValue("Test1234!");
 
@@ -67,9 +61,6 @@ test("host can create a schedule and receive safe participant and host links", a
   // 3. 스케줄 생성
   await page.waitForURL("**/schedule/create", { timeout: 60000 });
 
-  // 페이지 컴파일 및 Hydration 안정을 위해 대기
-  await page.waitForTimeout(3000);
-
   const titleInput = page.getByLabel("모임 제목");
   await titleInput.waitFor({ state: "visible", timeout: 15000 });
   await titleInput.fill("제품 인터뷰");
@@ -77,11 +68,15 @@ test("host can create a schedule and receive safe participant and host links", a
 
   // Step 1 -> Step 2 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await page.waitForTimeout(1000);
+  await expect(page.getByText("내 일정을 연동해 볼까요?")).toBeVisible({
+    timeout: 5000,
+  });
 
   // Step 2 -> Step 3 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
-  await page.waitForTimeout(1000);
+  await expect(page.getByText("후보 시간대 설정")).toBeVisible({
+    timeout: 5000,
+  });
 
   // Step 3 -> 생성 완료 (초대 링크 만들기)
   await page.getByRole("button", { name: "초대 링크 만들기 🚀" }).click();
