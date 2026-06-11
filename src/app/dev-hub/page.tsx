@@ -19,6 +19,28 @@ export default function DevHubPage() {
   const router = useRouter();
   const [scheduleId, setScheduleId] = useState("");
   const [hostToken, setHostToken] = useState("");
+  const [isBypassing, setIsBypassing] = useState(false);
+
+  const handleBypassLogin = async (role: "admin" | "host") => {
+    setIsBypassing(true);
+    try {
+      const response = await fetch("/api/auth/dev-bypass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "우회 로그인에 실패했습니다.");
+      }
+      alert(result.message);
+      router.push("/dashboard");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
+    } finally {
+      setIsBypassing(false);
+    }
+  };
 
   const handleJoinParticipant = () => {
     if (!scheduleId.trim()) return alert("모임 ID를 입력해주세요.");
@@ -148,6 +170,30 @@ export default function DevHubPage() {
                     진입 →
                   </span>
                 </Link>
+
+                {/* 개발용 우회 로그인 영역 */}
+                <div className="mt-2 rounded-xl bg-slate-50 border border-slate-100 p-3.5">
+                  <p className="text-[11px] font-bold text-slate-500 mb-2.5 flex items-center gap-1">
+                    <Shield className="h-3.5 w-3.5 text-brand-purple" />
+                    [개발용] 원클릭 로그인 패싱 (Bypass)
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleBypassLogin("admin")}
+                      disabled={isBypassing}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-3 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      👑 관리자 로그인
+                    </button>
+                    <button
+                      onClick={() => handleBypassLogin("host")}
+                      disabled={isBypassing}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-border-muted bg-white px-3 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      🧑‍💼 호스트 로그인
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

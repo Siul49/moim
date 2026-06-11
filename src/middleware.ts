@@ -29,9 +29,13 @@ export async function middleware(request: NextRequest) {
 
   // This will refresh session if expired
   let hasSupabaseUser = false;
-  if (process.env.E2E_TEST === "true") {
-    const mockUid = request.cookies.get("e2e_mock_uid")?.value;
-    const mockEmail = request.cookies.get("e2e_mock_email")?.value;
+  const mockUid = request.cookies.get("e2e_mock_uid")?.value;
+  const mockEmail = request.cookies.get("e2e_mock_email")?.value;
+
+  if (
+    process.env.E2E_TEST === "true" ||
+    (process.env.NODE_ENV === "development" && mockUid && mockEmail)
+  ) {
     hasSupabaseUser = !!mockUid && !!mockEmail;
   } else {
     const supabaseUserRes = await supabase.auth.getUser();
