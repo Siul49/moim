@@ -1,12 +1,45 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geistSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
+const pretendard = localFont({
+  src: [
+    {
+      path: "./fonts/Pretendard-Light.woff2",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Pretendard-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Pretendard-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Pretendard-SemiBold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Pretendard-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Pretendard-ExtraBold.woff2",
+      weight: "800",
+      style: "normal",
+    },
+  ],
+  variable: "--font-pretendard",
 });
+
 const geistMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
@@ -24,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={cn(geistSans.variable, geistMono.variable)}>
+    <html lang="ko" className={cn(pretendard.variable, geistMono.variable)}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

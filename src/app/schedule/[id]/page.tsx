@@ -1,16 +1,14 @@
 import { ScheduleRoomClient } from "./ScheduleRoomClient";
 
-export default function ScheduleParticipantPage({
+export default async function ScheduleParticipantPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { hostToken?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ hostToken?: string }>;
 }) {
-  return (
-    <ScheduleRoomClient
-      scheduleId={params.id}
-      hostToken={searchParams.hostToken ?? ""}
-    />
-  );
+  const { id } = await params;
+  const { hostToken } = await searchParams;
+
+  return <ScheduleRoomClient scheduleId={id} hostToken={hostToken ?? ""} />;
 }

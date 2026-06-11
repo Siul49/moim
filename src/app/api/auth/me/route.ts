@@ -1,46 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { verifyAccessToken, COOKIE_NAME } from "@/lib/auth/jwt";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
+export async function GET() {
+  const session = await getSession();
 
-  if (!token) {
+  if (!session) {
     return NextResponse.json(
       { success: false, message: "인증이 필요합니다." },
       { status: 401 },
     );
   }
 
-  const payload = await verifyAccessToken(token);
-  if (!payload) {
-    return NextResponse.json(
-      { success: false, message: "유효하지 않은 토큰입니다." },
-      { status: 401 },
-    );
-  }
-
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        phoneNumber: true,
+    const supabase = await createClient();
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, email, nickname, phone_number")
+      .eq("id", session.userId)
+      .maybeSingle();
+    // DB 오류를 폴백값으로 가리지 않고 500으로 surface한다.
+    if (profileError) throw profileError;
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: session.userId,
+        email: profile?.email ?? session.email,
+        nickname: profile?.nickname ?? null,
+        phoneNumber: profile?.phone_number ?? null,
       },
     });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "사용자를 찾을 수 없습니다." },
-        { status: 401 },
-      );
-    }
-
-    return NextResponse.json({ success: true, user });
   } catch (err) {
     console.error("[auth.me] 서버 오류:", err);
     return NextResponse.json(

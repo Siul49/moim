@@ -17,15 +17,20 @@ const SCOPES = [
 const TOKEN_COOKIE_NAME = "google_tokens";
 
 function getClientId(): string {
-  const id = process.env.GOOGLE_CLIENT_ID;
-  if (!id) throw new Error("GOOGLE_CLIENT_ID 환경변수가 설정되지 않았습니다.");
+  const id = process.env.GOOGLE_CALENDAR_CLIENT_ID;
+  if (!id)
+    throw new Error(
+      "GOOGLE_CALENDAR_CLIENT_ID 환경변수가 설정되지 않았습니다.",
+    );
   return id;
 }
 
 function getClientSecret(): string {
-  const secret = process.env.GOOGLE_CLIENT_SECRET;
+  const secret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
   if (!secret)
-    throw new Error("GOOGLE_CLIENT_SECRET 환경변수가 설정되지 않았습니다.");
+    throw new Error(
+      "GOOGLE_CALENDAR_CLIENT_SECRET 환경변수가 설정되지 않았습니다.",
+    );
   return secret;
 }
 

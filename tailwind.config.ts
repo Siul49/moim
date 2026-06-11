@@ -55,11 +55,69 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        brand: {
+          purple: {
+            DEFAULT: "hsl(var(--brand-purple))",
+            dark: "hsl(var(--brand-purple-dark))",
+            light: "hsl(var(--brand-purple-light))",
+            bg: "hsl(var(--brand-purple-bg))",
+            hover: "hsl(var(--brand-purple-hover))",
+            accent: "hsl(var(--brand-purple-accent))",
+            ring: "hsl(var(--brand-purple-ring))",
+          },
+          border: {
+            muted: "hsl(var(--brand-border-muted))",
+            gray: "hsl(var(--brand-border-gray))",
+          },
+          bg: {
+            light: "hsl(var(--brand-bg-light))",
+            muted: "hsl(var(--brand-bg-muted))",
+          },
+          text: {
+            primary: "hsl(var(--brand-text-primary))",
+            secondary: "hsl(var(--brand-text-secondary))",
+            muted: "hsl(var(--brand-text-muted))",
+            light: "hsl(var(--brand-text-light))",
+          },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: [
+          "var(--font-pretendard)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        mono: [
+          "var(--font-geist-mono)",
+          "ui-monospace",
+          "SFMono-Regular",
+          "monospace",
+        ],
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        scaleIn: {
+          from: { transform: "scale(0.95)", opacity: "0" },
+          to: { transform: "scale(1)", opacity: "1" },
+        },
+        bounceOnce: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+        },
+      },
+      animation: {
+        fadeIn: "fadeIn 0.25s ease-out forwards",
+        scaleIn: "scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        bounceOnce: "bounceOnce 0.4s ease-out 1",
       },
     },
   },

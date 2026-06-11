@@ -30,7 +30,7 @@ beforeEach(() => {
   process.env.NAVER_CLIENT_ID = "naver-client-id";
   process.env.NAVER_CLIENT_SECRET = "naver-client-secret";
   process.env.NEXT_PUBLIC_BASE_URL = "http://localhost:3000";
-  delete process.env.NAVER_REDIRECT_URI;
+  delete process.env.NAVER_CALENDAR_REDIRECT_URI;
 });
 
 describe("buildAuthUrl", () => {
@@ -46,8 +46,9 @@ describe("buildAuthUrl", () => {
     expect(url).toContain("state=state-123");
   });
 
-  test("NAVER_REDIRECT_URI가 있으면 우선 사용한다", () => {
-    process.env.NAVER_REDIRECT_URI = "https://example.com/naver/callback";
+  test("NAVER_CALENDAR_REDIRECT_URI가 있으면 우선 사용한다", () => {
+    process.env.NAVER_CALENDAR_REDIRECT_URI =
+      "https://example.com/naver/callback";
 
     const url = buildAuthUrl("state");
 

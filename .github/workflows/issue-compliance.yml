@@ -1,5 +1,8 @@
 name: 이슈 템플릿 검사 (Compliance Check)
 
+permissions:
+  issues: read
+
 on:
   issues:
     types: [opened, edited]

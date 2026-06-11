@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOIM - 버튼 디자인 시스템 제안 (Button Proposals)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Outfit & Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      background-color: #faf9fc;
+      color: #1a1523;
+    }
+    .brand-font {
+      font-family: 'Outfit', 'Pretendard', sans-serif;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#6252ac',
+              'purple-light': '#8f7bd6',
+              'brand-purple-hover': '#514295',
+              'purple-ring': '#f3efff',
+              text: {
+                primary: '#1d1926',
+                secondary: '#585163',
+                muted: '#7a7287',
+                light: '#a9a1b8'
+              },
+              border: {
+                muted: '#f0ebf8',
+                gray: '#ded6eb'
+              },
+              bg: {
+                light: '#fbfaff',
+                muted: '#f5f0fc'
+              }
+            }
+          },
+          boxShadow: {
+            'premium': '0 10px 30px -10px rgba(95, 82, 130, 0.12)',
+            'premium-lg': '0 20px 50px -12px rgba(95, 82, 130, 0.16)',
+            'glow': '0 0 20px 0px rgba(143, 123, 214, 0.15)',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen py-16 px-6">
+  <div class="mx-auto max-w-4xl">
+    <!-- Header -->
+    <header class="mb-12 text-center">
+      <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-border-muted bg-white px-5 py-2 text-xs font-bold uppercase tracking-wider text-brand-purple shadow-sm">
+        ✨ 디자인 시스템 개선 시안
+      </span>
+      <h1 class="mt-4 text-4xl font-extrabold tracking-tight text-brand-text-primary">
+        버튼 컴포넌트 디자인 제안
+      </h1>
+      <p class="mt-3 text-lg font-medium text-brand-text-secondary">
+        그라데이션 틴트 및 소프트 미세 섀도우를 더한 프리미엄 버튼 시안
+      </p>
+    </header>
+
+    <!-- Main Board -->
+    <div class="grid gap-8">
+      <!-- Section 1: Comparison Card -->
+      <section class="rounded-3xl border border-brand-border-muted bg-white p-8 shadow-premium">
+        <h2 class="text-xl font-extrabold text-brand-text-primary mb-6 flex items-center gap-2">
+          <span>🎨</span> 버튼 스타일 매트릭스
+        </h2>
+
+        <div class="grid gap-6 md:grid-cols-3">
+          <!-- Type 1: Solid Brand -->
+          <div class="rounded-2xl border border-brand-border-muted bg-brand-bg-light p-6 flex flex-col justify-between">
+            <div>
+              <span class="rounded-full bg-brand-purple/10 px-3 py-1 text-[11px] font-bold text-brand-purple">
+                Primary / Action
+              </span>
+              <h3 class="mt-3 text-lg font-extrabold text-brand-text-primary">Solid Brand</h3>
+              <p class="mt-2 text-xs text-brand-text-secondary leading-relaxed font-semibold">
+                최종 제출, 가입하기 등 한 페이지에서 가장 두드러져야 하는 <b>최우선 액션</b>에 사용합니다.
+              </p>
+            </div>
+            <div class="mt-8 flex justify-center">
+              <button class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple text-base font-bold text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-[#514295] hover:shadow-lg active:scale-[0.98]">
+                초대 링크 만들기
+              </button>
+            </div>
+          </div>
+
+          <!-- Type 2: Premium Tint Brand (Improved!) -->
+          <div class="rounded-2xl border border-brand-border-muted bg-brand-bg-light p-6 flex flex-col justify-between ring-2 ring-brand-purple/30 ring-offset-2">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="rounded-full bg-brand-purple/10 px-3 py-1 text-[11px] font-bold text-brand-purple">
+                  Refined Tint
+                </span>
+                <span class="text-[11px] font-bold text-brand-purple">Improved! 🔥</span>
+              </div>
+              <h3 class="mt-3 text-lg font-extrabold text-brand-text-primary">Tint Brand</h3>
+              <p class="mt-2 text-xs text-brand-text-secondary leading-relaxed font-semibold">
+                평평한 10% 솔리드 색상 대신 <b>은은한 미세 그라데이션</b>과 <b>소프트 퍼플 섀도우</b>를 입혀 입체적이고 고급스럽게 인지됩니다.
+              </p>
+            </div>
+            <div class="mt-8 flex justify-center">
+              <button class="inline-flex h-12 w-full items-center justify-center rounded-xl border border-brand-purple/15 bg-gradient-to-r from-brand-purple/[0.08] to-brand-purple/[0.03] text-base font-bold text-brand-purple shadow-[0_4px_10px_-2px_rgba(98,82,172,0.08)] transition-all duration-300 hover:scale-[1.02] hover:from-brand-purple/15 hover:to-brand-purple/8 hover:border-brand-purple/30 hover:shadow-[0_6px_16px_rgba(98,82,172,0.12)] active:scale-[0.98]">
+                가능 시간 제출
+              </button>
+            </div>
+          </div>
+
+          <!-- Type 3: Ghost Brand -->
+          <div class="rounded-2xl border border-brand-border-muted bg-brand-bg-light p-6 flex flex-col justify-between">
+            <div>
+              <span class="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold text-gray-500">
+                Navigation / Low Profile
+              </span>
+              <h3 class="mt-3 text-lg font-extrabold text-brand-text-primary">Ghost Brand</h3>
+              <p class="mt-2 text-xs text-brand-text-secondary leading-relaxed font-semibold">
+                헤더 영역 내비게이션이나 서브 메뉴처럼 주위 요소와 자연스럽게 어우러져야 할 때 씁니다.
+              </p>
+            </div>
+            <div class="mt-8 flex justify-center">
+              <button class="inline-flex h-12 w-full items-center justify-center rounded-xl text-base font-bold text-brand-purple transition-all duration-300 hover:scale-[1.02] hover:text-[#514295] active:scale-[0.98]">
+                캘린더 연동 관리
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Mockup Preview -->
+      <section class="rounded-3xl border border-brand-border-muted bg-white p-8 shadow-premium">
+        <h2 class="text-xl font-extrabold text-brand-text-primary mb-6 flex items-center gap-2">
+          <span>👀</span> 실제 페이지 적용 예시 시뮬레이션
+        </h2>
+
+        <!-- Box 1: Schedule room action -->
+        <div class="rounded-2xl border border-brand-border-muted bg-brand-bg-light p-6">
+          <p class="text-xs font-bold text-brand-text-muted uppercase mb-3">일정 조율 방 제출 화면 예시</p>
+          <div class="bg-white rounded-xl border border-brand-border-muted p-5 shadow-sm max-w-md mx-auto">
+            <h4 class="font-extrabold text-brand-text-primary">주말 독서 모임</h4>
+            <p class="text-xs text-brand-text-muted mt-1">김철수 님 외 7명 참여 중</p>
+            
+            <!-- Dummy Heatmap block -->
+            <div class="my-4 p-4 rounded-lg bg-brand-bg-light border border-brand-border-muted text-center text-xs font-bold text-brand-text-light">
+              📅 일정 격자판 (시간 선택 영역)
+            </div>
+
+            <!-- Standard CTA using Tint brand vs Ghost brand -->
+            <div class="grid gap-2">
+              <div class="text-[11px] font-bold text-brand-purple mb-1">✓ 개선된 스타일 (Refined Tinted): 입체적이고 고급스러움</div>
+              <button class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-brand-purple/15 bg-gradient-to-r from-brand-purple/[0.08] to-brand-purple/[0.03] text-sm font-bold text-brand-purple shadow-[0_4px_10px_-2px_rgba(98,82,172,0.08)] transition-all duration-300 hover:scale-[1.02] hover:from-brand-purple/15 hover:to-brand-purple/8 hover:border-brand-purple/30 hover:shadow-[0_6px_16px_rgba(98,82,172,0.12)] active:scale-[0.98]">
+                내 시간 제출하기
+              </button>
+              
+              <div class="h-px bg-brand-border-muted my-2"></div>
+              
+              <div class="text-[11px] font-bold text-brand-text-light mb-1">✗ 이전 스타일 (Ghost): 단순 글자처럼 보여 클릭 유도가 안 됨</div>
+              <button class="inline-flex h-11 w-full items-center justify-center rounded-xl text-sm font-bold text-brand-purple hover:scale-[1.02] active:scale-[0.98]">
+                내 시간 제출하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tailwind configs -->
+      <section class="rounded-3xl border border-brand-border-muted bg-white p-8 shadow-premium">
+        <h3 class="text-lg font-extrabold text-brand-text-primary mb-4">🛠️ Tailwind CSS 적용 코드 스펙</h3>
+        <pre class="bg-slate-900 text-slate-100 rounded-xl p-5 text-xs font-mono overflow-x-auto leading-relaxed">
+// solidBrand (솔리드 버튼)
+"bg-brand-purple text-white hover:bg-brand-purple-hover hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-sm"
+
+// tintBrand (개선된 프리미엄 그라데이션 틴트 버튼)
+"bg-gradient-to-r from-brand-purple/[0.08] to-brand-purple/[0.03] text-brand-purple border border-brand-purple/15 shadow-[0_4px_10px_-2px_rgba(98,82,172,0.08)] hover:from-brand-purple/15 hover:to-brand-purple/8 hover:border-brand-purple/30 hover:shadow-[0_6px_16px_rgba(98,82,172,0.12)] hover:scale-[1.02] active:scale-95 transition-all duration-300"
+
+// ghostBrand (고스트 버튼 - 헤더/내비바 전용)
+"text-brand-purple hover:text-brand-purple-hover hover:scale-[1.02] active:scale-95 transition-all duration-200"</pre>
+      </section>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-brand-text-light font-semibold">
+      MOIM UI/UX Design System Proposal · 2026
+    </footer>
+  </div>
+</body>
+</html>

@@ -5,7 +5,7 @@
  */
 
 /** 소셜 로그인 제공자 */
-export type AuthProvider = "kakao" | "google";
+export type AuthProvider = "kakao" | "google" | "apple" | "naver";
 
 /** 사용자 프로필 */
 export interface User {

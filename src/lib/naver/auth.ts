@@ -27,7 +27,7 @@ function getClientSecret(): string {
 }
 
 function getRedirectUri(): string {
-  const explicit = process.env.NAVER_REDIRECT_URI;
+  const explicit = process.env.NAVER_CALENDAR_REDIRECT_URI;
   if (explicit) return explicit;
 
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";

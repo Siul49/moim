@@ -1,10 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public", "auth"]
 }
 
 model User {
@@ -22,6 +25,8 @@ model User {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   socialAccounts   SocialAccount[]
+
+  @@schema("public")
 }
 
 model SocialAccount {
@@ -34,4 +39,36 @@ model SocialAccount {
   updatedAt      DateTime @updatedAt
 
   @@unique([provider, providerUserId])
+  @@schema("public")
 }
+
+model Schedule {
+  id                 String                @id
+  hostTokenHash      String                @unique
+  title              String
+  durationMinutes    Int
+  candidateDays      String
+  candidateStartHour Int
+  candidateEndHour   Int
+  status             String                @default("open")
+  confirmedSlot      String?
+  creatorId          String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  participants       ScheduleParticipant[]
+
+  @@schema("public")
+}
+
+model ScheduleParticipant {
+  id          String   @id
+  scheduleId  String
+  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  name        String
+  available   String
+  submittedAt DateTime @default(now())
+
+  @@index([scheduleId])
+  @@schema("public")
+}
+

@@ -1,105 +1,263 @@
 "use client";
 
+import { FormEvent, useState, useEffect } from "react";
+import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import { AuthProviderGlyph } from "@/components/moim/auth-social";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const supabase = createClient();
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [lastProvider, setLastProvider] = useState<string | null>(null);
 
-  const handleLogin = async (provider: "google" | "kakao") => {
-    setIsLoading(provider);
+  useEffect(() => {
+    setMounted(true);
+    const cookies = document.cookie.split("; ");
+    const providerCookie = cookies.find((row) =>
+      row.startsWith("last_login_provider="),
+    );
+    if (providerCookie) {
+      setLastProvider(providerCookie.split("=")[1]);
+    }
+  }, []);
+
+  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
+    if (event) event.preventDefault();
+    if (isSubmitting) return;
+    setMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loginId, password, remember }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message ?? "로그인에 실패했습니다.");
+      }
+
+      // Webkit/Safari 쿠키 디스크 동기화 대기 시간 부여
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      let redirectUrl = "/schedule/create";
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("redirect") ?? params.get("next");
+        if (next && (next.startsWith("/") || !next.includes("://"))) {
+          redirectUrl = next;
+        }
+      }
+      window.location.href = redirectUrl;
+    } catch (caught) {
+      setMessage(
+        caught instanceof Error ? caught.message : "요청에 실패했습니다.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
+    const supabase = createClient();
+    let next = "/schedule/create";
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const nextParam = params.get("redirect") ?? params.get("next");
+      if (
+        nextParam &&
+        (nextParam.startsWith("/") || !nextParam.includes("://"))
+      ) {
+        next = nextParam;
+      }
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
       if (error) throw error;
     } catch (err) {
-      console.error("로그인 에러:", err);
-      setIsLoading(null);
+      console.error(`${provider} 로그인 에러:`, err);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 px-4">
-      {/* 백그라운드 오로라 이펙트 */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-violet-600/20 blur-[120px] filter animate-pulse"
-          style={{ animationDuration: "10s" }}
-        />
-        <div
-          className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[60%] rounded-full bg-rose-600/10 blur-[120px] filter animate-pulse"
-          style={{ animationDuration: "7s" }}
-        />
-      </div>
-
-      {/* 로그인 카드 */}
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 p-8 shadow-2xl backdrop-blur-xl transition-all duration-300">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 font-bold text-2xl shadow-lg shadow-violet-500/5">
-            M
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mt-4">
-            MOIM 시작하기
-          </h1>
-          <p className="text-sm text-slate-400">
-            시간 조율을 더 스마트하고 완벽하게
+    <main className="min-h-screen bg-white px-6 py-16 text-brand-text-primary">
+      <section className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-[480px] flex-col justify-center">
+        <div className="mb-12 text-center">
+          <Link
+            href="/"
+            className="text-6xl font-extrabold tracking-normal text-brand-purple"
+          >
+            MOIM
+          </Link>
+          <p className="mt-5 text-lg font-semibold text-brand-text-secondary">
+            모임을 더 가깝게, 일상을 더 특별하게
           </p>
         </div>
 
-        <div className="mt-8 space-y-4">
-          {/* 카카오 로그인 버튼 */}
-          <button
-            onClick={() => handleLogin("kakao")}
-            disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#FEE500] px-4 py-3 text-sm font-semibold text-[#191919] hover:bg-[#FEE500]/90 active:scale-[0.98] transition-all duration-150 shadow-md shadow-yellow-500/5 disabled:opacity-50 disabled:pointer-events-none"
+        <form onSubmit={(e) => e.preventDefault()} className="grid gap-3.5">
+          <label htmlFor="loginId" className="grid gap-1.5 text-base font-bold">
+            이메일
+            <input
+              id="loginId"
+              value={loginId}
+              onChange={(event) => setLoginId(event.target.value)}
+              placeholder="example@email.com"
+              className="moim-input"
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label
+            htmlFor="password"
+            className="grid gap-1.5 text-base font-bold"
           >
-            {isLoading === "kakao" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#191919] border-t-transparent" />
-            ) : (
-              <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.68 2.531-.777 2.87-.12.43.148.423.31.314.127-.085 2.029-1.38 2.846-1.936.438.12.896.183 1.351.183 4.97 0 9-3.186 9-7.115S16.97 3 12 3z" />
-              </svg>
-            )}
-            카카오로 3초 만에 시작하기
-          </button>
+            <span className="flex items-center justify-between">
+              비밀번호
+              <Link
+                href="/forgot-password"
+                className="text-sm text-brand-purple hover:underline"
+              >
+                비밀번호 찾기
+              </Link>
+            </span>
+            <span className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                className="moim-input pr-12"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-light hover:text-brand-purple-accent focus:outline-none"
+              >
+                {showPassword ? (
+                  <Eye className="h-5 w-5" />
+                ) : (
+                  <EyeOff className="h-5 w-5" />
+                )}
+              </button>
+            </span>
+          </label>
 
-          {/* 구글 로그인 버튼 */}
-          <button
-            onClick={() => handleLogin("google")}
-            disabled={isLoading !== null}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-slate-800 px-4 py-3 text-sm font-semibold text-white active:scale-[0.98] transition-all duration-150 shadow-md disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {isLoading === "google" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  fill="#EA4335"
-                  d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.107C18.28 1.945 15.5 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.985 0-.74-.08-1.3-.176-1.857H12.24z"
-                />
-              </svg>
+          <label className="mt-1 flex items-center gap-2 text-sm font-semibold text-brand-text-secondary">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="h-4.5 w-4.5 rounded border-brand-border-gray accent-brand-purple"
+            />
+            로그인 유지
+          </label>
+
+          {message ? (
+            <p role="alert" className="text-sm text-destructive">
+              {message}
+            </p>
+          ) : null}
+
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              className={`mt-4 inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple px-7 text-base font-semibold text-white shadow-sm hover:bg-brand-purple-hover ${
+                isSubmitting ? "cursor-not-allowed opacity-70" : ""
+              }`}
+            >
+              {isSubmitting ? "로그인 중" : "로그인"}
+            </button>
+            {mounted && lastProvider === "local" && (
+              <span className="absolute top-1.5 -right-2 flex h-5 items-center rounded-full bg-brand-purple-light px-2.5 text-xs font-bold text-white shadow-sm animate-bounce">
+                최근 사용
+              </span>
             )}
-            Google 계정으로 계속하기
+          </div>
+        </form>
+
+        <div className="my-6 flex items-center gap-6 text-sm font-semibold text-brand-text-light">
+          <div className="h-px flex-1 bg-brand-border-gray" />
+          또는
+          <div className="h-px flex-1 bg-brand-border-gray" />
+        </div>
+
+        <div className="grid gap-3.5">
+          <button
+            type="button"
+            onClick={() => handleOAuthLogin("kakao")}
+            className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#fee500] text-lg font-bold text-[#191919] transition-all hover:opacity-90 active:scale-[0.99]"
+          >
+            <AuthProviderGlyph type="kakao" className="h-5 w-5" /> 카카오로
+            시작하기
+            {mounted && lastProvider === "kakao" && (
+              <span className="absolute -top-2 -right-2 flex h-5 items-center rounded-full bg-brand-purple-light px-2.5 text-xs font-bold text-white shadow-sm animate-bounce">
+                최근 사용
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl border border-brand-border-gray bg-white text-lg font-bold text-brand-text-primary transition-all hover:bg-brand-bg-light active:scale-[0.99] shadow-sm"
+            onClick={() => handleOAuthLogin("google")}
+          >
+            <AuthProviderGlyph type="google" className="h-5 w-5" /> 구글로
+            시작하기
+            {mounted && lastProvider === "google" && (
+              <span className="absolute -top-2 -right-2 flex h-5 items-center rounded-full bg-brand-purple-light px-2.5 text-xs font-bold text-white shadow-sm animate-bounce">
+                최근 사용
+              </span>
+            )}
+          </button>
+          <a
+            href="/api/auth/naver/login"
+            className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#03c75a] text-lg font-bold text-white transition-all hover:opacity-90 active:scale-[0.99]"
+          >
+            <AuthProviderGlyph type="naver" className="h-5 w-5" /> 네이버로
+            시작하기
+            {mounted && lastProvider === "naver" && (
+              <span className="absolute -top-2 -right-2 flex h-5 items-center rounded-full bg-brand-purple-light px-2.5 text-xs font-bold text-white shadow-sm animate-bounce">
+                최근 사용
+              </span>
+            )}
+          </a>
+          <button
+            type="button"
+            onClick={() => handleOAuthLogin("apple")}
+            className="relative inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-black text-lg font-bold text-white transition-all hover:bg-[#1c1c1e] active:scale-[0.99]"
+          >
+            <AuthProviderGlyph type="apple" className="h-5 w-5" /> Apple로
+            시작하기
+            {mounted && lastProvider === "apple" && (
+              <span className="absolute -top-2 -right-2 flex h-5 items-center rounded-full bg-brand-purple-light px-2.5 text-xs font-bold text-white shadow-sm animate-bounce">
+                최근 사용
+              </span>
+            )}
           </button>
         </div>
 
-        <div className="mt-8 text-center text-xs text-slate-500">
-          로그인 시 MOIM의{" "}
-          <a href="#" className="underline hover:text-slate-400">
-            서비스 이용약관
-          </a>
-          및{" "}
-          <a href="#" className="underline hover:text-slate-400">
-            개인정보 처리방침
-          </a>
-          에 동의하게 됩니다.
-        </div>
-      </div>
-    </div>
+        <p className="mt-12 text-center text-lg font-semibold text-brand-text-secondary">
+          아직 계정이 없으신가요?{" "}
+          <Link href="/signup" className="text-brand-purple">
+            회원가입
+          </Link>
+        </p>
+      </section>
+    </main>
   );
 }
