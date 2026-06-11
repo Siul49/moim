@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { AuthProviderGlyph } from "@/components/moim/auth-social";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -103,40 +104,64 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-14 text-[#222026]">
+    <main className="min-h-screen bg-white px-6 py-14 text-brand-text-primary">
       <section className="mx-auto w-full max-w-[420px]">
         <div className="mb-10 text-center">
           <Link
             href="/"
-            className="text-6xl font-extrabold tracking-normal text-[#6252ac]"
+            className="text-6xl font-extrabold tracking-normal text-brand-purple"
           >
             MOIM
           </Link>
-          <p className="mt-4 text-lg font-semibold text-[#6f6a73]">
+          <p className="mt-4 text-lg font-semibold text-brand-text-secondary">
             모임을 더 가깝게, 일상을 더 특별하게
           </p>
         </div>
 
         {isComplete ? (
-          <div className="rounded-[2rem] border border-[#eee8f4] bg-white p-10 text-center shadow-[0_20px_60px_rgba(95,82,130,0.12)]">
-            <CheckCircle2 className="mx-auto h-14 w-14 text-[#6252ac]" />
+          <div className="rounded-[2rem] border border-brand-border-muted bg-white p-10 text-center shadow-[0_20px_60px_rgba(95,82,130,0.12)]">
+            <CheckCircle2 className="mx-auto h-14 w-14 text-brand-purple" />
             <h1 className="mt-5 text-3xl font-extrabold">회원가입 완료</h1>
-            <p className="mt-3 text-[#77727c]">
+            <p className="mt-3 text-brand-text-muted">
               이제 캘린더를 연동하거나 바로 모임을 만들 수 있습니다.
             </p>
             <div className="mt-8 grid gap-3">
-              <Link
-                href="/calendar/connect"
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-[#8f7bd6] font-bold text-white"
-              >
-                캘린더 연동하기
-              </Link>
-              <Link
-                href="/schedule/create"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-[#eee8f4] font-bold text-[#6252ac]"
-              >
-                모임 만들기
-              </Link>
+              {(() => {
+                let redirectUrl = "";
+                if (typeof window !== "undefined") {
+                  const params = new URLSearchParams(window.location.search);
+                  const next = params.get("redirect") ?? params.get("next");
+                  if (next && (next.startsWith("/") || !next.includes("://"))) {
+                    redirectUrl = next;
+                  }
+                }
+                if (redirectUrl) {
+                  return (
+                    <Link
+                      href={redirectUrl}
+                      className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-purple font-bold text-white transition-all hover:scale-[1.02]"
+                    >
+                      모임 저장 완료 (대시보드로 이동)
+                    </Link>
+                  );
+                }
+                return (
+                  <>
+                    <Link
+                      href="/calendar/connect"
+                      className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-purple-light font-bold text-white"
+                    >
+                      캘린더 연동하기
+                    </Link>
+                    <Link
+                      href="/schedule/create"
+                      className="inline-flex h-12 items-center justify-center rounded-xl border border-brand-border-muted font-bold text-brand-purple"
+                    >
+                      모임 만들기
+                    </Link>
+                  </>
+                );
+              })()}
             </div>
           </div>
         ) : (
@@ -148,7 +173,7 @@ export default function SignupPage() {
               <SocialButton type="apple" label="iCloud로 시작하기" dark />
             </div>
 
-            <div className="my-8 h-px bg-[#dedbe3]" />
+            <div className="my-8 h-px bg-brand-border-gray" />
 
             <form onSubmit={(e) => e.preventDefault()} className="grid gap-4">
               <TextField
@@ -214,7 +239,7 @@ export default function SignupPage() {
                 }
               />
 
-              <fieldset className="rounded-lg border border-[#dedbe3] p-5">
+              <fieldset className="rounded-lg border border-brand-border-gray p-5">
                 <legend className="px-1 text-lg font-bold">약관 동의</legend>
                 <div className="grid gap-4">
                   {[
@@ -226,7 +251,7 @@ export default function SignupPage() {
                   ].map(([name, label, required]) => (
                     <div
                       key={name}
-                      className="flex items-center justify-between gap-3 text-base font-semibold text-[#504b55]"
+                      className="flex items-center justify-between gap-3 text-base font-semibold text-brand-text-secondary"
                     >
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
@@ -243,15 +268,17 @@ export default function SignupPage() {
                             name === "termsAgreed" ||
                             name === "privacyAgreed"
                           }
-                          className="h-5 w-5 rounded border-[#dedbe3]"
+                          className="h-5 w-5 rounded border-brand-border-gray"
                         />
                         {label}
-                        <span className="text-[#8f7bd6]">({required})</span>
+                        <span className="text-brand-purple-light">
+                          ({required})
+                        </span>
                       </label>
                       <button
                         type="button"
                         onClick={() => setActiveTermsKey(name as TermsKey)}
-                        className="rounded p-1 hover:bg-[#fbf7ff] text-[#aaa5ad] hover:text-[#8f7bd6] focus:outline-none"
+                        className="rounded p-1 hover:bg-brand-bg-light text-brand-text-light hover:text-brand-purple-light focus:outline-none"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
@@ -269,16 +296,16 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => handleSubmit()}
-                className={`inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#8f7bd6] px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-[#7d68c9] ${
+                className={`inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-purple-light px-7 text-base font-semibold text-white shadow-[0_10px_18px_rgba(98,82,172,0.22)] hover:bg-brand-purple ${
                   isSubmitting ? "cursor-not-allowed opacity-70" : ""
                 }`}
               >
                 {isSubmitting ? "가입 중" : "회원가입"}
               </button>
             </form>
-            <p className="mt-6 text-center text-lg font-semibold text-[#6f6a73]">
+            <p className="mt-6 text-center text-lg font-semibold text-brand-text-secondary">
               계정이 있으신가요?{" "}
-              <Link href="/login" className="text-[#6252ac]">
+              <Link href="/login" className="text-brand-purple">
                 로그인
               </Link>
             </p>
@@ -305,33 +332,49 @@ function SocialButton({
   label: string;
   dark?: boolean;
 }) {
-  const href =
-    type === "kakao"
-      ? "/api/auth/kakao/login"
-      : type === "apple"
-        ? "/api/auth/apple/login"
-        : type === "google"
-          ? "/api/auth/google/login"
-          : type === "naver"
-            ? "/api/auth/naver/login"
-            : undefined;
+  const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
+    const supabase = createClient();
+    let next = "/schedule/create";
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const nextParam = params.get("redirect") ?? params.get("next");
+      if (
+        nextParam &&
+        (nextParam.startsWith("/") || !nextParam.includes("://"))
+      ) {
+        next = nextParam;
+      }
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`${provider} 로그인 에러:`, err);
+    }
+  };
+
   const className = dark
     ? "bg-[#171717] text-white"
     : type === "kakao"
       ? "bg-[#fee500] text-[#191919]"
       : type === "naver"
         ? "bg-[#03c75a] text-white"
-        : "border border-[#dedbe3] bg-white text-[#222026]";
+        : "border border-brand-border-gray bg-white text-brand-text-primary";
   const content = (
     <>
       <AuthProviderGlyph type={type} />
       {label}
     </>
   );
-  if (href) {
+  if (type === "naver") {
     return (
       <a
-        href={href}
+        href="/api/auth/naver/login"
         className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg text-lg font-bold ${className}`}
       >
         {content}
@@ -341,6 +384,7 @@ function SocialButton({
   return (
     <button
       type="button"
+      onClick={() => handleOAuthLogin(type)}
       className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg text-lg font-bold ${className}`}
     >
       {content}
@@ -431,7 +475,7 @@ function PasswordField({
         <button
           type="button"
           onClick={onToggleShow}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa5ad] hover:text-brand-purple-accent focus:outline-none"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-light hover:text-brand-purple-accent focus:outline-none"
         >
           {showPassword ? (
             <Eye className="h-5 w-5" />

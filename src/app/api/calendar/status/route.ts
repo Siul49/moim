@@ -1,47 +1,32 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { getConnection } from "@/lib/caldav/connection-cookie";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * GET /api/calendar/status
+ * 현재 브라우저의 캘린더 연동 상태를 반환한다.
+ *
+ * Google/Naver와 동일하게 연동 정보는 HttpOnly 쿠키에 저장되므로, 별도의 앱
+ * 세션 검증 없이 쿠키 존재 여부로 상태를 판단한다.
+ */
 export async function GET() {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
-  }
-
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
 
-    // 1. Google 연동 확인
-    const { data: googleConn, error: googleError } = await supabase
-      .from("google_connections")
-      .select("google_email")
-      .eq("profile_id", session.userId)
-      .eq("is_active", true)
-      .maybeSingle();
+    // 1. Google 연동 확인 (google/auth.ts의 google_tokens 쿠키)
+    const googleConnected = !!cookieStore.get("google_tokens")?.value;
 
-    if (googleError) {
-      console.error("[calendar.status] Google 조회 실패:", googleError.message);
-    }
-
-    // 2. iCloud 연동 확인
-    const { data: icloudConn, error: icloudError } = await supabase
-      .from("icloud_connections")
-      .select("apple_id")
-      .eq("profile_id", session.userId)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (icloudError) {
-      console.error("[calendar.status] iCloud 조회 실패:", icloudError.message);
-    }
+    // 2. iCloud 연동 확인 (connection-cookie.ts의 icloud_connection 쿠키)
+    const icloud = await getConnection();
 
     return NextResponse.json({
-      googleConnected: !!googleConn,
-      googleEmail: googleConn?.google_email ?? undefined,
-      icloudConnected: !!icloudConn,
-      icloudAppleId: icloudConn?.apple_id ?? undefined,
+      googleConnected,
+      // 쿠키 저장 방식에는 Google 이메일이 없으므로 미제공
+      googleEmail: undefined,
+      icloudConnected: !!icloud,
+      icloudAppleId: icloud?.appleId ?? undefined,
     });
   } catch (err) {
     console.error("[calendar.status] 오류 발생:", err);

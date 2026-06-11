@@ -27,10 +27,9 @@ npm run test:e2e -- --project=chromium
 ## 먼저 읽을 문서
 
 1. `docs/README.md`: 현재 문서 기준과 v1/v2 구분
-2. `docs/v2/user-flow.md`: 최신 사용자 흐름 및 수익화 연결안
-3. `docs/v1/codex-work-context.md`: 현재 개발 handoff와 주의점
-4. `ARCHITECTURE.md`: 코드 구조와 테스트 전략
-5. `convention.md`: 커밋, 브랜치, 이슈, PR 규칙
+2. `docs/v1/codex-work-context.md`: 현재 개발 handoff와 주의점
+3. `ARCHITECTURE.md`: 코드 구조와 테스트 전략
+4. `convention.md`: 커밋, 브랜치, 이슈, PR 규칙
 
 ## 현재 안정성 기준
 

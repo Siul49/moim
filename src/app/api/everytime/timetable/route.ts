@@ -5,6 +5,7 @@ import {
   fetchTimetableFromUrl,
 } from "@/lib/everytime/url-scraper";
 import { timetableToFreeSlots } from "@/lib/everytime/converter";
+import { createClient } from "@/lib/supabase/server";
 import type { DayCode } from "@/types/schedule";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +107,22 @@ async function handleUrlRequest(
 
   try {
     const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: {
+            everytime_url: url,
+            everytime_slots: freeSlots,
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[everytime] 유저 메타데이터 저장 실패:", err);
+    }
     return NextResponse.json({ timetable, freeSlots });
   } catch (err) {
     console.error("[everytime.timetable] 시간표 변환 오류:", err);
@@ -180,6 +197,22 @@ async function handleFileRequest(
 
   try {
     const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: {
+            everytime_url: "file_upload",
+            everytime_slots: freeSlots,
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[everytime] 유저 메타데이터 저장 실패:", err);
+    }
     return NextResponse.json({ timetable, freeSlots });
   } catch (err) {
     console.error("[everytime.timetable] 시간표 변환 오류:", err);

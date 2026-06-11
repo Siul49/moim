@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSchedule, getSchedulePublic } from "@/lib/schedules/store";
+import { createClient } from "@/lib/supabase/server";
 import {
   HOST_TOKEN_MAX_AGE,
   getHostTokenCookieName,
@@ -10,14 +11,23 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const created = await createSchedule(await request.json());
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const body = await request.json();
+    const created = await createSchedule({
+      ...body,
+      creatorId: user?.id || null,
+    });
     const schedule = await getSchedulePublic(created.id);
 
     const response = NextResponse.json(
       {
         schedule,
         participantPath: `/schedule/${created.id}`,
-        hostPath: `/schedule/${created.id}`,
+        hostPath: `/schedule/${created.id}?hostToken=${created.hostToken}`,
         hostToken: created.hostToken,
       },
       { status: 201 },

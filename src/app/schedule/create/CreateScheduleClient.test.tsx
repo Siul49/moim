@@ -21,8 +21,13 @@ function mockSchedulesApi() {
 }
 
 async function submitAndWaitForLinks(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "초대 링크 만들기" }));
-  await screen.findByText("초대 링크가 준비됐습니다");
+  // Step 1 -> Step 2
+  await user.click(screen.getByRole("button", { name: "다음 단계로 →" }));
+  // Step 2 -> Step 3
+  await user.click(screen.getByRole("button", { name: "다음 단계로 →" }));
+  // Step 3 -> Step 4
+  await user.click(screen.getByRole("button", { name: "초대 링크 만들기 🚀" }));
+  await screen.findByText(/초대 링크가 준비됐습니다/);
 }
 
 describe("CreateScheduleClient 복사 피드백", () => {

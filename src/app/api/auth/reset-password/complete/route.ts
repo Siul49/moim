@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import bcryptjs from "bcryptjs";
 
 export const dynamic = "force-dynamic";
 
@@ -45,17 +43,17 @@ export async function POST(req: NextRequest) {
   const token = authHeader.split(" ")[1];
 
   try {
-    // 2. Supabase Auth를 통해 토큰의 진위 확인 및 유저 이메일 획득
+    // 2. Supabase Auth를 통해 토큰으로 세션을 설정하고 비밀번호 변경
     const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: "",
+    });
 
-    if (error || !user || !user.email) {
+    if (sessionError) {
       console.error(
-        "[auth.reset-password.complete] Supabase 세션 에러:",
-        error?.message,
+        "[auth.reset-password.complete] setSession 에러:",
+        sessionError.message,
       );
       return NextResponse.json(
         {
@@ -66,26 +64,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. 로컬 DB의 해당 유저 passwordHash 갱신
-    const email = user.email.toLowerCase();
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
     });
 
-    if (!existingUser) {
+    if (updateError) {
+      console.error(
+        "[auth.reset-password.complete] updateUser 에러:",
+        updateError.message,
+      );
       return NextResponse.json(
-        { success: false, message: "해당 계정을 찾을 수 없습니다." },
-        { status: 404 },
+        {
+          success: false,
+          message: "비밀번호 변경에 실패했습니다. 다시 시도해 주세요.",
+        },
+        { status: 500 },
       );
     }
-
-    const passwordHash = await bcryptjs.hash(password, 12);
-
-    await prisma.user.update({
-      where: { id: existingUser.id },
-      data: { passwordHash },
-    });
 
     return NextResponse.json(
       { success: true, message: "비밀번호가 성공적으로 변경되었습니다." },

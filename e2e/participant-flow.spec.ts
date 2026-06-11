@@ -26,15 +26,14 @@ test("participant can submit availability from an invite link and host can confi
   await page.locator('[data-slot-key="MON-11"]').click();
   await page.getByRole("button", { name: "가능 시간 제출" }).click();
 
-  await expect(page.getByText("가능 시간이 제출됐습니다")).toBeVisible({
+  await expect(page.getByText("시간 제출 완료! 🎉")).toBeVisible({
     timeout: 15000,
   });
 
-  // 리렌더링 및 브라우저 이벤트 큐가 완전히 비워지도록 충분한 대기
-  await page.waitForTimeout(2000);
-
-  await page.goto(`${created.hostPath}?hostToken=${created.hostToken}`);
-  await expect(page.getByText("민지", { exact: true })).toBeVisible();
+  await page.goto(created.hostPath);
+  await expect(page.getByText("민지", { exact: true })).toBeVisible({
+    timeout: 15000,
+  });
   await expect(
     page.getByTestId("common-slots").getByText("월요일 10:00-12:00"),
   ).toBeVisible();

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -24,13 +23,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. 해당 이메일로 가입된 유저가 로컬 DB에 존재하는지 체크
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
-      select: { id: true },
-    });
+    const supabase = await createClient();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!user) {
+    // 1. 해당 이메일로 가입된 유저가 profiles 테이블에 존재하는지 체크
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (profileError || !profile) {
       return NextResponse.json(
         { success: false, message: "가입되지 않은 이메일 주소입니다." },
         { status: 404 },
@@ -38,7 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Supabase Auth를 이용하여 비밀번호 재설정 링크 발송
-    const supabase = await createClient();
     const origin = new URL(req.url).origin;
     const redirectTo = `${origin}/reset-password/complete`;
 

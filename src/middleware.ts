@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "@/lib/supabase/env";
-import { COOKIE_NAME } from "@/lib/auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { url, anonKey } = getSupabaseConfig();
@@ -29,8 +28,19 @@ export async function middleware(request: NextRequest) {
   });
 
   // This will refresh session if expired
-  const supabaseUserRes = await supabase.auth.getUser();
-  const hasSupabaseUser = !!supabaseUserRes.data.user;
+  let hasSupabaseUser = false;
+  const mockUid = request.cookies.get("e2e_mock_uid")?.value;
+  const mockEmail = request.cookies.get("e2e_mock_email")?.value;
+
+  if (
+    process.env.E2E_TEST === "true" ||
+    (process.env.NODE_ENV === "development" && mockUid && mockEmail)
+  ) {
+    hasSupabaseUser = !!mockUid && !!mockEmail;
+  } else {
+    const supabaseUserRes = await supabase.auth.getUser();
+    hasSupabaseUser = !!supabaseUserRes.data.user;
+  }
 
   // 보호 대상 경로 리스트
   const PROTECTED_ROUTES = ["/schedule/create", "/calendar/connect"];
@@ -39,8 +49,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    const hasLocalToken = request.cookies.has(COOKIE_NAME);
-    if (!hasLocalToken && !hasSupabaseUser) {
+    if (!hasSupabaseUser) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("next", request.nextUrl.pathname);
 

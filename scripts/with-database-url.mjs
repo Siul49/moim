@@ -1,6 +1,13 @@
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import dotenv from "dotenv";
+
+if (existsSync(".env.test")) {
+  dotenv.config({ path: ".env.test" });
+} else if (existsSync(".env")) {
+  dotenv.config();
+}
 
 process.env.DATABASE_URL ||= "file:./dev.db";
 

@@ -1,19 +1,25 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import {
   extractNaverUserInfo,
   getNaverToken,
   getNaverUser,
+  STATE_COOKIE,
 } from "@/lib/auth/naver";
-import { COOKIE_MAX_AGE, COOKIE_NAME, signAccessToken } from "@/lib/auth/jwt";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-
-const STATE_COOKIE = "naver_oauth_state";
-const LOGIN_SUCCESS_REDIRECT = "/";
 const ADDITIONAL_INFO_REDIRECT = "/signup/additional-info?provider=naver";
+const LOGIN_SUCCESS_REDIRECT = "/schedule/create";
 const LOGIN_FAILURE_REDIRECT = "/login?error=naver_login_failed";
+
+/**
+ * 네이버는 Supabase가 기본 지원하지 않는 OAuth 제공자다(#46).
+ * 그래서 네이버 OAuth로 사용자 정보만 받아온 뒤, Supabase Admin(service_role)으로
+ * 해당 사용자를 auth.users에 생성/조회하고, magiclink 토큰을 verifyOtp로 교환해
+ * 일반 Supabase 세션 쿠키를 발급한다. 이렇게 하면 카카오/구글/애플과 동일하게
+ * supabase.auth.getUser() 기반 세션으로 일원화된다.
+ */
 
 function redirectWithStateCleanup(origin: string, path: string) {
   const res = NextResponse.redirect(`${origin}${path}`);
@@ -21,34 +27,20 @@ function redirectWithStateCleanup(origin: string, path: string) {
   return res;
 }
 
-function isUniqueConstraintError(
-  error: unknown,
-): error is Prisma.PrismaClientKnownRequestError {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2002"
-  );
-}
-
-function uniqueTargetIncludes(
-  error: Prisma.PrismaClientKnownRequestError,
-  field: string,
-) {
-  const target = error.meta?.target;
-  if (Array.isArray(target)) {
-    return target.includes(field);
-  }
-  return typeof target === "string" && target.includes(field);
+/** 네이버 이메일이 없을 때도 동일 사용자로 식별되도록 결정적 placeholder를 만든다. */
+function resolveEmail(naverId: string, email?: string): string {
+  if (email && email.trim()) return email.trim().toLowerCase();
+  return `naver_${naverId}@naver.invalid`;
 }
 
 export async function GET(req: NextRequest) {
-  const origin = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const origin = new URL(req.url).origin;
   const { searchParams } = req.nextUrl;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const error = searchParams.get("error");
+  const oauthError = searchParams.get("error");
 
-  if (error || !code || !state) {
+  if (oauthError || !code || !state) {
     return redirectWithStateCleanup(origin, LOGIN_FAILURE_REDIRECT);
   }
 
@@ -62,128 +54,125 @@ export async function GET(req: NextRequest) {
     const naverUser = await getNaverUser(naverTokenData.access_token);
     const { naverId, email, nickname } = extractNaverUserInfo(naverUser);
 
-    const socialAccount = await prisma.socialAccount.findUnique({
-      where: {
-        provider_providerUserId: {
-          provider: "naver",
-          providerUserId: naverId,
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            nickname: true,
-            profileCompleted: true,
-          },
-        },
-      },
-    });
+    const authEmail = resolveEmail(naverId, email);
+    const admin = createAdminClient();
 
-    let user: {
-      id: string;
-      email: string | null;
-      nickname: string;
-      profileCompleted: boolean;
-    };
+    // 1) 기존 사용자 조회: 변하지 않는 naver_id를 1차 식별자로 사용한다.
+    //    (이메일은 미제공/변경될 수 있어 단독 키로 쓰면 같은 계정이 갈라진다)
+    const { data: byNaverId, error: lookupError } = await admin
+      .from("profiles")
+      .select("id, phone_number, terms_agreed_at")
+      .eq("naver_id", naverId)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
 
-    if (socialAccount) {
-      user = socialAccount.user;
-    } else {
-      let finalNickname = nickname;
-      const existingNick = await prisma.user.findUnique({
-        where: { nickname: finalNickname },
-        select: { id: true },
-      });
-      if (existingNick) {
-        finalNickname = `naver_${naverId}`;
-      }
+    let existingProfile = byNaverId;
 
-      const createUserData = (nick: string) => ({
-        data: {
-          email: email ?? null,
-          nickname: nick,
-          profileCompleted: false,
-          socialAccounts: {
-            create: {
-              provider: "naver",
-              providerUserId: naverId,
-            },
-          },
-        },
-        select: {
-          id: true,
-          email: true,
-          nickname: true,
-          profileCompleted: true,
-        },
-      });
+    // naver_id가 아직 없던 기존 사용자(이메일 가입자 등)는 이메일로 한 번 더
+    // 찾아 매칭하고, 찾으면 naver_id를 백필해 다음부터 1차 키로 잡히게 한다.
+    if (!existingProfile) {
+      const { data: byEmail, error: byEmailError } = await admin
+        .from("profiles")
+        .select("id, phone_number, terms_agreed_at, naver_id")
+        .eq("email", authEmail)
+        .maybeSingle();
+      if (byEmailError) throw byEmailError;
 
-      try {
-        user = await prisma.user.create(createUserData(finalNickname));
-      } catch (createErr) {
-        if (!isUniqueConstraintError(createErr)) {
-          throw createErr;
+      if (byEmail) {
+        // 아직 네이버 연결이 없는 기존 사용자만 백필한다.
+        // 이미 다른 naver_id가 연결돼 있으면 덮어쓰지 않는다.
+        if (!byEmail.naver_id) {
+          const { error: backfillError } = await admin
+            .from("profiles")
+            .update({ naver_id: naverId })
+            .eq("id", byEmail.id);
+          if (backfillError) throw backfillError;
         }
-
-        if (
-          uniqueTargetIncludes(createErr, "provider") ||
-          uniqueTargetIncludes(createErr, "providerUserId")
-        ) {
-          const racedSocialAccount = await prisma.socialAccount.findUnique({
-            where: {
-              provider_providerUserId: {
-                provider: "naver",
-                providerUserId: naverId,
-              },
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  nickname: true,
-                  profileCompleted: true,
-                },
-              },
-            },
-          });
-          if (!racedSocialAccount) {
-            throw createErr;
-          }
-          user = racedSocialAccount.user;
-        } else if (uniqueTargetIncludes(createErr, "nickname")) {
-          const randomSuffix = Math.random().toString(36).slice(2, 7);
-          user = await prisma.user.create(
-            createUserData(`naver_${naverId}_${randomSuffix}`),
-          );
-        } else {
-          throw createErr;
-        }
+        existingProfile = byEmail;
       }
     }
 
-    const token = await signAccessToken({
-      userId: user.id,
-      ...(user.email ? { email: user.email } : {}),
-      nickname: user.nickname,
-      provider: "naver",
-    });
+    let isNewUser = false;
+    let profileComplete =
+      !!existingProfile?.phone_number && !!existingProfile?.terms_agreed_at;
 
-    const redirectPath = user.profileCompleted
-      ? LOGIN_SUCCESS_REDIRECT
-      : ADDITIONAL_INFO_REDIRECT;
+    // 2) 없으면 Admin으로 생성 (handle_new_user 트리거가 profiles 채움)
+    if (!existingProfile) {
+      // 닉네임 unique 충돌 회피: 충돌 시 naverId 기반(전역 고유)으로 대체
+      let finalNickname = nickname;
+      const { data: nickTaken } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("nickname", finalNickname)
+        .maybeSingle();
+      if (nickTaken) finalNickname = `naver_${naverId}`;
+
+      const { error: createError } = await admin.auth.admin.createUser({
+        email: authEmail,
+        email_confirm: true,
+        user_metadata: {
+          nickname: finalNickname,
+          provider: "naver",
+          naver_id: naverId,
+        },
+      });
+
+      if (createError) {
+        if (!/already|registered|exists/i.test(createError.message)) {
+          throw createError;
+        }
+        // 동시 요청 race: 다른 요청이 먼저 생성을 끝낸 기존 사용자다.
+        // 신규로 오판해 추가정보 페이지로 보내지 않도록, 실제 프로필 상태를
+        // naver_id(없으면 이메일)로 재조회해 profileComplete를 정확히 잡는다.
+        const { data: raced, error: racedError } = await admin
+          .from("profiles")
+          .select("phone_number, terms_agreed_at")
+          .eq("naver_id", naverId)
+          .maybeSingle();
+        if (racedError) throw racedError;
+
+        let racedProfile = raced;
+        if (!racedProfile) {
+          const { data: emailFallback, error: emailFallbackError } = await admin
+            .from("profiles")
+            .select("phone_number, terms_agreed_at")
+            .eq("email", authEmail)
+            .maybeSingle();
+          if (emailFallbackError) throw emailFallbackError;
+          racedProfile = emailFallback;
+        }
+        isNewUser = false;
+        profileComplete =
+          !!racedProfile?.phone_number && !!racedProfile?.terms_agreed_at;
+      } else {
+        isNewUser = true;
+        profileComplete = false;
+      }
+    }
+
+    // 3) magiclink 토큰 발급 → 서버 클라이언트에서 verifyOtp로 세션 쿠키 설정
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email: authEmail,
+      });
+    if (linkError || !linkData.properties?.hashed_token) {
+      throw linkError ?? new Error("magiclink 토큰 발급 실패");
+    }
+
+    const supabase = await createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      type: "email",
+      token_hash: linkData.properties.hashed_token,
+    });
+    if (verifyError) throw verifyError;
+
+    const redirectPath =
+      isNewUser || !profileComplete
+        ? ADDITIONAL_INFO_REDIRECT
+        : LOGIN_SUCCESS_REDIRECT;
 
     const res = NextResponse.redirect(`${origin}${redirectPath}`);
-    res.cookies.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: COOKIE_MAX_AGE,
-    });
-
     res.cookies.set("last_login_provider", "naver", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

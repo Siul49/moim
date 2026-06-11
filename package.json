@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "npm run db:migrate",
-    "dev": "next dev",
+    "dev": "next dev -p 4000",
     "build": "next build",
     "start": "next start",
     "db:migrate": "node scripts/ensure-sqlite-schema.mjs",
