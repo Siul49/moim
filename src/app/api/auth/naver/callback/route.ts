@@ -74,17 +74,21 @@ export async function GET(req: NextRequest) {
     if (!existingProfile) {
       const { data: byEmail, error: byEmailError } = await admin
         .from("profiles")
-        .select("id, phone_number, terms_agreed_at")
+        .select("id, phone_number, terms_agreed_at, naver_id")
         .eq("email", authEmail)
         .maybeSingle();
       if (byEmailError) throw byEmailError;
 
       if (byEmail) {
-        const { error: backfillError } = await admin
-          .from("profiles")
-          .update({ naver_id: naverId })
-          .eq("id", byEmail.id);
-        if (backfillError) throw backfillError;
+        // 아직 네이버 연결이 없는 기존 사용자만 백필한다.
+        // 이미 다른 naver_id가 연결돼 있으면 덮어쓰지 않는다.
+        if (!byEmail.naver_id) {
+          const { error: backfillError } = await admin
+            .from("profiles")
+            .update({ naver_id: naverId })
+            .eq("id", byEmail.id);
+          if (backfillError) throw backfillError;
+        }
         existingProfile = byEmail;
       }
     }
