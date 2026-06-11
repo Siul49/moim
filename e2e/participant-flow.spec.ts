@@ -33,7 +33,7 @@ test("participant can submit availability from an invite link and host can confi
   // 리렌더링 및 브라우저 이벤트 큐가 완전히 비워지도록 충분한 대기
   await page.waitForTimeout(2000);
 
-  await page.goto(`${created.hostPath}?hostToken=${created.hostToken}`);
+  await page.goto(created.hostPath);
   await expect(page.getByText("민지", { exact: true })).toBeVisible();
   await expect(
     page.getByTestId("common-slots").getByText("월요일 10:00-12:00"),
