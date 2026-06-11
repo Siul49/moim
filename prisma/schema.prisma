@@ -1,0 +1,74 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public", "auth"]
+}
+
+model User {
+  id               String          @id @default(cuid())
+  email            String?         @unique
+  phoneNumber      String?         @unique
+  nickname         String          @unique
+  passwordHash     String?
+  isAgeOver14      Boolean?
+  termsAgreedAt    DateTime?
+  privacyAgreedAt  DateTime?
+  marketingAgreed  Boolean         @default(false)
+  eventSmsAgreed   Boolean         @default(false)
+  profileCompleted Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  socialAccounts   SocialAccount[]
+
+  @@schema("public")
+}
+
+model SocialAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String
+  providerUserId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@schema("public")
+}
+
+model Schedule {
+  id                 String                @id
+  hostTokenHash      String                @unique
+  title              String
+  durationMinutes    Int
+  candidateDays      String
+  candidateStartHour Int
+  candidateEndHour   Int
+  status             String                @default("open")
+  confirmedSlot      String?
+  creatorId          String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  participants       ScheduleParticipant[]
+
+  @@schema("public")
+}
+
+model ScheduleParticipant {
+  id          String   @id
+  scheduleId  String
+  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  name        String
+  available   String
+  submittedAt DateTime @default(now())
+
+  @@index([scheduleId])
+  @@schema("public")
+}
+

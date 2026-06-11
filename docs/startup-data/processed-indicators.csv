@@ -1,0 +1,18 @@
+dataset,source_url,raw_indicator,scope,value,preprocessing,processed_variable,moim_usage
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,단체활동 참여율,전체,69.2%,단체 참여 문항에서 참여자 비중 추출,group_participation_rate,모임 수요가 일부 특수 집단이 아니라 일반적 사회참여 행동임을 설명
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,단체활동 참여율,20~29세,67.9%,연령대 20~29세 행만 추출,young_adult_group_participation_rate,대학생·청년층 초기 타깃의 모임 수요 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,참여 단체 종류,20~29세 친목·사교,80.1%,20~29세 참여자 기준 복수응답 비율 추출,meeting_type_social_weight,친목/사교 모임 프리셋 및 모임 유형 분류 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,참여 단체 종류,20~29세 취미·스포츠·여가,66.3%,20~29세 참여자 기준 복수응답 비율 추출,meeting_type_hobby_weight,동아리/취미/스포츠 모임 프리셋 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,참여 단체 종류,20~29세 학술단체,14.9%,20~29세 참여자 기준 복수응답 비율 추출,meeting_type_academic_weight,스터디/학술/팀 프로젝트 모임 프리셋 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,가족·친척 외 교류자 있음,20~29세,86.7%,사회적 관계망 문항에서 가족·친척 외 교류자 있음 비율 추출,non_family_contact_presence,모바일 링크 기반 초대와 다인 일정 조율 수요 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,가족·친척 외 하루 평균 교류자 수,20~29세,4.3명,사회적 관계망 문항에서 가족·친척 외 평균 교류자 수 추출,average_non_family_contacts,모임당 참여자 수와 다인 조율 난이도 설명 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,여가활동을 함께 하는 사람,주중 친구/연인,18.1%,주중 여가 동반자 분포에서 친구/연인 비율 추출,weekday_friend_leisure_share,평일 친구/팀 모임은 제한된 후보 시간에서 조율된다는 설명 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,여가활동을 함께 하는 사람,주말 친구/연인,21.2%,주말 여가 동반자 분포에서 친구/연인 비율 추출,weekend_friend_leisure_share,주말 후보 시간의 모임 수요 보정 근거
+2025 사회조사,https://kostat.go.kr/boardDownload.es?bid=219&list_no=439196&seq=3,여가생활 불만족 이유,전체 시간 부족,21.9%,불만족 이유 중 시간 부족 비율 추출,time_shortage_constraint_rate,일정 조율을 빠르게 줄여야 하는 문제 정의 근거
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,대학생 이상 하루 이동 시간,대학생 이상,1:53,학생의 시간사용 표에서 대학생 이상 2024 이동 시간 추출,college_daily_travel_time,대학생 일정에서 이동·수업·여가가 함께 충돌한다는 설명 근거
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,대학생 이상 하루 학습 시간,대학생 이상,3:11,학생의 시간사용 표에서 대학생 이상 2024 학습 시간 추출,college_daily_study_time,수업/학습 블록을 일정 조율의 핵심 busy 데이터로 보는 근거
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,대학생 이상 하루 교제 및 참여 시간,대학생 이상,1:11,학생의 시간사용 표에서 대학생 이상 2024 교제 및 참여 시간 추출,college_daily_social_participation_time,대학생 이상 집단의 모임 관련 시간 사용 근거
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,교제 및 참여활동 행위자 비율,전체 요일,77.0%,행위자 비율 표에서 교제 및 참여활동 전체 값 추출,social_participation_actor_rate,모임/교제 행동이 높은 빈도의 일상 행동임을 설명
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,교제 및 참여활동 행위자 평균시간,평일,1:12,행위자 평균시간 표에서 평일 값 추출,weekday_social_participation_actor_time,평일 후보 시간 추천 설명의 기준값
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,교제 및 참여활동 행위자 평균시간,토요일,1:26,행위자 평균시간 표에서 토요일 값 추출,saturday_social_participation_actor_time,주말 후보 시간 추천 설명의 기준값
+2024 생활시간조사,https://www.kostat.go.kr/boardDownload.es?bid=220&list_no=437764&seq=9,교제 및 참여활동 행위자 평균시간,일요일,1:39,행위자 평균시간 표에서 일요일 값 추출,sunday_social_participation_actor_time,주말 후보 시간 추천 설명의 기준값
