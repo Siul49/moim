@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { passwordSchema } from "./password.schema";
 
 const PHONE_RAW = /^010\d{8}$/;
 const PHONE_DASH = /^010-\d{4}-\d{4}$/;
@@ -16,11 +17,7 @@ export const signupSchema = z
       .string()
       .min(2, "닉네임은 2자 이상이어야 합니다.")
       .max(12, "닉네임은 12자 이하여야 합니다."),
-    password: z
-      .string()
-      .min(8, "비밀번호는 8자 이상이어야 합니다.")
-      .regex(/[a-zA-Z]/, "비밀번호에 영문자를 포함해야 합니다.")
-      .regex(/[0-9]/, "비밀번호에 숫자를 포함해야 합니다."),
+    password: passwordSchema,
     passwordConfirm: z.string(),
     isAgeOver14: z.boolean(),
     termsAgreed: z.boolean(),

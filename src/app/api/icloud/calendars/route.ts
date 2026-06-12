@@ -3,6 +3,7 @@ import { maskEmail } from "@/lib/crypto";
 import { discoverCalDAV } from "@/lib/caldav/discovery";
 import { CalDAVError } from "@/lib/caldav/client";
 import { getConnectionAuth } from "@/lib/caldav/connection-cookie";
+import { createApiHandler } from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
  * GET /api/icloud/calendars
  * 연결된 iCloud 계정의 캘린더 컬렉션 목록을 CalDAV에서 실시간 조회한다.
  */
-export async function GET() {
+export const GET = createApiHandler({}, async () => {
   const connection = await getConnectionAuth();
   if (!connection) {
     return NextResponse.json(
@@ -27,7 +28,6 @@ export async function GET() {
 
     return NextResponse.json({
       calendars: discovery.calendars.map((c) => ({
-        // 쿠키 저장 방식에는 DB UUID가 없으므로 calendarUrl이 식별자
         calendarUrl: c.url,
         displayName: c.displayName,
         color: c.color ?? null,
@@ -50,4 +50,4 @@ export async function GET() {
       { status: 502 },
     );
   }
-}
+});

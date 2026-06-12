@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { getValidTokens } from "@/lib/google/auth";
 import { listCalendars } from "@/lib/google/calendars";
+import { createApiHandler } from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
-/**
- * GET /api/google/calendars
- * 연결된 Google 계정의 캘린더 목록을 반환한다.
- */
-export async function GET() {
+export const GET = createApiHandler({}, async () => {
   const tokens = await getValidTokens();
   if (!tokens) {
     return NextResponse.json(
@@ -38,4 +35,4 @@ export async function GET() {
       { status: 502 },
     );
   }
-}
+});

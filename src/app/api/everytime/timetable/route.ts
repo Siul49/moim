@@ -6,6 +6,7 @@ import {
 } from "@/lib/everytime/url-scraper";
 import { timetableToFreeSlots } from "@/lib/everytime/converter";
 import { createClient } from "@/lib/supabase/server";
+import { createApiHandler } from "@/lib/api-handler";
 import type { DayCode } from "@/types/schedule";
 
 export const dynamic = "force-dynamic";
@@ -14,19 +15,8 @@ export const dynamic = "force-dynamic";
  * POST /api/everytime/timetable
  *
  * 에브리타임 시간표를 받아 빈 시간(TimeSlot[])으로 변환한다.
- *
- * 방법 A — 공유 URL (application/json):
- *   { "url": "https://everytime.kr/@XXXX" }
- *
- * 방법 B — ICS 파일 업로드 (multipart/form-data):
- *   file: .ics 파일 (앱 → 시간표 공유 → 캘린더 내보내기)
- *
- * Query: ?days=MON,TUE,WED (선택 — 기본값 월~금)
- *
- * Response:
- *   { "timetable": EverytimeTimetable, "freeSlots": TimeSlot[] }
  */
-export async function POST(req: NextRequest) {
+export const POST = createApiHandler({}, async ({ req }) => {
   const contentType = req.headers.get("content-type") ?? "";
   const candidateDays = parseCandidateDays(req);
 
@@ -47,7 +37,7 @@ export async function POST(req: NextRequest) {
     },
     { status: 415 },
   );
-}
+});
 
 async function handleUrlRequest(
   req: NextRequest,

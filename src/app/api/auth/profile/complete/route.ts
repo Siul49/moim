@@ -1,53 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createApiHandler } from "@/lib/api-handler";
 import { normalizePhoneNumber } from "@/features/auth/signup.schema";
 import { socialProfileSchema } from "@/features/auth/social-profile.schema";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json(
-      { success: false, message: "인증이 필요합니다." },
-      { status: 401 },
-    );
-  }
+export const POST = createApiHandler(
+  {
+    requireAuth: true,
+    bodySchema: socialProfileSchema,
+  },
+  async ({ session, body }) => {
+    const {
+      phoneNumber,
+      isAgeOver14,
+      termsAgreed,
+      privacyAgreed,
+      marketingAgreed,
+      eventSmsAgreed,
+    } = body;
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "요청 형식이 올바르지 않습니다." },
-      { status: 400 },
-    );
-  }
-
-  const result = socialProfileSchema.safeParse(body);
-  if (!result.success) {
-    const firstError = result.error.issues[0];
-    return NextResponse.json(
-      {
-        success: false,
-        message: firstError.message,
-        field: firstError.path[0] ?? null,
-      },
-      { status: 422 },
-    );
-  }
-
-  const {
-    phoneNumber,
-    isAgeOver14,
-    termsAgreed,
-    privacyAgreed,
-    marketingAgreed,
-    eventSmsAgreed,
-  } = result.data;
-
-  try {
     const now = new Date().toISOString();
     const supabase = await createClient();
 
@@ -99,11 +72,5 @@ export async function POST(req: NextRequest) {
         nickname: profile.nickname,
       },
     });
-  } catch (err) {
-    console.error("[auth.profile.complete] error:", err);
-    return NextResponse.json(
-      { success: false, message: "서버 오류가 발생했습니다." },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

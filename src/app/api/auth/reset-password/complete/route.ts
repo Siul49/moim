@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { validatePassword } from "@/features/auth/password.schema";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { password } = body;
-  if (
-    !password ||
-    password.length < 8 ||
-    !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':",./<>?]).{8,}$/.test(
-      password,
-    )
-  ) {
+  if (!password || !validatePassword(password)) {
     return NextResponse.json(
       {
         success: false,
