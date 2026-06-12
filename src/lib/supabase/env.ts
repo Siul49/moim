@@ -12,7 +12,8 @@ export function getSupabaseConfig(
   if (
     !options.isServer &&
     typeof window !== "undefined" &&
-    process.env.NODE_ENV !== "test"
+    process.env.NODE_ENV !== "test" &&
+    !process.env.VITEST
   ) {
     url ||= "https://example-project.supabase.co";
     anonKey ||= "test-anon-key";

@@ -1,4 +1,12 @@
 import { PrismaClient } from "@prisma/client";
+import { existsSync } from "node:fs";
+import dotenv from "dotenv";
+
+if (existsSync(".env.test")) {
+  dotenv.config({ path: ".env.test" });
+} else if (existsSync(".env")) {
+  dotenv.config();
+}
 
 const dbUrl = process.env.DATABASE_URL || "";
 if (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://")) {
