@@ -1,31 +1,36 @@
-/**
- * iCloud(CalDAV) → 표준 CalendarEvent 어댑터
- *
- * 입력은 `@/lib/caldav/query`가 반환하는 `ParsedEvent[]` (이미 ICS 파싱이 끝난
- * 도메인 객체). title 누락 등 방어 케이스만 처리하며 시간/날짜 변환은 없다.
- */
-
+import { ArrayCalendarAdapter } from "../adapter";
 import type { ParsedEvent } from "@/types/icloud";
-import type { CalendarEvent } from "@/types/calendar-event";
-import type { CalendarAdapter } from "../adapter";
 
-export const icloudAdapter: CalendarAdapter<ParsedEvent[]> = {
-  source: "icloud",
-  toCalendarEvents(events) {
-    return events.map(toCalendarEvent);
-  },
-};
+export class ICloudCalendarAdapter extends ArrayCalendarAdapter<ParsedEvent> {
+  readonly source = "icloud";
 
-function toCalendarEvent(event: ParsedEvent): CalendarEvent {
-  return {
-    id: `icloud:${event.uid}`,
-    externalId: event.uid,
-    title: event.title || "(제목 없음)",
-    startAt: event.startAt,
-    endAt: event.endAt,
-    isAllDay: event.isAllDay,
-    source: "icloud",
-    location: event.location,
-    description: event.description,
-  };
+  protected getExternalId(event: ParsedEvent): string {
+    return event.uid;
+  }
+
+  protected getTitle(event: ParsedEvent): string {
+    return event.title || "";
+  }
+
+  protected getStartAt(event: ParsedEvent): Date {
+    return event.startAt;
+  }
+
+  protected getEndAt(event: ParsedEvent): Date {
+    return event.endAt;
+  }
+
+  protected getIsAllDay(event: ParsedEvent): boolean {
+    return event.isAllDay;
+  }
+
+  protected getLocation(event: ParsedEvent): string | undefined {
+    return event.location;
+  }
+
+  protected getDescription(event: ParsedEvent): string | undefined {
+    return event.description;
+  }
 }
+
+export const icloudAdapter = new ICloudCalendarAdapter();

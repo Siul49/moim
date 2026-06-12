@@ -1,25 +1,62 @@
-/**
- * 사진(스크린샷) → 표준 CalendarEvent 어댑터 — 스텁
- *
- * 후속 이슈(AI 사진 가용시간 추출)에서 구현한다. 본 파일은 어댑터 자리만
- * 잡아 두기 위한 placeholder다. AI 추출 결과의 입력 타입은 후속 PR에서
- * 확정한다(예: `{ slots: { startAt, endAt }[] }`).
- *
- * @see Issue #15 후속 작업
- */
-
-import type { CalendarAdapter } from "../adapter";
+import { BaseCalendarAdapter } from "../adapter";
+import type { CalendarEvent } from "@/types/calendar-event";
 
 export interface PhotoExtractionResult {
   /** 모델이 사진에서 추출한 busy 슬롯 (절대 시각). */
   busy: { startAt: Date; endAt: Date; title?: string }[];
 }
 
-export const photoAdapter: CalendarAdapter<PhotoExtractionResult> = {
-  source: "photo",
-  toCalendarEvents(_raw) {
+export class PhotoCalendarAdapter extends BaseCalendarAdapter<
+  PhotoExtractionResult,
+  PhotoExtractionResult["busy"][number]
+> {
+  readonly source = "photo";
+
+  protected getExternalId(_item: {
+    startAt: Date;
+    endAt: Date;
+    title?: string;
+  }): string {
+    throw new Error("photoAdapter is not implemented yet");
+  }
+
+  protected getTitle(item: {
+    startAt: Date;
+    endAt: Date;
+    title?: string;
+  }): string {
+    return item.title || "";
+  }
+
+  protected getStartAt(item: {
+    startAt: Date;
+    endAt: Date;
+    title?: string;
+  }): Date {
+    return item.startAt;
+  }
+
+  protected getEndAt(item: {
+    startAt: Date;
+    endAt: Date;
+    title?: string;
+  }): Date {
+    return item.endAt;
+  }
+
+  protected getIsAllDay(_item: {
+    startAt: Date;
+    endAt: Date;
+    title?: string;
+  }): boolean {
+    return false;
+  }
+
+  toCalendarEvents(_raw: PhotoExtractionResult): CalendarEvent[] {
     throw new Error(
       "photoAdapter.toCalendarEvents: 후속 이슈(AI 사진 추출)에서 구현 예정",
     );
-  },
-};
+  }
+}
+
+export const photoAdapter = new PhotoCalendarAdapter();

@@ -3,11 +3,18 @@ export interface SupabaseConfig {
   anonKey: string;
 }
 
-export function getSupabaseConfig(): SupabaseConfig {
+export function getSupabaseConfig(
+  options: { isServer?: boolean } = {},
+): SupabaseConfig {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   let anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-  if (typeof window !== "undefined" && !process.env.VITEST) {
+  if (
+    process.env.SUPABASE_TEST_NO_FALLBACK !== "true" &&
+    ((!options.isServer && typeof window !== "undefined") ||
+      process.env.NODE_ENV === "test" ||
+      process.env.VITEST)
+  ) {
     url ||= "https://example-project.supabase.co";
     anonKey ||= "test-anon-key";
   }

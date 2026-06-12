@@ -1,15 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { UnauthorizedError } from "@/lib/errors";
+export { UnauthorizedError };
 
 export interface Session {
   userId: string; // auth.users.id (= profiles.id for authenticated users)
   email: string;
-}
-
-export class UnauthorizedError extends Error {
-  constructor() {
-    super("인증이 필요합니다.");
-    this.name = "UnauthorizedError";
-  }
 }
 
 /** 현재 Supabase 세션을 반환한다. 로그인하지 않은 경우 null. */

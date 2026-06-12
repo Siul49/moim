@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getValidTokens } from "@/lib/google/auth";
 import { queryEvents } from "@/lib/google/events";
+import { createApiHandler } from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
  * GET /api/google/events/query?calendarId=...&startDate=...&endDate=...
  * 특정 캘린더의 기간별 일정을 조회한다.
  */
-export async function GET(req: NextRequest) {
+export const GET = createApiHandler({}, async ({ req }) => {
   const tokens = await getValidTokens();
   if (!tokens) {
     return NextResponse.json(
@@ -68,4 +69,4 @@ export async function GET(req: NextRequest) {
       { status: 502 },
     );
   }
-}
+});

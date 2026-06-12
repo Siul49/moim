@@ -71,4 +71,3 @@ model ScheduleParticipant {
   @@index([scheduleId])
   @@schema("public")
 }
-

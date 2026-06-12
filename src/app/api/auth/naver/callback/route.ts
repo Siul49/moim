@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const naverTokenData = await getNaverToken(code, state);
+    const naverTokenData = await getNaverToken(code, state, origin);
     const naverUser = await getNaverUser(naverTokenData.access_token);
     const { naverId, email, nickname } = extractNaverUserInfo(naverUser);
 

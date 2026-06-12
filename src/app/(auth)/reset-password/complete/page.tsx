@@ -3,6 +3,7 @@
 import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { validatePassword } from "@/features/auth/password.schema";
 
 export default function ResetPasswordCompletePage() {
   const [password, setPassword] = useState("");
@@ -20,11 +21,7 @@ export default function ResetPasswordCompletePage() {
 
   const errors = {
     password:
-      password &&
-      (password.length < 8 ||
-        !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':",./<>?]).{8,}$/.test(
-          password,
-        ))
+      password && !validatePassword(password)
         ? "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다."
         : "",
     passwordConfirm:
