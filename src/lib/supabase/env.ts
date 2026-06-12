@@ -10,10 +10,10 @@ export function getSupabaseConfig(
   let anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (
-    !options.isServer &&
-    typeof window !== "undefined" &&
-    process.env.NODE_ENV !== "test" &&
-    !process.env.VITEST
+    process.env.SUPABASE_TEST_NO_FALLBACK !== "true" &&
+    ((!options.isServer && typeof window !== "undefined") ||
+      process.env.NODE_ENV === "test" ||
+      process.env.VITEST)
   ) {
     url ||= "https://example-project.supabase.co";
     anonKey ||= "test-anon-key";
