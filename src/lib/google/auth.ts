@@ -34,19 +34,27 @@ function getClientSecret(): string {
   return secret;
 }
 
-function getRedirectUri(): string {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  return `${base}/api/google/callback`;
+function getRedirectUri(origin?: string): string {
+  const explicit = process.env.GOOGLE_CALENDAR_REDIRECT_URI;
+  if (explicit) return explicit;
+
+  const base =
+    origin || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
+  try {
+    return new URL("/api/google/callback", base).toString();
+  } catch {
+    return `${base.replace(/\/+$/, "")}/api/google/callback`;
+  }
 }
 
 /**
  * Google OAuth 인증 URL을 생성한다.
  * 사용자를 이 URL로 리다이렉트하면 Google 동의 화면이 표시된다.
  */
-export function buildAuthUrl(state?: string): string {
+export function buildAuthUrl(state?: string, origin?: string): string {
   const params = new URLSearchParams({
     client_id: getClientId(),
-    redirect_uri: getRedirectUri(),
+    redirect_uri: getRedirectUri(origin),
     response_type: "code",
     scope: SCOPES,
     access_type: "offline", // refresh_token 발급
@@ -62,6 +70,7 @@ export function buildAuthUrl(state?: string): string {
  */
 export async function exchangeCodeForTokens(
   code: string,
+  origin?: string,
 ): Promise<GoogleTokens> {
   const response = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
@@ -70,7 +79,7 @@ export async function exchangeCodeForTokens(
       code,
       client_id: getClientId(),
       client_secret: getClientSecret(),
-      redirect_uri: getRedirectUri(),
+      redirect_uri: getRedirectUri(origin),
       grant_type: "authorization_code",
     }),
   });

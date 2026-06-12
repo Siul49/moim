@@ -1,22 +1,61 @@
-/**
- * 캘린더 provider 어댑터 인터페이스
- *
- * 각 provider(iCloud, Google, 수동 입력, AI 사진 추출, .ics 등)는 raw 데이터
- * 형태가 모두 다르다. 이 인터페이스를 구현하면 표준 `CalendarEvent[]`로 변환되어
- * 이후의 free/busy 계산·교집합 로직이 provider 구분 없이 동일하게 동작한다.
- *
- * 새로운 provider를 추가할 때:
- * 1. `adapters/<provider>.ts`에 `createXxxAdapter()` 팩토리를 만들고
- * 2. `toCalendarEvents`에서 provider raw → CalendarEvent 매핑을 작성한 뒤
- * 3. 본 모듈의 `ADAPTER_REGISTRY`에 등록한다.
- */
-
 import type {
   CalendarEvent,
   CalendarEventSource,
 } from "@/types/calendar-event";
 
-export interface CalendarAdapter<TRaw> {
-  readonly source: CalendarEventSource;
-  toCalendarEvents(raw: TRaw): CalendarEvent[];
+export abstract class BaseCalendarAdapter<TRaw, TItem = TRaw> {
+  abstract readonly source: CalendarEventSource;
+
+  protected abstract getExternalId(item: TItem): string;
+  protected abstract getTitle(item: TItem): string;
+  protected abstract getStartAt(item: TItem): Date;
+  protected abstract getEndAt(item: TItem): Date;
+  protected abstract getIsAllDay(item: TItem): boolean;
+
+  protected getLocation(_item: TItem): string | undefined {
+    return undefined;
+  }
+
+  protected getDescription(_item: TItem): string | undefined {
+    return undefined;
+  }
+
+  /**
+   * Template Method to map a single item to a standard CalendarEvent.
+   * Standardizes fallback title, ID formatting, source name, and spacing.
+   */
+  protected mapToCalendarEvent(item: TItem): CalendarEvent {
+    const externalId = this.getExternalId(item);
+    return {
+      id: `${this.source}:${externalId}`,
+      externalId,
+      title: this.getTitle(item).trim() || "(제목 없음)",
+      startAt: this.getStartAt(item),
+      endAt: this.getEndAt(item),
+      isAllDay: this.getIsAllDay(item),
+      source: this.source,
+      location: this.getLocation(item),
+      description: this.getDescription(item),
+    };
+  }
+
+  abstract toCalendarEvents(raw: TRaw): CalendarEvent[];
+}
+
+export abstract class ArrayCalendarAdapter<TItem> extends BaseCalendarAdapter<
+  TItem[],
+  TItem
+> {
+  toCalendarEvents(events: TItem[]): CalendarEvent[] {
+    return this.filterEvents(events).map((item) =>
+      this.mapToCalendarEvent(item),
+    );
+  }
+
+  /**
+   * Optional hook to filter raw events before mapping.
+   */
+  protected filterEvents(events: TItem[]): TItem[] {
+    return events;
+  }
 }

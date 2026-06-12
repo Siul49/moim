@@ -55,6 +55,26 @@ describe("buildAuthUrl", () => {
 
     expect(url).toContain("state=my-state-value");
   });
+
+  test("동적 origin 매개변수를 전달하면 redirect_uri에 적용된다", () => {
+    const url = buildAuthUrl(undefined, "https://my-custom-domain.com");
+
+    expect(url).toContain(
+      "redirect_uri=https%3A%2F%2Fmy-custom-domain.com%2Fapi%2Fgoogle%2Fcallback",
+    );
+  });
+
+  test("GOOGLE_CALENDAR_REDIRECT_URI 환경변수가 있으면 우선 사용한다", () => {
+    process.env.GOOGLE_CALENDAR_REDIRECT_URI =
+      "https://explicit-domain.com/callback";
+    const url = buildAuthUrl();
+
+    expect(url).toContain(
+      "redirect_uri=https%3A%2F%2Fexplicit-domain.com%2Fcallback",
+    );
+
+    delete process.env.GOOGLE_CALENDAR_REDIRECT_URI;
+  });
 });
 
 describe("exchangeCodeForTokens", () => {
@@ -92,6 +112,27 @@ describe("exchangeCodeForTokens", () => {
 
     await expect(exchangeCodeForTokens("bad-code")).rejects.toThrow(
       "토큰 교환 실패",
+    );
+  });
+
+  test("동적 origin 매개변수를 전달하면 redirect_uri에 적용하여 요청한다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "access-123",
+          refresh_token: "refresh-456",
+          expires_in: 3600,
+        }),
+    });
+
+    const customOrigin = "https://my-custom-domain.com";
+    await exchangeCodeForTokens("auth-code-789", customOrigin);
+
+    const [, options] = mockFetch.mock.calls[0];
+    const bodyStr = decodeURIComponent(options.body.toString());
+    expect(bodyStr).toContain(
+      `redirect_uri=${customOrigin}/api/google/callback`,
     );
   });
 });

@@ -5,10 +5,8 @@ import type {
   EverytimeSession,
   EverytimeTimetable,
 } from "@/types/everytime";
-
-// ============================================================
-// 에브리타임 시간표 조회 모듈 — 서버 전용
-// ============================================================
+import { EverytimeFetchError } from "@/lib/errors";
+export { EverytimeFetchError };
 
 const BASE_URL = "https://api.everytime.kr";
 const SEMESTER_SUGGEST_URL = `${BASE_URL}/find/timetable/semester/suggest`;
@@ -18,13 +16,6 @@ const xmlParser = new XMLParser({
   attributeNamePrefix: "@_",
   isArray: (name) => name === "subject" || name === "time",
 });
-
-export class EverytimeFetchError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EverytimeFetchError";
-  }
-}
 
 /**
  * 현재 학기의 시간표를 가져온다.
