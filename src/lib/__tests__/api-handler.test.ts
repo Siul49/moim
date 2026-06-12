@@ -120,7 +120,7 @@ describe("createApiHandler", () => {
   });
 
   it("should parse and pass route parameters to handler", async () => {
-    const handler = createApiHandler<Record<string, never>, { id: string }>(
+    const handler = createApiHandler<z.ZodTypeAny, { id: string }>(
       {},
       async ({ params }) => {
         return NextResponse.json({ id: params.id });

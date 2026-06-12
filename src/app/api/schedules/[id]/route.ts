@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   confirmSchedule,
   confirmScheduleByCreator,
@@ -16,7 +17,7 @@ import { confirmScheduleSchema } from "@/features/schedules/schedule.schema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = createApiHandler<Record<string, never>, { id: string }>(
+export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
   {},
   async ({ req, session, params }) => {
     const { id } = params;
