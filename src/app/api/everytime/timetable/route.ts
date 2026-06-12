@@ -7,7 +7,8 @@ import {
 import { timetableToFreeSlots } from "@/lib/everytime/converter";
 import { createClient } from "@/lib/supabase/server";
 import { createApiHandler } from "@/lib/api-handler";
-import type { DayCode } from "@/types/schedule";
+import type { DayCode, TimeSlot } from "@/types/schedule";
+import type { EverytimeTimetable } from "@/types/everytime";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +82,7 @@ async function handleUrlRequest(
     );
   }
 
-  let timetable: Awaited<ReturnType<typeof fetchTimetableFromUrl>>;
+  let timetable: EverytimeTimetable;
   try {
     timetable = await fetchTimetableFromUrl(url.trim());
   } catch (err) {
@@ -96,19 +97,25 @@ async function handleUrlRequest(
   }
 
   try {
-    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    const freeSlots: TimeSlot[] = timetableToFreeSlots(timetable, {
+      candidateDays,
+    });
     try {
       const supabase = await createClient();
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
       if (user) {
-        await supabase.auth.updateUser({
+        const { error: updateError } = await supabase.auth.updateUser({
           data: {
             everytime_url: url,
             everytime_slots: freeSlots,
           },
         });
+        if (updateError) throw updateError;
       }
     } catch (err) {
       console.error("[everytime] 유저 메타데이터 저장 실패:", err);
@@ -174,7 +181,7 @@ async function handleFileRequest(
     );
   }
 
-  let timetable: Awaited<ReturnType<typeof parseTimetableFromIcs>>;
+  let timetable: EverytimeTimetable;
   try {
     timetable = parseTimetableFromIcs(icsText);
   } catch (err) {
@@ -186,19 +193,25 @@ async function handleFileRequest(
   }
 
   try {
-    const freeSlots = timetableToFreeSlots(timetable, { candidateDays });
+    const freeSlots: TimeSlot[] = timetableToFreeSlots(timetable, {
+      candidateDays,
+    });
     try {
       const supabase = await createClient();
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
       if (user) {
-        await supabase.auth.updateUser({
+        const { error: updateError } = await supabase.auth.updateUser({
           data: {
             everytime_url: "file_upload",
             everytime_slots: freeSlots,
           },
         });
+        if (updateError) throw updateError;
       }
     } catch (err) {
       console.error("[everytime] 유저 메타데이터 저장 실패:", err);
