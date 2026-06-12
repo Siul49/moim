@@ -54,6 +54,7 @@ try {
     "candidateEndHour" INTEGER NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'open',
     "confirmedSlot" TEXT,
+    "creatorId" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
   )
@@ -105,6 +106,12 @@ try {
   if (!scheduleColumnNames.has("confirmedSlot")) {
     await prisma.$executeRawUnsafe(
       `ALTER TABLE "Schedule" ADD COLUMN "confirmedSlot" TEXT`,
+    );
+  }
+
+  if (!scheduleColumnNames.has("creatorId")) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Schedule" ADD COLUMN "creatorId" TEXT`,
     );
   }
 } finally {

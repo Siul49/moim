@@ -8,21 +8,19 @@ test("host can create a schedule and receive safe participant and host links", a
 
   const testEmail = `test_${Date.now()}@example.com`;
   const testPhone = `010-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const testNickname = `host_${Date.now().toString().slice(-6)}`;
 
   // 1. 회원가입 진행
   await page.goto("/signup");
 
-  const emailInput = page.locator("#email");
-  await emailInput.waitFor({ state: "visible", timeout: 10000 });
-  await emailInput.fill(testEmail);
-  await expect(emailInput).toHaveValue(testEmail);
-
   const phoneInput = page.locator("#phoneNumber");
+  await phoneInput.waitFor({ state: "visible", timeout: 10000 });
   await phoneInput.fill(testPhone);
   await expect(phoneInput).toHaveValue(testPhone);
 
   const nicknameInput = page.locator("#nickname");
-  await nicknameInput.fill(`host_${Date.now().toString().slice(-6)}`);
+  await nicknameInput.fill(testNickname);
+  await expect(nicknameInput).toHaveValue(testNickname);
 
   const pwInput = page.locator("#password");
   await pwInput.waitFor({ state: "visible", timeout: 10000 });
@@ -33,6 +31,27 @@ test("host can create a schedule and receive safe participant and host links", a
   await pwConfirmInput.waitFor({ state: "visible", timeout: 10000 });
   await pwConfirmInput.fill("Test1234!");
   await expect(pwConfirmInput).toHaveValue("Test1234!");
+
+  const emailInput = page.locator("#email");
+  await emailInput.fill(testEmail);
+  await expect(emailInput).toHaveValue(testEmail);
+
+  // WebKit 자동완성 버그 우회: 폼 제출 직전에 비워진 필드들을 검사하고 재기입함
+  if ((await phoneInput.inputValue()) !== testPhone) {
+    await phoneInput.fill(testPhone);
+  }
+  if ((await nicknameInput.inputValue()) !== testNickname) {
+    await nicknameInput.fill(testNickname);
+  }
+  if ((await emailInput.inputValue()) !== testEmail) {
+    await emailInput.fill(testEmail);
+  }
+  if ((await pwInput.inputValue()) !== "Test1234!") {
+    await pwInput.fill("Test1234!");
+  }
+  if ((await pwConfirmInput.inputValue()) !== "Test1234!") {
+    await pwConfirmInput.fill("Test1234!");
+  }
 
   await page.getByRole("checkbox", { name: /만 14세 이상입니다/ }).check();
   await page.getByRole("checkbox", { name: /이용약관/ }).check();

@@ -1,4 +1,6 @@
 import type { CalDAVAuth } from "@/types/icloud";
+import { CalDAVError } from "@/lib/errors";
+export { CalDAVError };
 
 export type CalDAVMethod = "PROPFIND" | "REPORT" | "PUT" | "DELETE" | "GET";
 
@@ -14,17 +16,6 @@ export interface CalDAVResponse {
   status: number;
   headers: Headers;
   body: string;
-}
-
-export class CalDAVError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-    public readonly url: string,
-  ) {
-    super(message);
-    this.name = "CalDAVError";
-  }
 }
 
 /**

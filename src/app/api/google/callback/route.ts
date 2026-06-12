@@ -30,14 +30,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
+    const { origin } = new URL(req.url);
+    const tokens = await exchangeCodeForTokens(code, origin);
     const email = await getUserEmail(tokens.accessToken);
 
     await saveTokensToCookie(tokens);
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
     return NextResponse.redirect(
-      `${baseUrl}/api/google/calendars?connected=true&email=${encodeURIComponent(email)}`,
+      `${origin}/api/google/calendars?connected=true&email=${encodeURIComponent(email)}`,
     );
   } catch (err) {
     console.error("[google.callback] 오류:", err);

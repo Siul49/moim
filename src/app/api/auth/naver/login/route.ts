@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
+    const { origin } = new URL(request.url);
     const state = crypto.randomUUID();
-    const naverAuthUrl = getNaverAuthUrl(state);
+    const naverAuthUrl = getNaverAuthUrl(state, origin);
 
     const res = NextResponse.redirect(naverAuthUrl);
     res.cookies.set(STATE_COOKIE, state, {
