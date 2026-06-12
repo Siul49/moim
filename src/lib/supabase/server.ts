@@ -12,6 +12,133 @@ import { getSupabaseConfig } from "./env";
 
 export async function createClient() {
   const cookieStore = await cookies();
+  const isE2ETest = process.env.E2E_TEST === "true";
+  const mockUid =
+    typeof cookieStore.get === "function"
+      ? cookieStore.get("e2e_mock_uid")?.value
+      : undefined;
+  const mockEmail =
+    typeof cookieStore.get === "function"
+      ? cookieStore.get("e2e_mock_email")?.value
+      : undefined;
+  const mockNickname =
+    (typeof cookieStore.get === "function"
+      ? cookieStore.get("e2e_mock_nickname")?.value
+      : undefined) || "e2e_user";
+
+  const isMockSession = isE2ETest || (mockUid && mockEmail);
+
+  if (isMockSession) {
+    const authMock = {
+      getUser: async () => {
+        if (!mockEmail || !mockUid) {
+          return {
+            data: { user: null },
+            error: new Error("No E2E mock session"),
+          };
+        }
+        return {
+          data: {
+            user: {
+              id: mockUid,
+              email: mockEmail,
+              user_metadata: { nickname: mockNickname },
+            },
+          },
+          error: null,
+        };
+      },
+      signUp: async ({
+        email,
+        options,
+      }: {
+        email: string;
+        options?: { data?: Record<string, unknown> };
+      }) => {
+        const uid = `e2e_uid_${Date.now()}`;
+        return {
+          data: {
+            user: {
+              id: uid,
+              email,
+              user_metadata: options?.data || {},
+            },
+          },
+          error: null,
+        };
+      },
+      signInWithPassword: async ({ email }: { email: string }) => {
+        return {
+          data: {
+            user: {
+              id: mockUid || "e2e_default_uid",
+              email,
+              user_metadata: { nickname: mockNickname },
+            },
+            session: { access_token: "mock_jwt_token" },
+          },
+          error: null,
+        };
+      },
+      signOut: async () => {
+        return { error: null };
+      },
+      verifyOtp: async ({
+        token_hash,
+        type,
+      }: {
+        token_hash: string;
+        type: string;
+      }) => {
+        return {
+          data: {
+            user: {
+              id: mockUid || `e2e_naver_uid_${Date.now()}`,
+              email: mockEmail || "naver_user@example.com",
+              user_metadata: { nickname: mockNickname },
+            },
+            session: { access_token: "mock_jwt_token" },
+          },
+          error: null,
+        };
+      },
+      updateUser: async ({ data }: { data: any }) => {
+        return {
+          data: {
+            user: {
+              id: mockUid || "e2e_default_uid",
+              email: mockEmail || "e2e_default_email@example.com",
+              user_metadata: { ...data, nickname: mockNickname },
+            },
+          },
+          error: null,
+        };
+      },
+      setSession: async () => {
+        return {
+          data: {
+            session: { access_token: "mock_jwt_token" },
+          },
+          error: null,
+        };
+      },
+    };
+
+    return new Proxy({} as any, {
+      get(target, prop, receiver) {
+        if (prop === "auth") {
+          return authMock;
+        }
+        if (prop === "from") {
+          return (table: string) => {
+            return new MockSupabaseQueryBuilder(table);
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+  }
+
   const { url, anonKey } = getSupabaseConfig({ isServer: true });
 
   const client = createServerClient(url, anonKey, {
@@ -32,127 +159,6 @@ export async function createClient() {
       },
     },
   });
-
-  if (
-    process.env.E2E_TEST === "true" ||
-    process.env.NODE_ENV === "development"
-  ) {
-    const mockUid = cookieStore.get("e2e_mock_uid")?.value;
-    const mockEmail = cookieStore.get("e2e_mock_email")?.value;
-    const mockNickname =
-      cookieStore.get("e2e_mock_nickname")?.value || "e2e_user";
-
-    if (process.env.E2E_TEST === "true" || (mockUid && mockEmail)) {
-      const authMock = {
-        getUser: async () => {
-          if (!mockEmail || !mockUid) {
-            return {
-              data: { user: null },
-              error: new Error("No E2E mock session"),
-            };
-          }
-          return {
-            data: {
-              user: {
-                id: mockUid,
-                email: mockEmail,
-                user_metadata: { nickname: mockNickname },
-              },
-            },
-            error: null,
-          };
-        },
-        signUp: async ({
-          email,
-          options,
-        }: {
-          email: string;
-          options?: { data?: Record<string, unknown> };
-        }) => {
-          const uid = `e2e_uid_${Date.now()}`;
-          return {
-            data: {
-              user: {
-                id: uid,
-                email,
-                user_metadata: options?.data || {},
-              },
-            },
-            error: null,
-          };
-        },
-        signInWithPassword: async ({ email }: { email: string }) => {
-          return {
-            data: {
-              user: {
-                id: mockUid,
-                email,
-                user_metadata: { nickname: mockNickname },
-              },
-              session: { access_token: "mock_jwt_token" },
-            },
-            error: null,
-          };
-        },
-        signOut: async () => {
-          return { error: null };
-        },
-        verifyOtp: async ({
-          token_hash,
-          type,
-        }: {
-          token_hash: string;
-          type: string;
-        }) => {
-          return {
-            data: {
-              user: {
-                id: mockUid || `e2e_naver_uid_${Date.now()}`,
-                email: mockEmail || "naver_user@example.com",
-                user_metadata: { nickname: mockNickname },
-              },
-              session: { access_token: "mock_jwt_token" },
-            },
-            error: null,
-          };
-        },
-        updateUser: async ({ data }: { data: any }) => {
-          return {
-            data: {
-              user: {
-                id: mockUid,
-                email: mockEmail,
-                user_metadata: { ...data, nickname: mockNickname },
-              },
-            },
-            error: null,
-          };
-        },
-        setSession: async () => {
-          return {
-            data: {
-              session: { access_token: "mock_jwt_token" },
-            },
-            error: null,
-          };
-        },
-      };
-
-      return new Proxy(client, {
-        get(target, prop, receiver) {
-          if (prop === "auth") {
-            return authMock;
-          }
-          if (prop === "from") {
-            return (table: string) => {
-              return new MockSupabaseQueryBuilder(table);
-            };
-          }
-          return Reflect.get(target, prop, receiver);
-        },
-      });
-    }
-  }
 
   return client;
 }
@@ -271,6 +277,7 @@ class MockSupabaseQueryBuilder {
             where: {
               OR: [
                 { id: naverId },
+                { id: `naver_${naverId}` },
                 { email: `naver_${naverId}@naver.invalid` },
               ],
             },

@@ -105,11 +105,26 @@ async function parseRequestBody(
   }
 }
 
+import { MoimError } from "@/lib/errors";
+
 /**
- * API 처리 도중 발생한 예외를 일관된 형식으로 로깅하고 500 응답으로 포맷팅합니다.
+ * API 처리 도중 발생한 예외를 일관된 형식으로 로깅하고 응답으로 포맷팅합니다.
  */
 function apiErrorHandler(err: unknown): NextResponse {
   console.error("[API handler error]:", err);
+
+  if (err instanceof MoimError) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: err.clientMessage,
+        code: err.code,
+        details: err.details,
+      },
+      { status: err.statusCode },
+    );
+  }
+
   return NextResponse.json(
     { success: false, message: "서버 내부 오류가 발생했습니다." },
     { status: 500 },

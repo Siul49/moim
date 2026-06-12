@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createApiHandler } from "@/lib/api-handler";
+import { UnauthorizedError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +16,17 @@ export const GET = createApiHandler(
       .maybeSingle();
 
     if (profileError) throw profileError;
+    if (!profile) {
+      throw new UnauthorizedError("프로필 정보를 찾을 수 없습니다.");
+    }
 
     return NextResponse.json({
       success: true,
       user: {
         id: session.userId,
-        email: profile?.email ?? session.email,
-        nickname: profile?.nickname ?? null,
-        phoneNumber: profile?.phone_number ?? null,
+        email: profile.email,
+        nickname: profile.nickname ?? null,
+        phoneNumber: profile.phone_number ?? null,
       },
     });
   },

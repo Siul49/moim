@@ -102,19 +102,25 @@ export const PATCH = createApiHandler<
     try {
       // 1. 로그인 유저가 생성자(호스트)인지 먼저 확인하여 확정
       if (session) {
-        const schedule = await confirmScheduleByCreator(
-          id,
-          session.userId,
-          confirmedSlot,
-        );
-        return NextResponse.json({ schedule });
+        const isCreator = await getScheduleForCreator(id, session.userId);
+        if (isCreator) {
+          const schedule = await confirmScheduleByCreator(
+            id,
+            session.userId,
+            confirmedSlot,
+          );
+          return NextResponse.json({ schedule });
+        }
       }
 
       // 2. hostToken 기반 확정 처리
+      const bodyHostToken = body.hostToken;
+      const trimmedBodyHostToken =
+        typeof bodyHostToken === "string" ? bodyHostToken.trim() : "";
       const hostToken =
-        typeof body.hostToken === "string" && body.hostToken.trim()
-          ? body.hostToken
-          : req.cookies.get(getHostTokenCookieName(id))?.value;
+        trimmedBodyHostToken ||
+        req.cookies.get(getHostTokenCookieName(id))?.value;
+
       if (!hostToken) {
         return NextResponse.json(
           { error: "hostToken is required" },
@@ -127,13 +133,13 @@ export const PATCH = createApiHandler<
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "invalid request";
-      const status =
-        message === "schedule not found"
-          ? 404
-          : message === "invalid host token"
-            ? 403
-            : 400;
-      return NextResponse.json({ error: message }, { status });
+      if (message === "schedule not found") {
+        return NextResponse.json({ error: message }, { status: 404 });
+      }
+      if (message === "invalid host token") {
+        return NextResponse.json({ error: message }, { status: 403 });
+      }
+      throw error;
     }
   },
 );
