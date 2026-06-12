@@ -13,7 +13,7 @@ alter table public.profiles
 
 -- 네이버 회원번호는 전역 고유 (이미 채워진 행끼리만 유일성 보장)
 -- 빈 문자열/공백은 '식별자 없음'으로 보고 인덱스에서 제외한다.
-create unique index if not exists profiles_naver_id_key
+create unique index concurrently if not exists profiles_naver_id_key
   on public.profiles (naver_id)
   where nullif(btrim(naver_id), '') is not null;
 

@@ -9,10 +9,15 @@ export function getSupabaseConfig(
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   let anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
+  const isE2E =
+    process.env.NEXT_PUBLIC_SUPABASE_E2E === "1" ||
+    process.env.NEXT_PUBLIC_SUPABASE_E2E === "true";
+
   if (
     !options.isServer &&
     typeof window !== "undefined" &&
-    process.env.NODE_ENV !== "test"
+    process.env.NODE_ENV !== "test" &&
+    isE2E
   ) {
     url ||= "https://example-project.supabase.co";
     anonKey ||= "test-anon-key";

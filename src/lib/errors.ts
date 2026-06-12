@@ -13,14 +13,20 @@ export class MoimError extends Error {
 }
 
 export class UnauthorizedError extends MoimError {
-  constructor(message = "인증이 필요합니다.") {
-    super(message, "UNAUTHORIZED", 401, message);
+  constructor(
+    message = "인증이 필요합니다.",
+    clientMessage = "인증이 필요합니다.",
+  ) {
+    super(message, "UNAUTHORIZED", 401, clientMessage);
   }
 }
 
 export class ForbiddenError extends MoimError {
-  constructor(message = "접근 권한이 없습니다.") {
-    super(message, "FORBIDDEN", 403, message);
+  constructor(
+    message = "접근 권한이 없습니다.",
+    clientMessage = "접근 권한이 없습니다.",
+  ) {
+    super(message, "FORBIDDEN", 403, clientMessage);
   }
 }
 
@@ -70,7 +76,7 @@ export class EverytimeError extends ExternalServiceError {
       "Everytime",
       statusCode,
       "에브리타임 연동 중 오류가 발생했습니다.",
-      { type, ...details },
+      { ...details, type },
     );
   }
 }

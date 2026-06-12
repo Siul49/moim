@@ -218,7 +218,12 @@ class MockSupabaseQueryBuilder {
 
         let user;
         if (this.isUpsert) {
-          const lookupId = this.updateData.id || id;
+          const naverIdVal = this.updateData.naver_id;
+          const lookupId =
+            this.updateData.id ||
+            id ||
+            (naverIdVal ? `naver_${naverIdVal}` : `user_${Date.now()}`);
+
           user = await prisma.user.upsert({
             where: { id: lookupId },
             create: {
@@ -226,7 +231,9 @@ class MockSupabaseQueryBuilder {
               email:
                 this.updateData.email ||
                 email ||
-                `user_${Date.now()}@example.com`,
+                (naverIdVal
+                  ? `naver_${naverIdVal}@naver.invalid`
+                  : `user_${Date.now()}@example.com`),
               nickname:
                 this.updateData.nickname || nickname || `user_${Date.now()}`,
               ...data,
@@ -235,14 +242,41 @@ class MockSupabaseQueryBuilder {
           });
         } else {
           let where: any = {};
-          if (id) where.id = id;
-          else if (email) where.email = email;
-          else if (nickname) where.nickname = nickname;
+          if (id) {
+            where.id = id;
+          } else if (email) {
+            where.email = email;
+          } else if (nickname) {
+            where.nickname = nickname;
+          } else if (naverId) {
+            const targetUser = await prisma.user.findFirst({
+              where: {
+                OR: [
+                  { id: naverId },
+                  { email: `naver_${naverId}@naver.invalid` },
+                ],
+              },
+            });
+            where.id = targetUser ? targetUser.id : "non-existent-id";
+          }
 
           user = await prisma.user.update({
             where,
             data,
           });
+        }
+
+        let responseNaverId = null;
+        if (user.id.startsWith("naver_")) {
+          responseNaverId = user.id.replace("naver_", "");
+        } else if (
+          user.email?.startsWith("naver_") &&
+          user.email.endsWith("@naver.invalid")
+        ) {
+          responseNaverId = user.email.substring(
+            6,
+            user.email.indexOf("@naver.invalid"),
+          );
         }
 
         return {
@@ -255,6 +289,7 @@ class MockSupabaseQueryBuilder {
             privacy_agreed_at: user.privacyAgreedAt,
             marketing_agreed: user.marketingAgreed,
             event_sms_agreed: user.eventSmsAgreed,
+            naver_id: responseNaverId,
           },
           error: null,
         };
@@ -281,6 +316,19 @@ class MockSupabaseQueryBuilder {
           return { data: null, error: null };
         }
 
+        let responseNaverId = null;
+        if (user.id.startsWith("naver_")) {
+          responseNaverId = user.id.replace("naver_", "");
+        } else if (
+          user.email?.startsWith("naver_") &&
+          user.email.endsWith("@naver.invalid")
+        ) {
+          responseNaverId = user.email.substring(
+            6,
+            user.email.indexOf("@naver.invalid"),
+          );
+        }
+
         return {
           data: {
             id: user.id,
@@ -291,6 +339,7 @@ class MockSupabaseQueryBuilder {
             privacy_agreed_at: user.privacyAgreedAt,
             marketing_agreed: user.marketingAgreed,
             event_sms_agreed: user.eventSmsAgreed,
+            naver_id: responseNaverId,
           },
           error: null,
         };

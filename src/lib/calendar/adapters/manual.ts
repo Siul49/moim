@@ -17,35 +17,37 @@ export interface ManualAdapterInput {
   weekStart?: Date;
 }
 
+type ManualItem = { slot: TimeSlot; index: number; weekStart: Date };
+
 export class ManualCalendarAdapter extends BaseCalendarAdapter<
   ManualAdapterInput,
-  { slot: TimeSlot; index: number; weekStart: Date }
+  ManualItem
 > {
   readonly source = "manual";
 
-  protected getExternalId(item: { slot: TimeSlot; index: number }): string {
+  protected getExternalId(item: ManualItem): string {
     return `${item.index}:${item.slot.day}-${item.slot.startHour}-${item.slot.endHour}`;
   }
 
-  protected getTitle(_item: unknown): string {
+  protected getTitle(_item: ManualItem): string {
     return "가용";
   }
 
-  protected getStartAt(item: { slot: TimeSlot; weekStart: Date }): Date {
+  protected getStartAt(item: ManualItem): Date {
     return this.addHours(
       item.weekStart,
       DAY_OFFSET[item.slot.day] * 24 + item.slot.startHour,
     );
   }
 
-  protected getEndAt(item: { slot: TimeSlot; weekStart: Date }): Date {
+  protected getEndAt(item: ManualItem): Date {
     return this.addHours(
       item.weekStart,
       DAY_OFFSET[item.slot.day] * 24 + item.slot.endHour,
     );
   }
 
-  protected getIsAllDay(_item: unknown): boolean {
+  protected getIsAllDay(_item: ManualItem): boolean {
     return false;
   }
 

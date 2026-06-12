@@ -40,7 +40,11 @@ function getRedirectUri(origin?: string): string {
 
   const base =
     origin || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
-  return `${base}/api/google/callback`;
+  try {
+    return new URL("/api/google/callback", base).toString();
+  } catch {
+    return `${base.replace(/\/+$/, "")}/api/google/callback`;
+  }
 }
 
 /**

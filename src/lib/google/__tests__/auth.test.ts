@@ -114,6 +114,27 @@ describe("exchangeCodeForTokens", () => {
       "토큰 교환 실패",
     );
   });
+
+  test("동적 origin 매개변수를 전달하면 redirect_uri에 적용하여 요청한다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "access-123",
+          refresh_token: "refresh-456",
+          expires_in: 3600,
+        }),
+    });
+
+    const customOrigin = "https://my-custom-domain.com";
+    await exchangeCodeForTokens("auth-code-789", customOrigin);
+
+    const [, options] = mockFetch.mock.calls[0];
+    const bodyStr = decodeURIComponent(options.body.toString());
+    expect(bodyStr).toContain(
+      `redirect_uri=${customOrigin}/api/google/callback`,
+    );
+  });
 });
 
 describe("refreshAccessToken", () => {

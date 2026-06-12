@@ -17,15 +17,33 @@ export class GoogleCalendarAdapter extends ArrayCalendarAdapter<GoogleEvent> {
   }
 
   protected getStartAt(event: GoogleEvent): Date {
-    return event.start.date
-      ? this.parseAllDay(event.start.date)
-      : new Date(event.start.dateTime as string);
+    if (event.start.date) {
+      return this.parseAllDay(event.start.date);
+    }
+    if (event.start.dateTime) {
+      const date = new Date(event.start.dateTime);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    throw new Error(
+      `Google calendar event start time is invalid or missing for event ID: ${event.id}`,
+    );
   }
 
   protected getEndAt(event: GoogleEvent): Date {
-    return event.end.date
-      ? this.parseAllDay(event.end.date)
-      : new Date(event.end.dateTime as string);
+    if (event.end.date) {
+      return this.parseAllDay(event.end.date);
+    }
+    if (event.end.dateTime) {
+      const date = new Date(event.end.dateTime);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    throw new Error(
+      `Google calendar event end time is invalid or missing for event ID: ${event.id}`,
+    );
   }
 
   protected getIsAllDay(event: GoogleEvent): boolean {
