@@ -121,9 +121,18 @@ export default function DashboardSettingsPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("사용자 정보를 찾을 수 없습니다.");
 
+      // 선호 시작/종료 시간 순서 검증 (역전된 값 저장 방지)
+      const start = Number(startHour);
+      const end = Number(endHour);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
+        throw new Error("선호 시작 시간은 종료 시간보다 이전이어야 합니다.");
+      }
+
       // 1. Update profiles table
       // 가입 트리거(handle_new_user)가 프로필 행을 항상 생성하므로 update를 쓴다.
       // (profiles에는 update RLS 정책만 있고 insert 정책이 없어 upsert는 막힐 수 있음)
+      // .select().single()으로 갱신된 행을 강제 반환 → 행이 없거나 RLS로 막히면
+      // 0건이 'success'로 처리되지 않고 에러(PGRST116)로 드러난다.
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -135,7 +144,9 @@ export default function DashboardSettingsPage() {
           preferred_timezone: timezone,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select("id")
+        .single();
 
       if (profileError) throw profileError;
 

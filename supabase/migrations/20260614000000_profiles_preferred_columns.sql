@@ -13,3 +13,15 @@ alter table public.profiles
   add column if not exists preferred_start_hour text not null default '09',
   add column if not exists preferred_end_hour   text not null default '18',
   add column if not exists preferred_timezone   text not null default 'Asia/Seoul';
+
+-- 시간값 무결성: "00"~"23" 형식 + 시작 < 종료 강제 (API 우회/직접 조작 방어)
+-- ADD CONSTRAINT은 IF NOT EXISTS를 지원하지 않으므로 재실행 안전을 위해 drop 후 add
+alter table public.profiles
+  drop constraint if exists profiles_preferred_hours_check;
+
+alter table public.profiles
+  add constraint profiles_preferred_hours_check check (
+    preferred_start_hour ~ '^(0[0-9]|1[0-9]|2[0-3])$' and
+    preferred_end_hour   ~ '^(0[0-9]|1[0-9]|2[0-3])$' and
+    preferred_start_hour::int < preferred_end_hour::int
+  );
