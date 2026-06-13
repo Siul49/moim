@@ -390,7 +390,9 @@ export default function DashboardSettingsPage() {
                   </p>
                   <p className="text-[10px] text-brand-text-muted">
                     {hasGoogle
-                      ? `${googleEmail} · 연동 완료`
+                      ? googleEmail
+                        ? `${googleEmail} · 연동 완료`
+                        : "연동 완료"
                       : "내 캘린더 일정 실시간 차단용 연동"}
                   </p>
                 </div>
