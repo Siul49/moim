@@ -81,25 +81,22 @@ export default function DashboardSettingsPage() {
         setNickname(user.user_metadata?.nickname || "");
       }
 
-      // Check Google Connection
-      const { data: googleConn } = await supabase
-        .from("google_connections")
-        .select("id, google_email")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      setHasGoogle(!!googleConn);
-      setGoogleEmail(googleConn?.google_email || "");
-
-      // Check iCloud Connection
-      const { data: icloudConn } = await supabase
-        .from("icloud_connections")
-        .select("id, apple_id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      setHasICloud(!!icloudConn);
-      setIcloudAppleId(icloudConn?.apple_id || "");
+      // 캘린더 연동 상태는 쿠키 기반(/api/calendar/status)이 단일 소스다.
+      // (OAuth 콜백/iCloud 연동은 쿠키에 저장하며, google_connections /
+      //  icloud_connections 테이블은 연동 흐름에서 채워지지 않아 항상 미연동으로 보였음)
+      // 모임 만들기 화면(/calendar/connect)과 동일한 소스로 통일한다.
+      try {
+        const statusRes = await fetch("/api/calendar/status");
+        if (statusRes.ok) {
+          const status = await statusRes.json();
+          setHasGoogle(!!status.googleConnected);
+          setGoogleEmail(status.googleEmail || "");
+          setHasICloud(!!status.icloudConnected);
+          setIcloudAppleId(status.icloudAppleId || "");
+        }
+      } catch (err) {
+        console.error("[settings] 캘린더 연동 상태 조회 실패:", err);
+      }
 
       setLoading(false);
     }
@@ -393,7 +390,9 @@ export default function DashboardSettingsPage() {
                   </p>
                   <p className="text-[10px] text-brand-text-muted">
                     {hasGoogle
-                      ? `${googleEmail} · 연동 완료`
+                      ? googleEmail
+                        ? `${googleEmail} · 연동 완료`
+                        : "연동 완료"
                       : "내 캘린더 일정 실시간 차단용 연동"}
                   </p>
                 </div>
