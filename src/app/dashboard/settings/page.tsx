@@ -12,6 +12,24 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+/**
+ * Supabase의 PostgrestError는 Error 인스턴스가 아니라 { message, ... } 객체라
+ * `instanceof Error`만으로는 실제 메시지가 가려진다. 메시지 문자열을 폭넓게 추출한다.
+ */
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string" &&
+    (err as { message: string }).message
+  ) {
+    return (err as { message: string }).message;
+  }
+  return fallback;
+}
+
 export default function DashboardSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -22,6 +40,7 @@ export default function DashboardSettingsPage() {
   const [endHour, setEndHour] = useState("18");
   const [timezone, setTimezone] = useState("Asia/Seoul");
   const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
 
   const [hasGoogle, setHasGoogle] = useState(false);
   const [hasICloud, setHasICloud] = useState(false);
@@ -94,6 +113,7 @@ export default function DashboardSettingsPage() {
 
     setUpdating(true);
     setMessage("");
+    setMessageIsError(false);
 
     try {
       const {
@@ -102,16 +122,20 @@ export default function DashboardSettingsPage() {
       if (!user) throw new Error("사용자 정보를 찾을 수 없습니다.");
 
       // 1. Update profiles table
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        email,
-        nickname,
-        phone_number: phoneNumber,
-        preferred_start_hour: startHour,
-        preferred_end_hour: endHour,
-        preferred_timezone: timezone,
-        updated_at: new Date().toISOString(),
-      });
+      // 가입 트리거(handle_new_user)가 프로필 행을 항상 생성하므로 update를 쓴다.
+      // (profiles에는 update RLS 정책만 있고 insert 정책이 없어 upsert는 막힐 수 있음)
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          email,
+          nickname,
+          phone_number: phoneNumber,
+          preferred_start_hour: startHour,
+          preferred_end_hour: endHour,
+          preferred_timezone: timezone,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
 
       if (profileError) throw profileError;
 
@@ -123,11 +147,11 @@ export default function DashboardSettingsPage() {
       if (userError) throw userError;
 
       setMessage("설정이 성공적으로 저장되었습니다. ✨");
+      setMessageIsError(false);
     } catch (err) {
       console.error(err);
-      setMessage(
-        err instanceof Error ? err.message : "업데이트 중 오류가 발생했습니다.",
-      );
+      setMessage(getErrorMessage(err, "업데이트 중 오류가 발생했습니다."));
+      setMessageIsError(true);
     } finally {
       setUpdating(false);
     }
@@ -144,6 +168,7 @@ export default function DashboardSettingsPage() {
       setHasGoogle(false);
       setGoogleEmail("");
       setMessage("Google Calendar 연동이 해제되었습니다. 🔌");
+      setMessageIsError(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
     }
@@ -160,6 +185,7 @@ export default function DashboardSettingsPage() {
       setHasICloud(false);
       setIcloudAppleId("");
       setMessage("iCloud Calendar 연동이 해제되었습니다. 🔌");
+      setMessageIsError(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : "오류가 발생했습니다.");
     }
@@ -188,6 +214,7 @@ export default function DashboardSettingsPage() {
       setAppleIdInput("");
       setAppPasswordInput("");
       setMessage("iCloud Calendar 연동에 성공했습니다! 🎉");
+      setMessageIsError(false);
     } catch (err) {
       setIcloudError(
         err instanceof Error ? err.message : "연동 중 오류가 발생했습니다.",
@@ -222,7 +249,7 @@ export default function DashboardSettingsPage() {
         <div
           role="alert"
           className={`rounded-xl p-4 text-xs font-bold ${
-            message.includes("오류")
+            messageIsError
               ? "bg-red-50 text-red-600 border border-red-100"
               : "bg-green-50 text-green-600 border border-green-100"
           }`}
