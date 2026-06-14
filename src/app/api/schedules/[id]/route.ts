@@ -6,7 +6,8 @@ import {
   deleteScheduleByCreator,
   getScheduleForCreator,
   getScheduleForHost,
-  getSchedulePublic,
+  getScheduleParticipantForUser,
+  getScheduleResult,
 } from "@/lib/schedules/store";
 import {
   HOST_TOKEN_MAX_AGE,
@@ -19,7 +20,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
-  {},
+  { loadSession: true },
   async ({ req, session, params }) => {
     const { id } = params;
 
@@ -27,7 +28,7 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
     if (session) {
       const creatorSchedule = await getScheduleForCreator(id, session.userId);
       if (creatorSchedule) {
-        return NextResponse.json({ schedule: creatorSchedule });
+        return NextResponse.json({ schedule: creatorSchedule, isHost: true });
       }
     }
 
@@ -39,7 +40,10 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
     if (hostToken) {
       const hostSchedule = await getScheduleForHost(id, hostToken);
       if (hostSchedule) {
-        const response = NextResponse.json({ schedule: hostSchedule });
+        const response = NextResponse.json({
+          schedule: hostSchedule,
+          isHost: true,
+        });
         const isProd =
           process.env.NODE_ENV === "production" &&
           process.env.E2E_TEST !== "true";
@@ -61,15 +65,23 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
         );
       }
 
-      // 쿠키에 담긴 토큰만 잘못된 경우: 쿠키를 자동 소멸시키고 퍼블릭 모임 정보로 이동
-      const schedule = await getSchedulePublic(id);
+      // 쿠키에 담긴 토큰만 잘못된 경우: 쿠키를 소멸시키고 집계 결과(읽기전용)로 이동
+      const participant = session
+        ? await getScheduleParticipantForUser(id, session.userId)
+        : null;
+      const schedule = await getScheduleResult(id);
       if (!schedule) {
         return NextResponse.json(
           { error: "schedule not found" },
           { status: 404 },
         );
       }
-      const response = NextResponse.json({ schedule });
+      const response = NextResponse.json({
+        schedule,
+        isHost: false,
+        hasSubmittedAvailability: Boolean(participant),
+        participantName: participant?.name ?? null,
+      });
       response.cookies.set(getHostTokenCookieName(id), "", {
         path: "/",
         maxAge: 0,
@@ -77,7 +89,10 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
       return response;
     }
 
-    const schedule = await getSchedulePublic(id);
+    const participant = session
+      ? await getScheduleParticipantForUser(id, session.userId)
+      : null;
+    const schedule = await getScheduleResult(id);
     if (!schedule) {
       return NextResponse.json(
         { error: "schedule not found" },
@@ -85,7 +100,12 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
       );
     }
 
-    return NextResponse.json({ schedule });
+    return NextResponse.json({
+      schedule,
+      isHost: false,
+      hasSubmittedAvailability: Boolean(participant),
+      participantName: participant?.name ?? null,
+    });
   },
 );
 
@@ -95,6 +115,7 @@ export const PATCH = createApiHandler<
 >(
   {
     bodySchema: confirmScheduleSchema,
+    loadSession: true,
   },
   async ({ req, session, body, params }) => {
     const { id } = params;

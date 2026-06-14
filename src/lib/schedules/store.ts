@@ -130,6 +130,31 @@ export async function getScheduleForCreator(
   return toHostSchedule(schedule);
 }
 
+// 토큰/생성자 확인 없이 집계 결과(참여자·공통시간)를 반환한다.
+// 참여 링크를 가진 누구나 결과 화면을 볼 수 있도록 허용하며,
+// 호스트 전용 컨트롤(확정/카톡)은 프론트에서 isHost로 게이팅한다.
+export async function getScheduleResult(
+  id: string,
+): Promise<HostSchedule | null> {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id },
+    include: { participants: true },
+  });
+  if (!schedule) return null;
+  return toHostSchedule(schedule);
+}
+
+export async function getScheduleParticipantForUser(
+  scheduleId: string,
+  userId: string,
+): Promise<ScheduleParticipant | null> {
+  const participant = await prisma.scheduleParticipant.findFirst({
+    where: { scheduleId, userId },
+  });
+  if (!participant) return null;
+  return toScheduleParticipant(participant);
+}
+
 export async function addParticipantAvailability(
   scheduleId: string,
   input: AddParticipantAvailabilityInput,

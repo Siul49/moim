@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 export const POST = createApiHandler(
   {
     bodySchema: createScheduleSchema,
+    loadSession: true,
   },
   async ({ session, body }) => {
     const created = await createSchedule({
