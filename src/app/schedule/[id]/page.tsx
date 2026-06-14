@@ -5,10 +5,16 @@ export default async function ScheduleParticipantPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ hostToken?: string }>;
+  searchParams: Promise<{ hostToken?: string; participate?: string }>;
 }) {
   const { id } = await params;
-  const { hostToken } = await searchParams;
+  const { hostToken, participate } = await searchParams;
 
-  return <ScheduleRoomClient scheduleId={id} hostToken={hostToken ?? ""} />;
+  return (
+    <ScheduleRoomClient
+      scheduleId={id}
+      hostToken={hostToken ?? ""}
+      forceParticipant={participate === "1"}
+    />
+  );
 }
