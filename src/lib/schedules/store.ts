@@ -16,6 +16,7 @@ export interface CreateScheduleInput {
   candidateStartHour: number;
   candidateEndHour: number;
   creatorId?: string | null;
+  responseDeadline?: string | null;
 }
 
 export interface AddParticipantAvailabilityInput {
@@ -64,8 +65,12 @@ type ScheduleWithParticipantCount = Prisma.ScheduleGetPayload<{
   include: { _count: { select: { participants: true } } };
 }>;
 
-type NormalizedScheduleInput = Omit<CreateScheduleInput, "candidateDays"> & {
+type NormalizedScheduleInput = Omit<
+  CreateScheduleInput,
+  "candidateDays" | "responseDeadline"
+> & {
   candidateDays: DayCode[];
+  responseDeadline: Date | null;
 };
 
 const VALID_DAYS: DayCode[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -371,6 +376,9 @@ function normalizeScheduleInput(
     candidateStartHour: input.candidateStartHour,
     candidateEndHour: input.candidateEndHour,
     creatorId: input.creatorId,
+    responseDeadline: input.responseDeadline
+      ? new Date(input.responseDeadline)
+      : null,
   };
 }
 

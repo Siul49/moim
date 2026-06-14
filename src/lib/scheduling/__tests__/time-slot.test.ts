@@ -1,9 +1,10 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, it, expect } from "vitest";
 import {
   sortSlots,
   mergeOverlapping,
   sortDateSlots,
   mergeOverlappingDateSlots,
+  TIME_OPTIONS,
 } from "../time-slot";
 import type { TimeSlot, DateTimeSlot } from "@/types/schedule";
 
@@ -80,8 +81,14 @@ describe("mergeOverlapping — 겹치거나 인접한 슬롯 병합", () => {
 describe("sortDateSlots — Date 기반 정렬", () => {
   test("startAt 오름차순으로 정렬한다", () => {
     const input: DateTimeSlot[] = [
-      { startAt: iso("2026-05-10T14:00:00Z"), endAt: iso("2026-05-10T15:00:00Z") },
-      { startAt: iso("2026-05-09T10:00:00Z"), endAt: iso("2026-05-09T11:00:00Z") },
+      {
+        startAt: iso("2026-05-10T14:00:00Z"),
+        endAt: iso("2026-05-10T15:00:00Z"),
+      },
+      {
+        startAt: iso("2026-05-09T10:00:00Z"),
+        endAt: iso("2026-05-09T11:00:00Z"),
+      },
     ];
 
     const result = sortDateSlots(input);
@@ -94,8 +101,14 @@ describe("sortDateSlots — Date 기반 정렬", () => {
 describe("mergeOverlappingDateSlots — Date 기반 병합", () => {
   test("겹치는 시간 범위를 하나로 합친다", () => {
     const input: DateTimeSlot[] = [
-      { startAt: iso("2026-05-10T09:00:00Z"), endAt: iso("2026-05-10T11:00:00Z") },
-      { startAt: iso("2026-05-10T10:30:00Z"), endAt: iso("2026-05-10T12:00:00Z") },
+      {
+        startAt: iso("2026-05-10T09:00:00Z"),
+        endAt: iso("2026-05-10T11:00:00Z"),
+      },
+      {
+        startAt: iso("2026-05-10T10:30:00Z"),
+        endAt: iso("2026-05-10T12:00:00Z"),
+      },
     ];
 
     const result = mergeOverlappingDateSlots(input);
@@ -107,8 +120,14 @@ describe("mergeOverlappingDateSlots — Date 기반 병합", () => {
 
   test("인접(end===start)한 슬롯도 병합한다", () => {
     const input: DateTimeSlot[] = [
-      { startAt: iso("2026-05-10T09:00:00Z"), endAt: iso("2026-05-10T10:00:00Z") },
-      { startAt: iso("2026-05-10T10:00:00Z"), endAt: iso("2026-05-10T11:00:00Z") },
+      {
+        startAt: iso("2026-05-10T09:00:00Z"),
+        endAt: iso("2026-05-10T10:00:00Z"),
+      },
+      {
+        startAt: iso("2026-05-10T10:00:00Z"),
+        endAt: iso("2026-05-10T11:00:00Z"),
+      },
     ];
 
     const result = mergeOverlappingDateSlots(input);
@@ -119,10 +138,49 @@ describe("mergeOverlappingDateSlots — Date 기반 병합", () => {
 
   test("겹치지 않으면 그대로 둔다", () => {
     const input: DateTimeSlot[] = [
-      { startAt: iso("2026-05-10T09:00:00Z"), endAt: iso("2026-05-10T10:00:00Z") },
-      { startAt: iso("2026-05-10T11:00:00Z"), endAt: iso("2026-05-10T12:00:00Z") },
+      {
+        startAt: iso("2026-05-10T09:00:00Z"),
+        endAt: iso("2026-05-10T10:00:00Z"),
+      },
+      {
+        startAt: iso("2026-05-10T11:00:00Z"),
+        endAt: iso("2026-05-10T12:00:00Z"),
+      },
     ];
 
     expect(mergeOverlappingDateSlots(input)).toHaveLength(2);
+  });
+});
+
+describe("TIME_OPTIONS", () => {
+  it("should have exactly 144 slots", () => {
+    // 24 hours * 6 slots/hour = 144
+    expect(TIME_OPTIONS.length).toBe(144);
+  });
+
+  it("should start at 00:00 and end at 23:50", () => {
+    expect(TIME_OPTIONS[0]).toBe("00:00");
+    expect(TIME_OPTIONS[TIME_OPTIONS.length - 1]).toBe("23:50");
+  });
+
+  it("should contain only 10-minute increments", () => {
+    for (let i = 0; i < TIME_OPTIONS.length; i++) {
+      const time = TIME_OPTIONS[i];
+      const [, minutes] = time.split(":");
+      // Minutes should be one of 00, 10, 20, 30, 40, 50
+      expect(["00", "10", "20", "30", "40", "50"]).toContain(minutes);
+
+      // Verify sequence if not the first element
+      if (i > 0) {
+        const prevTime = TIME_OPTIONS[i - 1];
+        const [prevH, prevM] = prevTime.split(":").map(Number);
+        const [currH, currM] = time.split(":").map(Number);
+
+        const prevTotalMinutes = prevH * 60 + prevM;
+        const currTotalMinutes = currH * 60 + currM;
+
+        expect(currTotalMinutes - prevTotalMinutes).toBe(10);
+      }
+    }
   });
 });

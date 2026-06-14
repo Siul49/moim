@@ -29,6 +29,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
+import { TIME_OPTIONS } from "@/lib/scheduling/time-slot";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "MON", label: "월요일" },
@@ -466,20 +467,66 @@ export function CreateScheduleClient() {
                 </label>
               </div>
 
-              <label className="grid gap-2 text-sm font-bold text-brand-text-primary">
+              <div className="grid gap-2 text-sm font-bold text-brand-text-primary">
                 응답 마감일
-                <input
-                  type="datetime-local"
-                  value={responseDeadline}
-                  onChange={(event) => setResponseDeadline(event.target.value)}
-                  step={600}
-                  className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
-                  required
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={
+                      responseDeadline ? responseDeadline.split("T")[0] : ""
+                    }
+                    onChange={(event) => {
+                      const date = event.target.value;
+                      // 10분 단위 옵션(TIME_OPTIONS) 중 하루의 가장 마지막 시간인 23:50을 기본값으로 사용
+                      const time = responseDeadline.includes("T")
+                        ? responseDeadline.split("T")[1]
+                        : "23:50";
+                      // 날짜가 비워지면 시간 정보도 리셋하거나 T{time} 형태로 유지 (여기서는 유지)
+                      setResponseDeadline(
+                        date ? `${date}T${time}` : time ? `T${time}` : "",
+                      );
+                    }}
+                    className={cn(
+                      "flex-1 h-12 rounded-xl border px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary",
+                      responseDeadline.startsWith("T")
+                        ? "border-red-500 bg-red-50"
+                        : "border-brand-border-gray",
+                    )}
+                    required
+                  />
+                  <select
+                    value={
+                      responseDeadline.includes("T")
+                        ? responseDeadline.split("T")[1]
+                        : ""
+                    }
+                    onChange={(event) => {
+                      const time = event.target.value;
+                      // 날짜가 없으면 빈 문자열 유지하여 사용자가 날짜를 명시적으로 선택하게 유도
+                      const date = responseDeadline
+                        ? responseDeadline.split("T")[0]
+                        : "";
+                      setResponseDeadline(
+                        date ? `${date}T${time}` : `T${time}`,
+                      );
+                    }}
+                    className="w-[120px] h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary bg-white"
+                    required
+                  >
+                    <option value="" disabled>
+                      시간 선택
+                    </option>
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <span className="text-sm font-normal text-brand-text-muted">
                   이 날짜 이후로는 응답을 받을 수 없습니다.
                 </span>
-              </label>
+              </div>
 
               <div className="pt-4 flex justify-end">
                 <PurpleButton
