@@ -41,8 +41,9 @@ export async function GET(req: NextRequest) {
 
     await saveTokensToCookie(tokens);
 
+    // 사용자 페이지로 리다이렉트한다. (JSON API로 보내면 raw JSON이 노출됨)
     const response = NextResponse.redirect(
-      `${origin}/api/google/calendars?connected=true&email=${encodeURIComponent(email)}`,
+      `${origin}/calendar/connect?connected=google&email=${encodeURIComponent(email)}`,
     );
     // 1회용 origin 쿠키 정리
     response.cookies.set(GOOGLE_OAUTH_ORIGIN_COOKIE, "", {
