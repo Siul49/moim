@@ -420,7 +420,7 @@ export function SchedulerPreview({
 
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <CalendarBoard days={activeDays} schedules={schedules} />
-        <div className="overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
+        <div className="min-w-0 flex flex-col overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-brand-border-muted p-6">
             <h3 className="text-2xl font-bold">내 모임</h3>
             <Link
