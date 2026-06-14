@@ -67,6 +67,10 @@ export function CreateScheduleClient() {
   const [hasICloud, setHasICloud] = useState(false);
   const [blockBusyTimes, setBlockBusyTimes] = useState(true);
   const [busySlots, setBusySlots] = useState<string[]>([]);
+  const [calendarLoadStatus, setCalendarLoadStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [calendarLoadMessage, setCalendarLoadMessage] = useState("");
 
   const [selectedSlots, setSelectedSlots] = useState<string[]>(() => {
     // Default to Mon-Fri 9:00 - 18:00
@@ -132,24 +136,79 @@ export function CreateScheduleClient() {
         const icloud = Boolean(data.icloudConnected);
         setHasGoogle(google);
         setHasICloud(icloud);
-
-        // If calendar is connected, load some realistic mock busy slots
-        if (google || icloud) {
-          setBusySlots([
-            "MON-10",
-            "MON-11",
-            "WED-14",
-            "WED-15",
-            "FRI-16",
-            "FRI-17",
-          ]);
-        }
       } catch {
         // 상태 조회 실패 시 미연동 상태로 둔다
       }
     }
     checkConnections();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConnectedCalendarBusySlots() {
+      if (!hasGoogle && !hasICloud) {
+        setBusySlots([]);
+        setCalendarLoadStatus("idle");
+        setCalendarLoadMessage("");
+        return;
+      }
+
+      if (!candidateStartDate || !candidateEndDate) {
+        setBusySlots([]);
+        setCalendarLoadStatus("idle");
+        setCalendarLoadMessage("");
+        return;
+      }
+
+      setCalendarLoadStatus("loading");
+      setCalendarLoadMessage("연동 캘린더 일정을 불러오는 중입니다.");
+
+      try {
+        const result = await fetchConnectedBusySlotKeys({
+          includeGoogle: hasGoogle,
+          includeICloud: hasICloud,
+          startDate: candidateStartDate,
+          endDate: candidateEndDate,
+        });
+
+        if (cancelled) return;
+
+        setBusySlots(result.busySlotKeys);
+        setCalendarLoadStatus(result.errors.length > 0 ? "error" : "success");
+        if (result.errors.length > 0 && result.busySlotKeys.length === 0) {
+          setCalendarLoadMessage(
+            "연동 캘린더 일정을 불러오지 못했습니다. 직접 후보 시간을 선택해 주세요.",
+          );
+        } else if (result.errors.length > 0) {
+          setCalendarLoadMessage(
+            `일부 캘린더는 불러오지 못했지만, ${result.busySlotKeys.length}개 바쁜 시간대를 반영했습니다.`,
+          );
+        } else if (result.busySlotKeys.length > 0) {
+          setCalendarLoadMessage(
+            `${result.sourceCount}개 캘린더에서 ${result.busySlotKeys.length}개 바쁜 시간대를 반영했습니다.`,
+          );
+        } else {
+          setCalendarLoadMessage(
+            "후보 기간 안에서 겹치는 바쁜 일정이 없습니다.",
+          );
+        }
+      } catch {
+        if (cancelled) return;
+        setBusySlots([]);
+        setCalendarLoadStatus("error");
+        setCalendarLoadMessage(
+          "연동 캘린더 일정을 불러오지 못했습니다. 직접 후보 시간을 선택해 주세요.",
+        );
+      }
+    }
+
+    loadConnectedCalendarBusySlots();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [candidateEndDate, candidateStartDate, hasGoogle, hasICloud]);
 
   // Filter out busy slots if user decides to block them
   useEffect(() => {
@@ -610,15 +669,29 @@ export function CreateScheduleClient() {
               </div>
 
               {hasGoogle || hasICloud ? (
-                <label className="flex items-center gap-3 rounded-xl border border-brand-border-muted bg-brand-bg-light/30 p-4 text-xs font-bold text-brand-text-primary cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={blockBusyTimes}
-                    onChange={(e) => setBlockBusyTimes(e.target.checked)}
-                    className="h-5 w-5 rounded border-brand-border-gray accent-brand-purple-light cursor-pointer"
-                  />
-                  연동 캘린더에서 내 바쁜 시간 후보지에서 자동 제외 (추천)
-                </label>
+                <div className="grid gap-3">
+                  <label className="flex items-center gap-3 rounded-xl border border-brand-border-muted bg-brand-bg-light/30 p-4 text-xs font-bold text-brand-text-primary cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={blockBusyTimes}
+                      onChange={(e) => setBlockBusyTimes(e.target.checked)}
+                      className="h-5 w-5 rounded border-brand-border-gray accent-brand-purple-light cursor-pointer"
+                    />
+                    연동 캘린더에서 내 바쁜 시간 후보지에서 자동 제외 (추천)
+                  </label>
+                  {calendarLoadMessage ? (
+                    <p
+                      className={cn(
+                        "rounded-xl border p-3 text-xs font-bold",
+                        calendarLoadStatus === "error"
+                          ? "border-red-100 bg-red-50 text-red-700"
+                          : "border-brand-border-muted bg-brand-bg-light text-brand-purple",
+                      )}
+                    >
+                      {calendarLoadMessage}
+                    </p>
+                  ) : null}
+                </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-brand-border-muted p-4 bg-brand-bg-light/10 text-center">
                   <p className="text-xs text-brand-text-muted">
@@ -965,6 +1038,200 @@ function validateScheduleForm({
       }
     }
   }
+}
+
+type CalendarBusyLoadResult = {
+  busySlotKeys: string[];
+  sourceCount: number;
+  errors: string[];
+};
+
+type GoogleCalendarSummary = {
+  id: string;
+};
+
+type ICloudCalendarSummary = {
+  calendarUrl: string;
+};
+
+type GoogleEventPayload = {
+  start?: {
+    dateTime?: string;
+    date?: string;
+  };
+  end?: {
+    dateTime?: string;
+    date?: string;
+  };
+};
+
+type ICloudEventPayload = {
+  startAt?: string;
+  endAt?: string;
+};
+
+async function fetchConnectedBusySlotKeys({
+  includeGoogle,
+  includeICloud,
+  startDate,
+  endDate,
+}: {
+  includeGoogle: boolean;
+  includeICloud: boolean;
+  startDate: string;
+  endDate: string;
+}): Promise<CalendarBusyLoadResult> {
+  const window = buildQueryWindow(startDate, endDate);
+  const busyKeys = new Set<string>();
+  const errors: string[] = [];
+  let sourceCount = 0;
+
+  if (includeGoogle) {
+    try {
+      const { calendars } = await fetchJson<{
+        calendars: GoogleCalendarSummary[];
+      }>("/api/google/calendars");
+      const results = await Promise.allSettled(
+        calendars.map((calendar) =>
+          fetchJson<{ events: GoogleEventPayload[] }>(
+            `/api/google/events/query?${new URLSearchParams({
+              calendarId: calendar.id,
+              startDate: window.startDate,
+              endDate: window.endDate,
+            })}`,
+          ),
+        ),
+      );
+
+      sourceCount += calendars.length;
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          for (const event of result.value.events ?? []) {
+            addEventBusyKeys(busyKeys, getGoogleEventRange(event));
+          }
+        } else {
+          errors.push("google");
+        }
+      }
+    } catch {
+      errors.push("google");
+    }
+  }
+
+  if (includeICloud) {
+    try {
+      const { calendars } = await fetchJson<{
+        calendars: ICloudCalendarSummary[];
+      }>("/api/icloud/calendars");
+      const results = await Promise.allSettled(
+        calendars.map((calendar) =>
+          fetchJson<{ events: ICloudEventPayload[] }>(
+            "/api/icloud/events/query",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                calendarUrl: calendar.calendarUrl,
+                startDate: window.startDate,
+                endDate: window.endDate,
+              }),
+            },
+          ),
+        ),
+      );
+
+      sourceCount += calendars.length;
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          for (const event of result.value.events ?? []) {
+            addEventBusyKeys(busyKeys, getICloudEventRange(event));
+          }
+        } else {
+          errors.push("icloud");
+        }
+      }
+    } catch {
+      errors.push("icloud");
+    }
+  }
+
+  return {
+    busySlotKeys: Array.from(busyKeys),
+    sourceCount,
+    errors,
+  };
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { ...init, cache: "no-store" });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error ?? "request failed");
+  }
+  return data as T;
+}
+
+function buildQueryWindow(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T23:59:59.999`);
+  return {
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  };
+}
+
+function getGoogleEventRange(event: GoogleEventPayload) {
+  const startValue = event.start?.dateTime ?? event.start?.date;
+  const endValue = event.end?.dateTime ?? event.end?.date;
+  return parseEventRange(startValue, endValue);
+}
+
+function getICloudEventRange(event: ICloudEventPayload) {
+  return parseEventRange(event.startAt, event.endAt);
+}
+
+function parseEventRange(startValue?: string, endValue?: string) {
+  if (!startValue || !endValue) return null;
+  const start = parseProviderDate(startValue);
+  const end = parseProviderDate(endValue);
+  if (!start || !end || start >= end) return null;
+  return { start, end };
+}
+
+function parseProviderDate(value: string): Date | null {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const parsed = new Date(dateOnly ? `${value}T00:00:00` : value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function addEventBusyKeys(
+  keys: Set<string>,
+  range: { start: Date; end: Date } | null,
+) {
+  if (!range) return;
+
+  const cursor = new Date(range.start);
+  cursor.setMinutes(0, 0, 0);
+
+  while (cursor < range.end) {
+    const next = new Date(cursor);
+    next.setHours(cursor.getHours() + 1);
+
+    if (next > range.start && cursor < range.end) {
+      const day = toDayCode(cursor);
+      const hour = cursor.getHours();
+      if (hour >= 0 && hour < 24) {
+        keys.add(`${day}-${hour}`);
+      }
+    }
+
+    cursor.setHours(cursor.getHours() + 1);
+  }
+}
+
+function toDayCode(date: Date): DayCode {
+  const days: DayCode[] = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  return days[date.getDay()];
 }
 
 function useCopyFeedback(resetMs = 1800) {

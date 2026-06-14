@@ -90,6 +90,7 @@ export function ScheduleRoomClient({
   const [serverSaysHost, setServerSaysHost] = useState(false);
   const [hasSubmittedAvailability, setHasSubmittedAvailability] =
     useState(false);
+  const [isOpeningResult, setIsOpeningResult] = useState(false);
 
   // 드래그 상태 관리
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
@@ -317,6 +318,36 @@ export function ScheduleRoomClient({
     schedule &&
     "participants" in schedule &&
     (isHostView || hasSubmittedAvailability);
+
+  async function openSubmittedResultView() {
+    setError("");
+    setIsOpeningResult(true);
+
+    try {
+      const response = await fetch(`/api/schedules/${scheduleId}`, {
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? "결과 화면을 열 수 없습니다.");
+      }
+
+      setSchedule(result.schedule);
+      setServerSaysHost(Boolean(result.isHost));
+      setHasSubmittedAvailability(
+        Boolean(result.hasSubmittedAvailability) || hasSubmittedAvailability,
+      );
+      if (result.participantName) {
+        setSubmittedName(result.participantName);
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "요청에 실패했습니다.",
+      );
+    } finally {
+      setIsOpeningResult(false);
+    }
+  }
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     if (event) event.preventDefault();
@@ -570,7 +601,8 @@ export function ScheduleRoomClient({
           ) : submitted ? (
             <SubmissionDonePanel
               name={submittedName}
-              scheduleId={schedule.id}
+              isOpeningResult={isOpeningResult}
+              onOpenResult={openSubmittedResultView}
             />
           ) : (
             <form
@@ -965,10 +997,12 @@ function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
 
 function SubmissionDonePanel({
   name,
-  scheduleId,
+  isOpeningResult,
+  onOpenResult,
 }: {
   name: string;
-  scheduleId: string;
+  isOpeningResult: boolean;
+  onOpenResult: () => void;
 }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -1017,13 +1051,19 @@ function SubmissionDonePanel({
                 >
                   마이 대시보드로 이동
                 </Link>
-                <Link
-                  href={`/schedule/${scheduleId}`}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-purple-light bg-white px-5 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
+                <button
+                  type="button"
+                  onClick={onOpenResult}
+                  disabled={isOpeningResult}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-purple-light bg-white px-5 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  결과 화면 열기
-                </Link>
+                  {isOpeningResult ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CalendarClock className="h-3.5 w-3.5" />
+                  )}
+                  {isOpeningResult ? "여는 중" : "결과 화면 열기"}
+                </button>
               </div>
             </div>
           </div>
@@ -1042,13 +1082,26 @@ function SubmissionDonePanel({
                 시간표나 번거로운 일정 업로드 과정 없이 **1초 만에** 가능한
                 시간대를 불러와 제출할 수 있습니다!
               </p>
-              <div className="mt-5">
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                 <Link
                   href="/signup?redirect=/dashboard"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-brand-purple-light to-brand-purple px-6 text-xs font-bold text-white hover:opacity-95 transition-all hover:scale-[1.02] shadow-md hover:shadow-brand-purple-ring/30 no-underline active:scale-95"
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-brand-purple-light to-brand-purple px-6 text-xs font-bold text-white hover:opacity-95 transition-all hover:scale-[1.02] shadow-md hover:shadow-brand-purple-ring/30 no-underline active:scale-95"
                 >
                   3초 간편 소셜 회원가입 🚀
                 </Link>
+                <button
+                  type="button"
+                  onClick={onOpenResult}
+                  disabled={isOpeningResult}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-purple-light bg-white px-5 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isOpeningResult ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CalendarClock className="h-3.5 w-3.5" />
+                  )}
+                  {isOpeningResult ? "여는 중" : "결과 화면 열기"}
+                </button>
               </div>
             </div>
           </div>
