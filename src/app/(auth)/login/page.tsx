@@ -47,7 +47,7 @@ export default function LoginPage() {
       // Webkit/Safari 쿠키 디스크 동기화 대기 시간 부여
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      let redirectUrl = "/schedule/create";
+      let redirectUrl = "/dashboard";
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const next = params.get("redirect") ?? params.get("next");
@@ -67,7 +67,7 @@ export default function LoginPage() {
 
   const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
     const supabase = createClient();
-    let next = "/schedule/create";
+    let next = "/dashboard";
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const nextParam = params.get("redirect") ?? params.get("next");

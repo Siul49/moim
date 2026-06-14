@@ -331,7 +331,7 @@ function SocialButton({
 }) {
   const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
     const supabase = createClient();
-    let next = "/schedule/create";
+    let next = "/dashboard";
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const nextParam = params.get("redirect") ?? params.get("next");

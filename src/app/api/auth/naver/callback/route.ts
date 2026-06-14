@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 const ADDITIONAL_INFO_REDIRECT = "/signup/additional-info?provider=naver";
-const LOGIN_SUCCESS_REDIRECT = "/schedule/create";
+const LOGIN_SUCCESS_REDIRECT = "/dashboard";
 const LOGIN_FAILURE_REDIRECT = "/login?error=naver_login_failed";
 
 /**
