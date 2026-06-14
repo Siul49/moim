@@ -364,6 +364,26 @@ export function SchedulerPreview({
   const [endDate, setEndDate] = useState("");
   const [activeDays, setActiveDays] = useState<Date[]>([]);
 
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+
+    const format = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    setStartDate(format(today));
+    setEndDate(format(dayAfter));
+    setActiveDays([today, tomorrow, dayAfter]);
+  }, []);
+
   const handleSearch = () => {
     if (!startDate || !endDate) return;
     const start = new Date(startDate);
