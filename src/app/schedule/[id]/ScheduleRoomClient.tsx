@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Users,
   X,
+  Loader2,
 } from "lucide-react";
 import {
   EmptyAvatar,
@@ -477,8 +478,11 @@ export function ScheduleRoomClient({
       <MoimTopBar activeHref="/schedule/create" />
 
       {isLoading ? (
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <h1 className="text-3xl font-extrabold">불러오는 중</h1>
+        <section className="flex h-[50vh] flex-col items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-brand-purple" />
+          <p className="mt-4 text-lg font-bold text-brand-text-muted">
+            불러오는 중...
+          </p>
         </section>
       ) : null}
 
