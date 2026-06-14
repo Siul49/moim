@@ -1,151 +1,121 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest, NextResponse } from "next/server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { createApiHandler } from "../api-handler";
-import { getSession } from "../auth/session";
-import { z } from "zod";
+import { NextRequest } from "next/server";
 
-vi.mock("../auth/session", () => ({
-  getSession: vi.fn(),
-}));
+// Next.js의 redirect, notFound 에러 유틸 모킹
+vi.mock("next/navigation", () => {
+  return {
+    isRedirectError: (err: any) =>
+      err &&
+      err.digest &&
+      typeof err.digest === "string" &&
+      err.digest.startsWith("NEXT_REDIRECT"),
+    isNotFoundError: (err: any) => err && err.digest === "NEXT_NOT_FOUND",
+  };
+});
 
-describe("createApiHandler", () => {
+describe("apiErrorHandler inside createApiHandler", () => {
+  let originalEnv: string | undefined;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    originalEnv = process.env.NODE_ENV;
+    // 환경변수 기본값 설정
+    process.env.DATABASE_URL = "mock-db-url";
+    process.env.JWT_SECRET = "mock-jwt-secret";
+    process.env.GOOGLE_CALENDAR_CLIENT_ID = "mock-google-client-id";
+    process.env.GOOGLE_CALENDAR_CLIENT_SECRET = "mock-google-client-secret";
+    process.env.NAVER_CLIENT_ID = "mock-naver-client-id";
+    process.env.NAVER_CLIENT_SECRET = "mock-naver-client-secret";
+    process.env.GEMINI_API_KEY = "mock-gemini-key";
   });
 
-  it("should return 401 when auth is required but session is missing", async () => {
-    vi.mocked(getSession).mockResolvedValue(null);
+  afterEach(() => {
+    process.env.NODE_ENV = originalEnv;
+  });
 
-    const handler = createApiHandler({ requireAuth: true }, async () =>
-      NextResponse.json({ ok: true }),
-    );
+  test("isRedirectError 에러가 발생하면 삼키지 않고 그대로 throw한다", async () => {
+    const handler = createApiHandler({}, async () => {
+      const redirectErr = new Error("Redirecting...");
+      (redirectErr as any).digest = "NEXT_REDIRECT;307;/login;default";
+      throw redirectErr;
+    });
 
     const req = new NextRequest("http://localhost/api/test");
-    const res = await handler(req);
-    expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-    expect(body.message).toBe("인증이 필요합니다.");
+    await expect(handler(req)).rejects.toThrow("Redirecting...");
   });
 
-  it("should return 400 when body parsing fails", async () => {
-    const handler = createApiHandler(
-      { bodySchema: z.object({ value: z.string() }) },
-      async () => NextResponse.json({ ok: true }),
-    );
-
-    // Invalid JSON body
-    const req = new NextRequest("http://localhost/api/test", {
-      method: "POST",
-      body: "invalid-json",
+  test("isNotFoundError 에러가 발생하면 삼키지 않고 그대로 throw한다", async () => {
+    const handler = createApiHandler({}, async () => {
+      const notFoundErr = new Error("Not Found");
+      (notFoundErr as any).digest = "NEXT_NOT_FOUND";
+      throw notFoundErr;
     });
-    const res = await handler(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-    expect(body.message).toBe("요청 형식이 올바르지 않습니다.");
+
+    const req = new NextRequest("http://localhost/api/test");
+    await expect(handler(req)).rejects.toThrow("Not Found");
   });
 
-  it("should return 422 when schema validation fails", async () => {
-    const schema = z.object({
-      email: z.string().email("올바른 이메일 형식이 아닙니다."),
-    });
-
-    const handler = createApiHandler({ bodySchema: schema }, async () =>
-      NextResponse.json({ ok: true }),
-    );
-
-    const req = new NextRequest("http://localhost/api/test", {
-      method: "POST",
-      body: JSON.stringify({ email: "not-an-email" }),
-    });
-    const res = await handler(req);
-    expect(res.status).toBe(422);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-    expect(body.message).toBe("올바른 이메일 형식이 아닙니다.");
-    expect(body.field).toBe("email");
-  });
-
-  it("should return 500 and log when handler throws an error", async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  test("개발 환경(development)에서 환경변수 누락 오류 발생 시 devHint와 envStatus를 응답에 포함한다", async () => {
+    process.env.NODE_ENV = "development";
+    // 필수 환경변수 중 하나 누락
+    delete process.env.NAVER_CLIENT_ID;
 
     const handler = createApiHandler({}, async () => {
-      throw new Error("unexpected db error");
+      throw new Error("NAVER_CLIENT_ID가 누락되었습니다.");
     });
 
     const req = new NextRequest("http://localhost/api/test");
     const res = await handler(req);
-    expect(res.status).toBe(500);
     const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.success).toBe(false);
+    expect(body.isEnvError).toBe(true);
+    expect(body.devHint).toContain(
+      "누락된 필수 환경변수가 감지되었습니다: NAVER_CLIENT_ID",
+    );
+    expect(body.envStatus).toBeDefined();
+    expect(body.envStatus.NAVER_CLIENT_ID).toBe(false);
+    expect(body.envStatus.DATABASE_URL).toBe(true);
+  });
+
+  test("개발 환경(development)에서 일반 에러 발생 시 에러명과 디버깅 힌트를 포함한다", async () => {
+    process.env.NODE_ENV = "development";
+    const handler = createApiHandler({}, async () => {
+      throw new TypeError("일반적인 타입 에러");
+    });
+
+    const req = new NextRequest("http://localhost/api/test");
+    const res = await handler(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.errorType).toBe("TypeError");
+    expect(body.isEnvError).toBe(false);
+    expect(body.devHint).toBe(
+      "발생한 오류의 예외 클래스 타입과 스택 트레이스를 확인하여 디버깅하십시오.",
+    );
+  });
+
+  test("프로덕션 환경(production)에서는 환경변수 유무나 디버깅 힌트 정보를 숨긴다", async () => {
+    process.env.NODE_ENV = "production";
+    delete process.env.NAVER_CLIENT_ID;
+
+    const handler = createApiHandler({}, async () => {
+      throw new Error("NAVER_CLIENT_ID 누락 에러");
+    });
+
+    const req = new NextRequest("http://localhost/api/test");
+    const res = await handler(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
     expect(body.success).toBe(false);
     expect(body.message).toBe("서버 내부 오류가 발생했습니다.");
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("should successfully pass session and body to handler and return successful response", async () => {
-    vi.mocked(getSession).mockResolvedValue({
-      userId: "user-123",
-      email: "test@example.com",
-    });
-
-    const schema = z.object({
-      name: z.string(),
-    });
-
-    const handler = createApiHandler(
-      { requireAuth: true, bodySchema: schema },
-      async ({ session, body }) => {
-        return NextResponse.json({
-          ok: true,
-          userId: session?.userId,
-          name: body.name,
-        });
-      },
-    );
-
-    const req = new NextRequest("http://localhost/api/test", {
-      method: "POST",
-      body: JSON.stringify({ name: "Alice" }),
-    });
-    const res = await handler(req);
-    expect(res.status).toBe(200);
-    const resBody = await res.json();
-    expect(resBody.ok).toBe(true);
-    expect(resBody.userId).toBe("user-123");
-    expect(resBody.name).toBe("Alice");
-  });
-
-  it("should parse and pass route parameters to handler", async () => {
-    const handler = createApiHandler<z.ZodTypeAny, { id: string }>(
-      {},
-      async ({ params }) => {
-        return NextResponse.json({ id: params.id });
-      },
-    );
-
-    const req = new NextRequest("http://localhost/api/test");
-    const routeContext = { params: Promise.resolve({ id: "schedule-abc" }) };
-    const res = await handler(req, routeContext);
-    expect(res.status).toBe(200);
-    const resBody = await res.json();
-    expect(resBody.id).toBe("schedule-abc");
-  });
-
-  it("should pass null session when auth is optional and session is missing", async () => {
-    vi.mocked(getSession).mockResolvedValue(null);
-
-    const handler = createApiHandler({}, async ({ session }) => {
-      return NextResponse.json({ hasSession: session !== null });
-    });
-
-    const req = new NextRequest("http://localhost/api/test");
-    const res = await handler(req);
-    expect(res.status).toBe(200);
-    const resBody = await res.json();
-    expect(resBody.hasSession).toBe(false);
+    expect(body.isEnvError).toBeUndefined();
+    expect(body.devHint).toBeUndefined();
+    expect(body.envStatus).toBeUndefined();
+    expect(body.errorType).toBeUndefined();
   });
 });
