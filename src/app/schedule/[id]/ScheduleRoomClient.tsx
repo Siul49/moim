@@ -592,7 +592,7 @@ export function ScheduleRoomClient({
                     <span className="text-lg">🗓️</span>
                     <div>
                       <p className="text-xs font-extrabold text-brand-purple">
-                        내 구글 캘린더 일정이 감지되었습니다! (시안 17)
+                        내 구글 캘린더 일정이 감지되었습니다!
                       </p>
                       <p className="text-[10px] font-semibold text-brand-text-muted mt-0.5">
                         연동된 일정을 바탕으로 이미 바쁜 시간대를 제외하고 가용

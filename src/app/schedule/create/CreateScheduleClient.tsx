@@ -497,7 +497,7 @@ export function CreateScheduleClient() {
           {step === 2 && (
             <div className="space-y-6 animate-fadeIn">
               <span className="text-lg font-extrabold text-brand-text-primary flex items-center gap-1.5">
-                📅 캘린더 연동 관리 (시안 12)
+                📅 캘린더 연동 관리
               </span>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -608,7 +608,7 @@ export function CreateScheduleClient() {
               </span>
               <p className="text-xs text-brand-text-muted">
                 조율 후보로 삼고 싶은 요일과 시간대를 드래그하거나 클릭하여
-                칠해주세요. (시안 13)
+                칠해주세요.
               </p>
 
               {/* Presets */}
@@ -771,7 +771,7 @@ export function CreateScheduleClient() {
             </h2>
             <p className="mt-3 text-base font-medium leading-7 text-brand-text-muted">
               참여자는 가능한 시간을 제출하고, 호스트는 결과 화면에서 최종
-              시간을 확정합니다. (시안 14)
+              시간을 확정합니다.
             </p>
 
             <div className="mt-8 grid gap-4 text-left">

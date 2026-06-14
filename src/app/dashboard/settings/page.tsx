@@ -249,7 +249,6 @@ export default function DashboardSettingsPage() {
         </h1>
         <p className="text-xs text-brand-text-muted mt-1">
           개인 프로필 정보, 외부 캘린더 연동 및 기본 약속 조건을 관리합니다.
-          (시안 07, 08, 10)
         </p>
       </div>
 
@@ -271,8 +270,7 @@ export default function DashboardSettingsPage() {
         {/* Profile Card */}
         <div className="rounded-[1.5rem] border border-brand-border-muted bg-white p-6 shadow-premium space-y-4">
           <h2 className="text-sm font-extrabold text-brand-text-primary flex items-center gap-2 mb-4">
-            <User className="h-4 w-4 text-brand-purple" />내 프로필 설정 (시안
-            10)
+            <User className="h-4 w-4 text-brand-purple" />내 프로필 설정
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -315,7 +313,7 @@ export default function DashboardSettingsPage() {
         <div className="rounded-[1.5rem] border border-brand-border-muted bg-white p-6 shadow-premium space-y-4">
           <h2 className="text-sm font-extrabold text-brand-text-primary flex items-center gap-2 mb-4">
             <Clock className="h-4 w-4 text-brand-purple" />
-            기본 일정 선호 조건 설정 (시안 08)
+            기본 일정 선호 조건 설정
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -374,7 +372,7 @@ export default function DashboardSettingsPage() {
         <div className="rounded-[1.5rem] border border-brand-border-muted bg-white p-6 shadow-premium space-y-4">
           <h2 className="text-sm font-extrabold text-brand-text-primary flex items-center gap-2 mb-4">
             <Calendar className="h-4 w-4 text-brand-purple" />
-            캘린더 연동 관리 (시안 07)
+            캘린더 연동 관리
           </h2>
 
           <div className="divide-y divide-brand-border-muted">

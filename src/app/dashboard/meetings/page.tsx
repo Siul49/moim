@@ -46,7 +46,7 @@ export default async function DashboardMeetingsPage() {
             내 모임 일정 관리
           </h1>
           <p className="text-xs text-brand-text-muted mt-1">
-            진행 중이거나 확정된 모임 일정들의 현황입니다. (시안 09)
+            진행 중이거나 확정된 모임 일정들의 현황입니다.
           </p>
         </div>
         <Link
