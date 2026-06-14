@@ -5,6 +5,7 @@ import {
   clearSchedules,
   confirmSchedule,
   createSchedule,
+  deleteScheduleByCreator,
   getScheduleForHost,
   getSchedulePublic,
 } from "../store";
@@ -289,5 +290,47 @@ describe("schedule store", () => {
     ).rejects.toThrow(
       "durationMinutes must not exceed the candidate time range",
     );
+  });
+
+  test("deleteScheduleByCreator는 생성자가 아니면 삭제를 거부한다", async () => {
+    const created = await createSchedule({
+      title: "삭제 권한 테스트",
+      durationMinutes: 60,
+      candidateDays: ["MON"],
+      candidateStartHour: 9,
+      candidateEndHour: 18,
+      creatorId: "creator-1",
+    });
+
+    await expect(
+      deleteScheduleByCreator(created.id, "other-user"),
+    ).rejects.toThrow("forbidden");
+
+    expect(await getSchedulePublic(created.id)).not.toBeNull();
+  });
+
+  test("deleteScheduleByCreator는 존재하지 않는 모임이면 거부한다", async () => {
+    await expect(
+      deleteScheduleByCreator("nonexistent-id", "creator-1"),
+    ).rejects.toThrow("schedule not found");
+  });
+
+  test("deleteScheduleByCreator는 생성자가 호출하면 모임과 참여자를 함께 삭제한다", async () => {
+    const created = await createSchedule({
+      title: "삭제 성공 테스트",
+      durationMinutes: 60,
+      candidateDays: ["MON"],
+      candidateStartHour: 9,
+      candidateEndHour: 18,
+      creatorId: "creator-1",
+    });
+    await addParticipantAvailability(created.id, {
+      name: "민지",
+      available: [{ day: "MON", startHour: 10, endHour: 12 }],
+    });
+
+    await deleteScheduleByCreator(created.id, "creator-1");
+
+    expect(await getSchedulePublic(created.id)).toBeNull();
   });
 });
