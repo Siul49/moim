@@ -20,6 +20,7 @@ describe("apiErrorHandler inside createApiHandler", () => {
 
   beforeEach(() => {
     originalEnv = process.env.NODE_ENV;
+    if (originalEnv) vi.stubEnv("NODE_ENV", originalEnv);
     // 환경변수 기본값 설정
     process.env.DATABASE_URL = "mock-db-url";
     process.env.JWT_SECRET = "mock-jwt-secret";
@@ -31,7 +32,8 @@ describe("apiErrorHandler inside createApiHandler", () => {
   });
 
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv;
+    if (originalEnv) vi.stubEnv("NODE_ENV", originalEnv);
+    else vi.unstubAllEnvs();
   });
 
   test("isRedirectError 에러가 발생하면 삼키지 않고 그대로 throw한다", async () => {
@@ -57,7 +59,7 @@ describe("apiErrorHandler inside createApiHandler", () => {
   });
 
   test("개발 환경(development)에서 환경변수 누락 오류 발생 시 devHint와 envStatus를 응답에 포함한다", async () => {
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
     // 필수 환경변수 중 하나 누락
     delete process.env.NAVER_CLIENT_ID;
 
@@ -81,7 +83,7 @@ describe("apiErrorHandler inside createApiHandler", () => {
   });
 
   test("개발 환경(development)에서 일반 에러 발생 시 에러명과 디버깅 힌트를 포함한다", async () => {
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
     const handler = createApiHandler({}, async () => {
       throw new TypeError("일반적인 타입 에러");
     });
@@ -99,7 +101,7 @@ describe("apiErrorHandler inside createApiHandler", () => {
   });
 
   test("프로덕션 환경(production)에서는 환경변수 유무나 디버깅 힌트 정보를 숨긴다", async () => {
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     delete process.env.NAVER_CLIENT_ID;
 
     const handler = createApiHandler({}, async () => {
