@@ -315,13 +315,19 @@ export function CreateScheduleClient() {
     setIsSubmitting(true);
 
     try {
+      const parsedDuration = parseInt(durationMinutes.replace(/[^0-9]/g, ""));
+      if (isNaN(parsedDuration)) {
+        throw new Error("소요 시간은 숫자 형태로 입력해 주세요.");
+      }
+
       validateScheduleForm({
         candidateDays,
         candidateStartHour: String(candidateStartHour),
         candidateEndHour: String(candidateEndHour),
-        durationMinutes: String(
-          parseInt(durationMinutes.replace(/[^0-9]/g, "")) || 60,
-        ),
+        durationMinutes: String(parsedDuration),
+        candidateStartDate,
+        candidateEndDate,
+        responseDeadline,
       });
 
       const response = await fetch("/api/schedules", {
@@ -329,11 +335,13 @@ export function CreateScheduleClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          durationMinutes:
-            parseInt(durationMinutes.replace(/[^0-9]/g, "")) || 60,
+          durationMinutes: parsedDuration,
           candidateDays,
           candidateStartHour,
           candidateEndHour,
+          candidateStartDate,
+          candidateEndDate,
+          responseDeadline,
         }),
       });
       const result = await response.json();
@@ -432,10 +440,11 @@ export function CreateScheduleClient() {
               <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
                 예상 소요시간
                 <input
+                  type="number"
                   value={durationMinutes}
                   onChange={(event) => setDurationMinutes(event.target.value)}
                   className="h-12 w-full rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-                  placeholder="예: 2시간, 반나절"
+                  placeholder="예: 120 (분 단위)"
                   required
                 />
               </label>
@@ -871,11 +880,17 @@ function validateScheduleForm({
   candidateStartHour,
   candidateEndHour,
   durationMinutes,
+  candidateStartDate,
+  candidateEndDate,
+  responseDeadline,
 }: {
   candidateDays: DayCode[];
   candidateStartHour: string;
   candidateEndHour: string;
   durationMinutes: string;
+  candidateStartDate: string;
+  candidateEndDate: string;
+  responseDeadline: string;
 }) {
   if (candidateDays.length === 0) {
     throw new Error("후보 요일을 하나 이상 선택해 주세요.");
@@ -883,8 +898,34 @@ function validateScheduleForm({
   if (Number(candidateEndHour) <= Number(candidateStartHour)) {
     throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
   }
-  if (Number(durationMinutes) <= 0) {
-    throw new Error("소요 시간은 0보다 커야 합니다.");
+  const duration = Number(durationMinutes);
+  if (duration < 15 || duration > 480) {
+    throw new Error("소요 시간은 15분에서 480분 사이여야 합니다.");
+  }
+
+  if (candidateStartDate && candidateEndDate) {
+    if (new Date(candidateStartDate) > new Date(candidateEndDate)) {
+      throw new Error("후보 날짜 범위의 종료일은 시작일 이후여야 합니다.");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(candidateStartDate) < today) {
+      throw new Error("후보 날짜는 과거일 수 없습니다.");
+    }
+  }
+
+  if (responseDeadline) {
+    const deadlineDate = new Date(responseDeadline);
+    if (deadlineDate <= new Date()) {
+      throw new Error("응답 마감일은 현재 시간 이후여야 합니다.");
+    }
+    if (candidateEndDate) {
+      const endOfDay = new Date(candidateEndDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (deadlineDate > endOfDay) {
+        throw new Error("응답 마감일은 후보 날짜 범위 내에 있어야 합니다.");
+      }
+    }
   }
 }
 
