@@ -27,6 +27,8 @@ function mockSchedulesApi() {
 }
 
 async function submitAndWaitForLinks(user: ReturnType<typeof userEvent.setup>) {
+  // Step 1: 필수 소요시간 입력 (#71에서 자유 입력 필드로 변경되어 기본값이 비어 있음)
+  await user.type(screen.getByLabelText("예상 소요시간"), "60");
   // Step 1 -> Step 2
   await user.click(screen.getByRole("button", { name: "다음 단계로 →" }));
   // Step 2 -> Step 3
