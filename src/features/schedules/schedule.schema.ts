@@ -54,6 +54,9 @@ export const createScheduleSchema = z
       .int()
       .min(0)
       .max(24, "종료 시간은 0시에서 24시 사이여야 합니다."),
+    candidateStartDate: z.string().optional(),
+    candidateEndDate: z.string().optional(),
+    responseDeadline: z.string().optional(),
   })
   .refine((data) => data.candidateStartHour < data.candidateEndHour, {
     message: "종료 시간은 시작 시간보다 커야 합니다.",

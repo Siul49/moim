@@ -56,8 +56,11 @@ const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
 
 export function CreateScheduleClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [title, setTitle] = useState("제품 인터뷰");
-  const [durationMinutes, setDurationMinutes] = useState("60");
+  const [title, setTitle] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [candidateStartDate, setCandidateStartDate] = useState("");
+  const [candidateEndDate, setCandidateEndDate] = useState("");
+  const [responseDeadline, setResponseDeadline] = useState("");
 
   // Calendar connection states
   const [hasGoogle, setHasGoogle] = useState(false);
@@ -312,11 +315,19 @@ export function CreateScheduleClient() {
     setIsSubmitting(true);
 
     try {
+      const parsedDuration = parseInt(durationMinutes.replace(/[^0-9]/g, ""));
+      if (isNaN(parsedDuration)) {
+        throw new Error("소요 시간은 숫자 형태로 입력해 주세요.");
+      }
+
       validateScheduleForm({
         candidateDays,
         candidateStartHour: String(candidateStartHour),
         candidateEndHour: String(candidateEndHour),
-        durationMinutes,
+        durationMinutes: String(parsedDuration),
+        candidateStartDate,
+        candidateEndDate,
+        responseDeadline,
       });
 
       const response = await fetch("/api/schedules", {
@@ -324,10 +335,13 @@ export function CreateScheduleClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          durationMinutes: Number(durationMinutes),
+          durationMinutes: parsedDuration,
           candidateDays,
           candidateStartHour,
           candidateEndHour,
+          candidateStartDate,
+          candidateEndDate,
+          responseDeadline,
         }),
       });
       const result = await response.json();
@@ -411,30 +425,69 @@ export function CreateScheduleClient() {
           {/* Step 1: 기본 정보 입력 */}
           {step === 1 && (
             <div className="space-y-6 animate-fadeIn">
-              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
+              <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
                 모임 제목
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
                   maxLength={80}
-                  placeholder="예: 제품 인터뷰"
+                  placeholder="예: 24학번 동기 모임 🍕"
                   required
                 />
               </label>
 
-              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-                소요 시간
-                <select
+              <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                예상 소요시간
+                <input
+                  type="number"
                   value={durationMinutes}
                   onChange={(event) => setDurationMinutes(event.target.value)}
-                  className="h-12 w-full sm:w-1/3 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-                >
-                  <option value="30">30분</option>
-                  <option value="60">60분</option>
-                  <option value="90">90분</option>
-                  <option value="120">120분</option>
-                </select>
+                  className="h-12 w-full rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                  placeholder="예: 120 (분 단위)"
+                  required
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                  후보 날짜 범위 (시작)
+                  <input
+                    type="date"
+                    value={candidateStartDate}
+                    onChange={(event) =>
+                      setCandidateStartDate(event.target.value)
+                    }
+                    className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    required
+                  />
+                </label>
+                <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                  후보 날짜 범위 (종료)
+                  <input
+                    type="date"
+                    value={candidateEndDate}
+                    onChange={(event) =>
+                      setCandidateEndDate(event.target.value)
+                    }
+                    className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    required
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-2 text-sm font-bold text-brand-text-primary">
+                응답 마감일
+                <input
+                  type="datetime-local"
+                  value={responseDeadline}
+                  onChange={(event) => setResponseDeadline(event.target.value)}
+                  className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                  required
+                />
+                <span className="text-sm font-normal text-brand-text-muted">
+                  이 날짜 이후로는 응답을 받을 수 없습니다.
+                </span>
               </label>
 
               <div className="pt-4 flex justify-end">
@@ -827,11 +880,17 @@ function validateScheduleForm({
   candidateStartHour,
   candidateEndHour,
   durationMinutes,
+  candidateStartDate,
+  candidateEndDate,
+  responseDeadline,
 }: {
   candidateDays: DayCode[];
   candidateStartHour: string;
   candidateEndHour: string;
   durationMinutes: string;
+  candidateStartDate: string;
+  candidateEndDate: string;
+  responseDeadline: string;
 }) {
   if (candidateDays.length === 0) {
     throw new Error("후보 요일을 하나 이상 선택해 주세요.");
@@ -839,8 +898,34 @@ function validateScheduleForm({
   if (Number(candidateEndHour) <= Number(candidateStartHour)) {
     throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
   }
-  if (Number(durationMinutes) <= 0) {
-    throw new Error("소요 시간은 0보다 커야 합니다.");
+  const duration = Number(durationMinutes);
+  if (duration < 15 || duration > 480) {
+    throw new Error("소요 시간은 15분에서 480분 사이여야 합니다.");
+  }
+
+  if (candidateStartDate && candidateEndDate) {
+    if (new Date(candidateStartDate) > new Date(candidateEndDate)) {
+      throw new Error("후보 날짜 범위의 종료일은 시작일 이후여야 합니다.");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(candidateStartDate) < today) {
+      throw new Error("후보 날짜는 과거일 수 없습니다.");
+    }
+  }
+
+  if (responseDeadline) {
+    const deadlineDate = new Date(responseDeadline);
+    if (deadlineDate <= new Date()) {
+      throw new Error("응답 마감일은 현재 시간 이후여야 합니다.");
+    }
+    if (candidateEndDate) {
+      const endOfDay = new Date(candidateEndDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (deadlineDate > endOfDay) {
+        throw new Error("응답 마감일은 후보 날짜 범위 내에 있어야 합니다.");
+      }
+    }
   }
 }
 

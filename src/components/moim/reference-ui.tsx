@@ -17,6 +17,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+export type ScheduleItem = {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: Date | string;
+  confirmedSlot?: string | null;
+  durationMinutes: number;
+  candidateDays: string;
+  candidateStartHour: number;
+  candidateEndHour: number;
+};
+
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: Home },
   { href: "/calendar/connect", label: "캘린더", icon: CalendarDays },
@@ -302,7 +314,34 @@ export function ProgressHeader({
   );
 }
 
-export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
+export function SchedulerPreview({
+  compact = false,
+  schedules = [],
+}: {
+  compact?: boolean;
+  schedules?: ScheduleItem[];
+}) {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [activeDays, setActiveDays] = useState<Date[]>([]);
+
+  const handleSearch = () => {
+    if (!startDate || !endDate) return;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (end < start) return;
+
+    const days: Date[] = [];
+    const current = new Date(start);
+    let count = 0;
+    while (current <= end && count < 7) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+      count++;
+    }
+    setActiveDays(days);
+  };
+
   return (
     <section
       className={cn(
@@ -318,23 +357,30 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {["10월 9일 (목)", "10월 11일 (목)"].map((date) => (
-            <span
-              key={date}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border-muted bg-white px-4 text-sm font-semibold text-brand-text-secondary"
-            >
-              <CalendarDays className="h-4 w-4 text-brand-purple-light" />
-              {date}
-            </span>
-          ))}
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-purple-light text-white">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border-muted bg-white px-4 text-sm font-semibold text-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-purple"
+          />
+          <span className="text-brand-text-muted">-</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border-muted bg-white px-4 text-sm font-semibold text-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-purple"
+          />
+          <button
+            onClick={handleSearch}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-purple-light text-white hover:bg-brand-purple transition-colors cursor-pointer"
+          >
             <Search className="h-5 w-5" />
-          </span>
+          </button>
         </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-        <CalendarBoard />
+        <CalendarBoard days={activeDays} schedules={schedules} />
         <div className="overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-brand-border-muted p-6">
             <h3 className="text-2xl font-bold">내 모임</h3>
@@ -343,51 +389,67 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
             </span>
           </div>
           <div className="grid gap-4 p-6">
-            {[
-              ["UX 디자인 스터디", "멤버 8명 · 매주 수요일 20:00", "UX"],
-              ["한강 러닝 크루", "멤버 24명 · 비정기 모임", "RUN"],
-              ["Next.js 알고리즘 정복", "멤버 5명 · 매주 토요일 14:00", "‹›"],
-            ].map(([title, meta, icon], index) => (
-              <div
-                key={title}
-                className="flex items-center gap-4 rounded-2xl border border-brand-border-muted bg-white p-4"
-              >
-                <span
-                  className={cn(
-                    "inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white",
-                    index === 0
-                      ? "bg-brand-purple-light"
-                      : index === 1
-                        ? "bg-brand-purple-light/40"
-                        : "bg-brand-text-muted",
-                  )}
-                >
-                  {icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-bold">{title}</p>
-                  <p className="truncate text-sm text-brand-text-muted">
-                    {meta}
-                  </p>
-                </div>
-                <span className="text-2xl text-brand-text-light">›</span>
+            {schedules.length === 0 ? (
+              <div className="text-center py-8 text-brand-text-muted text-sm">
+                생성된 모임이 없습니다.
               </div>
-            ))}
+            ) : (
+              schedules.slice(0, 3).map((sched, index) => {
+                const icon = sched.title.substring(0, 2).toUpperCase();
+                const isConfirmed = sched.status === "confirmed";
+                const meta =
+                  isConfirmed && sched.confirmedSlot
+                    ? `확정일: ${new Date(sched.confirmedSlot).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                    : `생성일: ${new Date(sched.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} · 조율 중`;
+
+                return (
+                  <Link
+                    key={sched.id}
+                    href={`/schedule/${sched.id}`}
+                    className="flex items-center gap-4 rounded-2xl border border-brand-border-muted bg-white p-4 no-underline hover:border-brand-purple transition-colors"
+                  >
+                    <span
+                      className={cn(
+                        "inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white",
+                        index === 0
+                          ? "bg-brand-purple-light"
+                          : index === 1
+                            ? "bg-brand-purple-light/40"
+                            : "bg-brand-text-muted",
+                      )}
+                    >
+                      {icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-lg font-bold text-brand-text-primary">
+                        {sched.title}
+                      </p>
+                      <p className="truncate text-sm text-brand-text-muted">
+                        {meta}
+                      </p>
+                    </div>
+                    <span className="text-2xl text-brand-text-light">›</span>
+                  </Link>
+                );
+              })
+            )}
             <Link
-              href="/schedule/create"
-              className="inline-flex h-14 items-center justify-center rounded-2xl border border-dashed border-brand-border-muted text-brand-text-light"
+              href="/dashboard/meetings"
+              className="inline-flex h-14 items-center justify-center rounded-2xl border border-dashed border-brand-border-muted text-brand-text-light no-underline hover:border-brand-purple hover:text-brand-purple transition-colors font-semibold"
             >
-              + 새로운 모임 탐색하기
+              모든 모임 탐색하기
             </Link>
           </div>
           <div className="grid grid-cols-2 bg-brand-bg-muted py-5 text-center">
             <div>
-              <p className="text-2xl font-extrabold text-brand-purple">12</p>
+              <p className="text-2xl font-extrabold text-brand-purple">
+                {schedules.filter((s) => s.status === "confirmed").length}
+              </p>
               <p className="text-sm text-brand-text-muted">참여 중인 모임</p>
             </div>
             <div>
               <p className="text-2xl font-extrabold text-brand-text-primary">
-                3
+                {schedules.filter((s) => s.status !== "confirmed").length}
               </p>
               <p className="text-sm text-brand-text-muted">대기 중인 일정</p>
             </div>
@@ -398,58 +460,110 @@ export function SchedulerPreview({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function CalendarBoard() {
-  const blocks = [
-    {
-      title: "디자인 팀 주간 회의",
-      time: "10:00 - 11:30",
-      column: 0,
-      row: 1,
-      span: 1.4,
-      colorClass:
-        "bg-brand-bg-light text-brand-text-primary border-l-brand-purple-light",
-    },
-    {
-      title: "프론트엔드 코드 리뷰",
-      time: "11:00 - 12:30",
-      column: 1,
-      row: 2,
-      span: 1.35,
-      colorClass:
-        "bg-brand-purple-light text-white border-l-brand-purple-light",
-    },
-    {
-      title: "점심 식사 (마케팅팀)",
-      time: "",
-      column: 0,
-      row: 3,
-      span: 0.9,
-      colorClass:
-        "bg-brand-bg-muted text-brand-text-primary border-l-brand-text-light",
-    },
-    {
-      title: "러닝 크루 번개",
-      time: "",
-      column: 2,
-      row: 0,
-      span: 0.9,
-      colorClass:
-        "bg-brand-bg-muted text-brand-text-primary border-l-brand-purple-light",
-    },
-  ];
+export function CalendarBoard({
+  days = [],
+  schedules = [],
+}: {
+  days?: Date[];
+  schedules?: ScheduleItem[];
+}) {
+  if (days.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-brand-border-muted bg-brand-bg-light/30 h-full min-h-[400px] text-center p-8">
+        <CalendarDays className="h-12 w-12 text-brand-text-light mb-4" />
+        <p className="text-xl font-bold text-brand-text-primary">
+          조회할 기간을 선택해주세요
+        </p>
+        <p className="text-sm text-brand-text-muted mt-2">
+          우측 상단에서 시작일과 종료일을 지정하고 검색 아이콘을 누르면
+          <br />
+          선택한 기간의 내 모임 일정이 표시됩니다.
+        </p>
+      </div>
+    );
+  }
+
+  const dayStrings = days.map((d) => {
+    const month = d.getMonth() + 1;
+    const date = d.getDate();
+    const day = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+    return `${month}/${date} (${day})`;
+  });
+
+  const blocks: {
+    title: string;
+    time: string;
+    column: number;
+    row: number;
+    span: number;
+    colorClass: string;
+  }[] = [];
+  schedules.forEach((s) => {
+    if (s.confirmedSlot) {
+      const slotDate = new Date(s.confirmedSlot);
+      const dayIndex = days.findIndex(
+        (d) =>
+          d.getFullYear() === slotDate.getFullYear() &&
+          d.getMonth() === slotDate.getMonth() &&
+          d.getDate() === slotDate.getDate(),
+      );
+      if (dayIndex !== -1) {
+        const startHour = slotDate.getHours() + slotDate.getMinutes() / 60;
+        blocks.push({
+          title: s.title,
+          time: `${slotDate.getHours().toString().padStart(2, "0")}:${slotDate.getMinutes().toString().padStart(2, "0")} 확정`,
+          column: dayIndex,
+          row: startHour - 9,
+          span: s.durationMinutes / 60,
+          colorClass:
+            "bg-brand-purple-light text-white border-l-brand-purple-light shadow-sm",
+        });
+      }
+    } else if (s.candidateDays) {
+      const candidateDates = s.candidateDays.split(",");
+      candidateDates.forEach((dateStr: string) => {
+        const slotDate = new Date(dateStr);
+        const dayIndex = days.findIndex(
+          (d) =>
+            d.getFullYear() === slotDate.getFullYear() &&
+            d.getMonth() === slotDate.getMonth() &&
+            d.getDate() === slotDate.getDate(),
+        );
+        if (dayIndex !== -1) {
+          blocks.push({
+            title: s.title,
+            time: "조율 중",
+            column: dayIndex,
+            row: s.candidateStartHour - 9,
+            span: s.candidateEndHour - s.candidateStartHour,
+            colorClass:
+              "bg-brand-bg-muted text-brand-text-primary border-l-brand-text-light border-dashed opacity-80",
+          });
+        }
+      });
+    }
+  });
 
   return (
     <div>
-      <div className="overflow-x-auto scroller-style rounded-t-2xl border border-brand-border-muted bg-white text-sm">
+      <div className="overflow-x-auto scroller-style rounded-[1.75rem] border border-brand-border-muted bg-white text-sm shadow-sm">
         <div className="relative min-w-[650px] select-none">
-          <div className="grid grid-cols-[72px_repeat(3,minmax(0,1fr))]">
-            <div className="flex h-16 items-center justify-center bg-brand-bg-muted px-4 font-semibold text-brand-text-muted">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `72px repeat(${days.length}, minmax(0,1fr))`,
+            }}
+          >
+            <div className="flex h-16 items-center justify-center bg-brand-bg-muted px-4 font-semibold text-brand-text-muted border-b border-r border-brand-border-muted">
               Time
             </div>
-            {["10/9 (수) 오늘", "10/10 (목)", "10/11 (금)"].map((day) => (
+            {dayStrings.map((day, i) => (
               <div
                 key={day}
-                className="flex h-16 items-center justify-center bg-brand-bg-muted px-4 text-center font-bold text-brand-text-primary"
+                className={cn(
+                  "flex h-16 items-center justify-center bg-brand-bg-muted px-4 text-center font-bold text-brand-text-primary border-b border-brand-border-muted",
+                  i !== days.length - 1 && "border-r",
+                )}
               >
                 {day}
               </div>
@@ -464,49 +578,44 @@ export function CalendarBoard() {
               "15:00",
               "16:00",
               "17:00",
-            ]
-              .slice(0, 7)
-              .map((time) => (
-                <div key={time} className="contents">
-                  <div className="flex h-20 items-center justify-center border-r border-t border-brand-border-muted px-2 text-xs font-semibold text-brand-text-light">
-                    {time}
-                  </div>
-                  <div className="h-20 border-r border-t border-brand-border-muted" />
-                  <div className="h-20 border-r border-t border-brand-border-muted" />
-                  <div className="h-20 border-t border-brand-border-muted" />
+            ].map((time) => (
+              <div key={time} className="contents">
+                <div className="flex h-20 items-center justify-center border-r border-b border-brand-border-muted px-2 text-xs font-semibold text-brand-text-light bg-brand-bg-light/20">
+                  {time}
                 </div>
-              ))}
+                {days.map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "h-20 border-b border-brand-border-muted",
+                      i !== days.length - 1 && "border-r",
+                    )}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
-          {blocks.map(({ title, time, column, row, span, colorClass }) => (
+          {blocks.map(({ title, time, column, row, span, colorClass }, i) => (
             <div
-              key={title}
+              key={`${title}-${i}`}
               className={cn(
-                "absolute flex flex-col justify-center rounded-xl border-l-4 px-4 py-2 text-sm shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md cursor-pointer",
+                "absolute flex flex-col justify-center rounded-xl border-l-4 px-4 py-2 text-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md cursor-pointer overflow-hidden",
                 colorClass,
               )}
               style={{
-                left: `calc(72px + ${column} * ((100% - 72px) / 3) + 8px)`,
+                left: `calc(72px + ${column} * ((100% - 72px) / ${days.length}) + 8px)`,
                 top: `calc(64px + ${row} * 80px + 8px)`,
-                width: `calc((100% - 72px) / 3 - 16px)`,
+                width: `calc((100% - 72px) / ${days.length} - 16px)`,
                 height: `calc(${span} * 80px - 16px)`,
               }}
             >
-              <p className="font-bold leading-snug">{title}</p>
+              <p className="font-bold leading-snug truncate">{title}</p>
               {time ? (
-                <p className="mt-0.5 text-xs opacity-90">{time}</p>
+                <p className="mt-0.5 text-xs opacity-90 truncate">{time}</p>
               ) : null}
             </div>
           ))}
         </div>
-      </div>
-      <div className="mt-5 flex items-center gap-5 text-sm text-brand-text-secondary">
-        <span className="flex items-center gap-2">
-          <i className="h-3 w-3 rounded-full bg-brand-purple-light" /> 업무: 3
-        </span>
-        <span className="flex items-center gap-2">
-          <i className="h-3 w-3 rounded-full bg-brand-purple-light/40" /> 모임:
-          1
-        </span>
       </div>
     </div>
   );
