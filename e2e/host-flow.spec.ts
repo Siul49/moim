@@ -83,7 +83,7 @@ test("host can create a schedule and receive safe participant and host links", a
   const titleInput = page.getByLabel("모임 제목");
   await titleInput.waitFor({ state: "visible", timeout: 15000 });
   await titleInput.fill("제품 인터뷰");
-  await page.getByLabel("소요 시간").selectOption("60");
+  await page.getByLabel("예상 소요시간").fill("60");
 
   // Step 1 -> Step 2 이동
   await page.getByRole("button", { name: "다음 단계로 →" }).click();
