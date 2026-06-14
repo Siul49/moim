@@ -451,7 +451,7 @@ export function SchedulerPreview({
                   <Link
                     key={sched.id}
                     href={`/schedule/${sched.id}`}
-                    className="flex items-center gap-4 rounded-2xl border border-brand-border-muted bg-white p-4 no-underline hover:border-brand-purple transition-colors"
+                    className="flex min-w-0 items-center gap-4 rounded-2xl border border-brand-border-muted bg-white p-4 no-underline hover:border-brand-purple transition-colors"
                   >
                     <span
                       className={cn(
