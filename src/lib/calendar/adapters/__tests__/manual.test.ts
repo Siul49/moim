@@ -47,7 +47,7 @@ describe("manualSlotsToFreeEvents — 그리드 선택 → free CalendarEvent", 
 describe("manualAdapter — ManualCalendarAdapter class direct usage", () => {
   test("toCalendarEvents를 직접 호출하여 동일한 환산 동작을 검증한다", () => {
     const weekStart = new Date(2026, 4, 4, 0, 0, 0, 0);
-    const slots = [{ day: "MON", startHour: 9, endHour: 11 }];
+    const slots: TimeSlot[] = [{ day: "MON", startHour: 9, endHour: 11 }];
 
     const result = manualAdapter.toCalendarEvents({ slots, weekStart });
     expect(result).toHaveLength(1);
