@@ -1,5 +1,24 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-import { caldavRequest, CalDAVError } from "../client";
+import { caldavRequest, CalDAVError, isIcloudCalendarUrl } from "../client";
+
+describe("isIcloudCalendarUrl", () => {
+  test("iCloud 파티션 호스트의 https URL을 허용한다", () => {
+    expect(
+      isIcloudCalendarUrl("https://p01-caldav.icloud.com/123/calendars/work/"),
+    ).toBe(true);
+    expect(isIcloudCalendarUrl("https://icloud.com/calendars/")).toBe(true);
+  });
+
+  test("icloud.com 외 호스트나 비-https는 거부한다", () => {
+    expect(isIcloudCalendarUrl("https://attacker.com/steal")).toBe(false);
+    // icloud.com 을 서브도메인으로 위장한 호스트도 거부
+    expect(isIcloudCalendarUrl("https://icloud.com.attacker.com/")).toBe(false);
+    expect(isIcloudCalendarUrl("http://p01-caldav.icloud.com/calendars/")).toBe(
+      false,
+    );
+    expect(isIcloudCalendarUrl("not-a-url")).toBe(false);
+  });
+});
 
 // fetch를 모킹
 const mockFetch = vi.fn();

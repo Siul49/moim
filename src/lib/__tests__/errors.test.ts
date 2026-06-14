@@ -10,8 +10,21 @@ import {
   EverytimeFetchError,
   EverytimeScrapeError,
 } from "../errors";
+import { UnauthorizedError as SessionUnauthorizedError } from "../auth/session";
+import { CalDAVError as CaldavClientError } from "../caldav/client";
+import { EverytimeAuthError as EverytimeAuthModuleError } from "../everytime/auth";
+import { EverytimeFetchError as EverytimeTimetableError } from "../everytime/timetable";
+import { EverytimeScrapeError as EverytimeScraperError } from "../everytime/url-scraper";
 
 describe("MoimError 계층 구조 검증", () => {
+  it("기존 공개 진입점이 동일한 에러 클래스를 계속 재-export한다", () => {
+    expect(SessionUnauthorizedError).toBe(UnauthorizedError);
+    expect(CaldavClientError).toBe(CalDAVError);
+    expect(EverytimeAuthModuleError).toBe(EverytimeAuthError);
+    expect(EverytimeTimetableError).toBe(EverytimeFetchError);
+    expect(EverytimeScraperError).toBe(EverytimeScrapeError);
+  });
+
   it("MoimError는 기본 예외 필드를 정상적으로 초기화한다", () => {
     const error = new MoimError(
       "Internal crash",
@@ -75,13 +88,16 @@ describe("MoimError 계층 구조 검증", () => {
     expect(authError).toBeInstanceOf(EverytimeAuthError);
     expect(authError.statusCode).toBe(401);
     expect(authError.code).toBe("EVERYTIME_ERROR");
+    expect(authError.details).toEqual({ type: "AUTH" });
 
     const fetchError = new EverytimeFetchError("Network block");
     expect(fetchError).toBeInstanceOf(EverytimeFetchError);
     expect(fetchError.statusCode).toBe(500);
+    expect(fetchError.details).toEqual({ type: "FETCH" });
 
     const scrapeError = new EverytimeScrapeError("Invalid share URL");
     expect(scrapeError).toBeInstanceOf(EverytimeScrapeError);
     expect(scrapeError.statusCode).toBe(400);
+    expect(scrapeError.details).toEqual({ type: "SCRAPE" });
   });
 });

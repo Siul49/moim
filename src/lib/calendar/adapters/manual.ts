@@ -50,10 +50,21 @@ export class ManualCalendarAdapter extends BaseCalendarAdapter<
   }
 
   toCalendarEvents(raw: ManualAdapterInput): CalendarEvent[] {
-    const weekStart = raw.weekStart ?? this.getThisMonday();
-    return raw.slots.map((slot, index) =>
-      this.mapToCalendarEvent({ slot, index, weekStart }),
+    const weekStart = this.normalizeWeekStart(
+      raw.weekStart ?? this.getThisMonday(),
     );
+    return raw.slots.map((slot, index) => {
+      if (
+        slot.startHour < 0 ||
+        slot.endHour > 24 ||
+        slot.startHour >= slot.endHour
+      ) {
+        throw new Error(
+          `유효하지 않은 가용 슬롯입니다: ${slot.day} ${slot.startHour}-${slot.endHour}`,
+        );
+      }
+      return this.mapToCalendarEvent({ slot, index, weekStart });
+    });
   }
 
   private addHours(base: Date, hours: number): Date {
@@ -62,14 +73,18 @@ export class ManualCalendarAdapter extends BaseCalendarAdapter<
     return next;
   }
 
-  private getThisMonday(): Date {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun ... 6=Sat
+  /** 임의의 기준일을 그 주 월요일 0시로 정규화한다. */
+  private normalizeWeekStart(input: Date): Date {
+    const day = input.getDay(); // 0=Sun ... 6=Sat
     const diffFromMonday = (day + 6) % 7;
-    const monday = new Date(now);
+    const monday = new Date(input);
     monday.setHours(0, 0, 0, 0);
     monday.setDate(monday.getDate() - diffFromMonday);
     return monday;
+  }
+
+  private getThisMonday(): Date {
+    return this.normalizeWeekStart(new Date());
   }
 }
 

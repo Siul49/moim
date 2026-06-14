@@ -3,6 +3,7 @@ import {
   exchangeCodeForTokens,
   getUserEmail,
   saveTokensToCookie,
+  GOOGLE_OAUTH_ORIGIN_COOKIE,
 } from "@/lib/google/auth";
 
 export const dynamic = "force-dynamic";
@@ -30,15 +31,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { origin } = new URL(req.url);
+    // 인증 시작 시 저장한 origin을 우선 사용해 redirect_uri를 일치시킨다.
+    // 쿠키가 없으면(만료 등) 현재 요청 origin으로 안전하게 폴백한다.
+    const savedOrigin = req.cookies.get(GOOGLE_OAUTH_ORIGIN_COOKIE)?.value;
+    const origin = savedOrigin || new URL(req.url).origin;
+
     const tokens = await exchangeCodeForTokens(code, origin);
     const email = await getUserEmail(tokens.accessToken);
 
     await saveTokensToCookie(tokens);
 
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       `${origin}/api/google/calendars?connected=true&email=${encodeURIComponent(email)}`,
     );
+    // 1회용 origin 쿠키 정리
+    response.cookies.set(GOOGLE_OAUTH_ORIGIN_COOKIE, "", {
+      path: "/",
+      maxAge: 0,
+    });
+    return response;
   } catch (err) {
     console.error("[google.callback] 오류:", err);
     return NextResponse.json(
