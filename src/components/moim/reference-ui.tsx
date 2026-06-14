@@ -384,9 +384,12 @@ export function SchedulerPreview({
         <div className="overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-brand-border-muted p-6">
             <h3 className="text-2xl font-bold">내 모임</h3>
-            <span className="font-semibold text-brand-purple-light">
+            <Link
+              href="/dashboard/meetings"
+              className="font-semibold text-brand-purple-light no-underline hover:text-brand-purple transition-colors cursor-pointer"
+            >
               모두 보기
-            </span>
+            </Link>
           </div>
           <div className="grid gap-4 p-6">
             {schedules.length === 0 ? (
