@@ -850,7 +850,7 @@ export function CreateScheduleClient() {
                 )}
               </button>
               <Link
-                href={`${links.participant}?participate=1`}
+                href={`${links.participant}${links.participant.includes("?") ? "&" : "?"}participate=1`}
                 className={cn(
                   buttonVariants({ variant: "outline" }),
                   "h-12 w-full rounded-xl border-brand-border-muted text-brand-purple font-bold shadow-sm hover:bg-brand-bg-light",
