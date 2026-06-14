@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   confirmSchedule,
   confirmScheduleByCreator,
+  deleteScheduleByCreator,
   getScheduleForCreator,
   getScheduleForHost,
   getSchedulePublic,
@@ -138,6 +139,38 @@ export const PATCH = createApiHandler<
       }
       if (message === "invalid host token") {
         return NextResponse.json({ error: message }, { status: 403 });
+      }
+      throw error;
+    }
+  },
+);
+
+// 생성자(호스트) 본인만 모임을 삭제할 수 있다. 참여자는 Cascade로 함께 삭제됨.
+export const DELETE = createApiHandler<z.ZodTypeAny, { id: string }>(
+  { requireAuth: true },
+  async ({ session, params }) => {
+    const { id } = params;
+    if (!session) {
+      return NextResponse.json(
+        { error: "인증이 필요합니다." },
+        { status: 401 },
+      );
+    }
+
+    try {
+      await deleteScheduleByCreator(id, session.userId);
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "invalid request";
+      if (message === "schedule not found") {
+        return NextResponse.json({ error: message }, { status: 404 });
+      }
+      if (message === "forbidden") {
+        return NextResponse.json(
+          { error: "삭제 권한이 없습니다." },
+          { status: 403 },
+        );
       }
       throw error;
     }
