@@ -16,6 +16,14 @@ const SCOPES = [
 
 const TOKEN_COOKIE_NAME = "google_tokens";
 
+/**
+ * 인증 시작 시점의 origin을 저장하는 쿠키.
+ * 콜백에서 토큰 교환 시 동일한 redirect_uri를 재사용해
+ * www↔apex 등 origin 드리프트로 인한 invalid_grant를 방지한다.
+ */
+export const GOOGLE_OAUTH_ORIGIN_COOKIE = "google_oauth_origin";
+export const GOOGLE_OAUTH_ORIGIN_MAX_AGE = 600; // 10분
+
 function getClientId(): string {
   const id = process.env.GOOGLE_CALENDAR_CLIENT_ID;
   if (!id)
@@ -34,8 +42,12 @@ function getClientSecret(): string {
   return secret;
 }
 
-function getRedirectUri(): string {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+function getRedirectUri(origin?: string): string {
+  const explicit = process.env.GOOGLE_CALENDAR_REDIRECT_URI;
+  if (explicit) return explicit;
+
+  const base =
+    origin || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
   return `${base}/api/google/callback`;
 }
 
@@ -43,10 +55,10 @@ function getRedirectUri(): string {
  * Google OAuth 인증 URL을 생성한다.
  * 사용자를 이 URL로 리다이렉트하면 Google 동의 화면이 표시된다.
  */
-export function buildAuthUrl(state?: string): string {
+export function buildAuthUrl(state?: string, origin?: string): string {
   const params = new URLSearchParams({
     client_id: getClientId(),
-    redirect_uri: getRedirectUri(),
+    redirect_uri: getRedirectUri(origin),
     response_type: "code",
     scope: SCOPES,
     access_type: "offline", // refresh_token 발급
@@ -62,6 +74,7 @@ export function buildAuthUrl(state?: string): string {
  */
 export async function exchangeCodeForTokens(
   code: string,
+  origin?: string,
 ): Promise<GoogleTokens> {
   const response = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
@@ -70,7 +83,7 @@ export async function exchangeCodeForTokens(
       code,
       client_id: getClientId(),
       client_secret: getClientSecret(),
-      redirect_uri: getRedirectUri(),
+      redirect_uri: getRedirectUri(origin),
       grant_type: "authorization_code",
     }),
   });

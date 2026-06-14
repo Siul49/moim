@@ -42,6 +42,7 @@ interface HostParticipant {
   name: string;
   available: TimeSlot[];
   submittedAt: string;
+  userId?: string | null;
 }
 
 interface HostSchedule extends PublicSchedule {

@@ -3,6 +3,8 @@ import type {
   EverytimeLectureTime,
   EverytimeTimetable,
 } from "@/types/everytime";
+import { EverytimeScrapeError } from "@/lib/errors";
+export { EverytimeScrapeError };
 
 // ============================================================
 // 에브리타임 공유 URL → 시간표 추출
@@ -23,13 +25,6 @@ const xmlParser = new XMLParser({
   attributeNamePrefix: "@_",
   isArray: (name) => name === "subject" || name === "data",
 });
-
-export class EverytimeScrapeError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EverytimeScrapeError";
-  }
-}
 
 /**
  * 에브리타임 공유 URL에서 시간표를 가져온다.

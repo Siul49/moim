@@ -71,7 +71,7 @@ test("user can connect and disconnect various calendars on the calendar connect 
   await loginPwInput.fill("Test1234!");
 
   await page.getByRole("button", { name: "로그인" }).click();
-  await page.waitForURL("**/schedule/create", { timeout: 60000 });
+  await page.waitForURL("**/dashboard", { timeout: 60000 });
 
   // 4. 캘린더 연동 페이지 이동
   await page.goto("/calendar/connect");

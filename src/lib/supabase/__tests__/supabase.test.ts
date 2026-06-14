@@ -19,6 +19,7 @@ describe("Supabase 클라이언트 인스턴스 생성 검증", () => {
       ...originalEnv,
       NEXT_PUBLIC_SUPABASE_URL: "https://example-project.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
+      SUPABASE_TEST_NO_FALLBACK: "true",
     };
   });
 

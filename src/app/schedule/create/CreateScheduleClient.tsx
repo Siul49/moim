@@ -1,11 +1,19 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useMemo, useRef } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
   CalendarPlus,
+  Check,
   CheckCircle2,
   Copy,
   Link2,
@@ -48,8 +56,11 @@ const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
 
 export function CreateScheduleClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [title, setTitle] = useState("제품 인터뷰");
-  const [durationMinutes, setDurationMinutes] = useState("60");
+  const [title, setTitle] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [candidateStartDate, setCandidateStartDate] = useState("");
+  const [candidateEndDate, setCandidateEndDate] = useState("");
+  const [responseDeadline, setResponseDeadline] = useState("");
 
   // Calendar connection states
   const [hasGoogle, setHasGoogle] = useState(false);
@@ -76,6 +87,8 @@ export function CreateScheduleClient() {
   } | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { copied: participantCopied, copy: copyParticipant } =
+    useCopyFeedback();
 
   const gridRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -302,11 +315,19 @@ export function CreateScheduleClient() {
     setIsSubmitting(true);
 
     try {
+      const parsedDuration = parseInt(durationMinutes.replace(/[^0-9]/g, ""));
+      if (isNaN(parsedDuration)) {
+        throw new Error("소요 시간은 숫자 형태로 입력해 주세요.");
+      }
+
       validateScheduleForm({
         candidateDays,
         candidateStartHour: String(candidateStartHour),
         candidateEndHour: String(candidateEndHour),
-        durationMinutes,
+        durationMinutes: String(parsedDuration),
+        candidateStartDate,
+        candidateEndDate,
+        responseDeadline,
       });
 
       const response = await fetch("/api/schedules", {
@@ -314,10 +335,13 @@ export function CreateScheduleClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          durationMinutes: Number(durationMinutes),
+          durationMinutes: parsedDuration,
           candidateDays,
           candidateStartHour,
           candidateEndHour,
+          candidateStartDate,
+          candidateEndDate,
+          responseDeadline,
         }),
       });
       const result = await response.json();
@@ -401,30 +425,69 @@ export function CreateScheduleClient() {
           {/* Step 1: 기본 정보 입력 */}
           {step === 1 && (
             <div className="space-y-6 animate-fadeIn">
-              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
+              <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
                 모임 제목
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
                   maxLength={80}
-                  placeholder="예: 제품 인터뷰"
+                  placeholder="예: 24학번 동기 모임 🍕"
                   required
                 />
               </label>
 
-              <label className="grid gap-3 text-lg font-extrabold text-brand-text-primary">
-                소요 시간
-                <select
+              <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                예상 소요시간
+                <input
+                  type="number"
                   value={durationMinutes}
                   onChange={(event) => setDurationMinutes(event.target.value)}
-                  className="h-12 w-full sm:w-1/3 rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
-                >
-                  <option value="30">30분</option>
-                  <option value="60">60분</option>
-                  <option value="90">90분</option>
-                  <option value="120">120분</option>
-                </select>
+                  className="h-12 w-full rounded-xl border border-brand-border-gray bg-white px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all"
+                  placeholder="예: 120 (분 단위)"
+                  required
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                  후보 날짜 범위 (시작)
+                  <input
+                    type="date"
+                    value={candidateStartDate}
+                    onChange={(event) =>
+                      setCandidateStartDate(event.target.value)
+                    }
+                    className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    required
+                  />
+                </label>
+                <label className="grid gap-3 text-sm font-bold text-brand-text-primary">
+                  후보 날짜 범위 (종료)
+                  <input
+                    type="date"
+                    value={candidateEndDate}
+                    onChange={(event) =>
+                      setCandidateEndDate(event.target.value)
+                    }
+                    className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    required
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-2 text-sm font-bold text-brand-text-primary">
+                응답 마감일
+                <input
+                  type="datetime-local"
+                  value={responseDeadline}
+                  onChange={(event) => setResponseDeadline(event.target.value)}
+                  className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                  required
+                />
+                <span className="text-sm font-normal text-brand-text-muted">
+                  이 날짜 이후로는 응답을 받을 수 없습니다.
+                </span>
               </label>
 
               <div className="pt-4 flex justify-end">
@@ -757,23 +820,43 @@ export function CreateScheduleClient() {
               </div>
             </div>
 
+            {/* 스크린 리더 전용 복사 완료 알림 */}
+            <div aria-live="polite" className="sr-only">
+              {participantCopied && "참여자 링크가 클립보드에 복사되었습니다"}
+            </div>
+
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
-                onClick={() => copyText(links.participant)}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#fee500] text-sm font-bold text-[#191919] hover:bg-[#ebd200] transition-colors shadow-sm"
+                data-testid="copy-participant-link-bottom"
+                onClick={() => copyParticipant(links.participant)}
+                className={cn(
+                  "inline-flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors shadow-sm",
+                  participantCopied
+                    ? "bg-[#e7f8ee] text-[#1f9254]"
+                    : "bg-[#fee500] text-[#191919] hover:bg-[#ebd200]",
+                )}
               >
-                <Copy className="h-4 w-4" />
-                참여자 링크 복사
+                {participantCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    참여자 링크 복사
+                  </>
+                )}
               </button>
               <Link
-                href={links.participant}
+                href={`${links.participant}${links.participant.includes("?") ? "&" : "?"}participate=1`}
                 className={cn(
                   buttonVariants({ variant: "outline" }),
                   "h-12 w-full rounded-xl border-brand-border-muted text-brand-purple font-bold shadow-sm hover:bg-brand-bg-light",
                 )}
               >
-                참여 화면 열기
+                일정 등록하기
               </Link>
               <Link
                 href={links.host}
@@ -797,11 +880,17 @@ function validateScheduleForm({
   candidateStartHour,
   candidateEndHour,
   durationMinutes,
+  candidateStartDate,
+  candidateEndDate,
+  responseDeadline,
 }: {
   candidateDays: DayCode[];
   candidateStartHour: string;
   candidateEndHour: string;
   durationMinutes: string;
+  candidateStartDate: string;
+  candidateEndDate: string;
+  responseDeadline: string;
 }) {
   if (candidateDays.length === 0) {
     throw new Error("후보 요일을 하나 이상 선택해 주세요.");
@@ -809,13 +898,92 @@ function validateScheduleForm({
   if (Number(candidateEndHour) <= Number(candidateStartHour)) {
     throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
   }
-  if (Number(durationMinutes) <= 0) {
-    throw new Error("소요 시간은 0보다 커야 합니다.");
+  const duration = Number(durationMinutes);
+  if (duration < 15 || duration > 480) {
+    throw new Error("소요 시간은 15분에서 480분 사이여야 합니다.");
+  }
+
+  if (candidateStartDate && candidateEndDate) {
+    if (new Date(candidateStartDate) > new Date(candidateEndDate)) {
+      throw new Error("후보 날짜 범위의 종료일은 시작일 이후여야 합니다.");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(candidateStartDate) < today) {
+      throw new Error("후보 날짜는 과거일 수 없습니다.");
+    }
+  }
+
+  if (responseDeadline) {
+    const deadlineDate = new Date(responseDeadline);
+    if (deadlineDate <= new Date()) {
+      throw new Error("응답 마감일은 현재 시간 이후여야 합니다.");
+    }
+    if (candidateEndDate) {
+      const endOfDay = new Date(candidateEndDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (deadlineDate > endOfDay) {
+        throw new Error("응답 마감일은 후보 날짜 범위 내에 있어야 합니다.");
+      }
+    }
   }
 }
 
-async function copyText(value: string) {
-  await navigator.clipboard?.writeText(value);
+function useCopyFeedback(resetMs = 1800) {
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetMsRef = useRef(resetMs);
+
+  useEffect(() => {
+    resetMsRef.current = resetMs;
+  }, [resetMs]);
+
+  const copy = useCallback(async (value: string) => {
+    const ok = await copyText(value);
+    if (ok) {
+      setCopied(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(
+        () => setCopied(false),
+        resetMsRef.current,
+      );
+    }
+    return ok;
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    },
+    [],
+  );
+
+  return { copied, copy };
+}
+
+async function copyText(value: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // 보안 컨텍스트가 아니거나 권한이 없으면 아래 레거시 방식으로 폴백
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function MiniInfo({
@@ -847,11 +1015,19 @@ function LinkField({
   testId: string;
   value: string;
 }) {
+  const { copied, copy } = useCopyFeedback();
+
   return (
     <label className="grid gap-2 text-sm font-bold text-brand-text-secondary">
       <span className="flex items-center gap-2">
         <Link2 className="h-4 w-4 text-brand-purple" />
         {label}
+        {copied ? (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-[#1f9254]">
+            <Check className="h-3.5 w-3.5" />
+            복사됨
+          </span>
+        ) : null}
       </span>
       <span className="relative">
         <input
@@ -862,11 +1038,18 @@ function LinkField({
         />
         <button
           type="button"
-          aria-label={`${label} 복사`}
-          onClick={() => copyText(value)}
-          className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#6252ac] hover:bg-white"
+          aria-label={copied ? `${label} 복사됨` : `${label} 복사`}
+          onClick={() => copy(value)}
+          className={cn(
+            "absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors",
+            copied ? "text-[#1f9254]" : "text-[#6252ac] hover:bg-white",
+          )}
         >
-          <Copy className="h-4 w-4" />
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </button>
       </span>
     </label>

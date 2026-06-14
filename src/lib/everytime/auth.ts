@@ -1,8 +1,6 @@
 import type { EverytimeCredentials, EverytimeSession } from "@/types/everytime";
-
-// ============================================================
-// 에브리타임 인증 모듈 — 서버 전용 (credentials 노출 금지)
-// ============================================================
+import { EverytimeAuthError } from "@/lib/errors";
+export { EverytimeAuthError };
 
 const LOGIN_PAGE_URL = "https://account.everytime.kr/login";
 const LOGIN_API_URL = "https://account.everytime.kr/api/authenticate/login";
@@ -13,13 +11,6 @@ const BASE_HEADERS = {
   Origin: "https://account.everytime.kr",
   Referer: "https://account.everytime.kr/login",
 };
-
-export class EverytimeAuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EverytimeAuthError";
-  }
-}
 
 /**
  * 에브리타임에 로그인하고 세션 토큰을 반환한다.

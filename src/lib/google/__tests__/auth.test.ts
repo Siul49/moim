@@ -55,6 +55,26 @@ describe("buildAuthUrl", () => {
 
     expect(url).toContain("state=my-state-value");
   });
+
+  test("동적 origin 매개변수를 전달하면 redirect_uri에 적용된다", () => {
+    const url = buildAuthUrl(undefined, "https://my-custom-domain.com");
+
+    expect(url).toContain(
+      "redirect_uri=https%3A%2F%2Fmy-custom-domain.com%2Fapi%2Fgoogle%2Fcallback",
+    );
+  });
+
+  test("GOOGLE_CALENDAR_REDIRECT_URI 환경변수가 있으면 우선 사용한다", () => {
+    process.env.GOOGLE_CALENDAR_REDIRECT_URI =
+      "https://explicit-domain.com/callback";
+    const url = buildAuthUrl();
+
+    expect(url).toContain(
+      "redirect_uri=https%3A%2F%2Fexplicit-domain.com%2Fcallback",
+    );
+
+    delete process.env.GOOGLE_CALENDAR_REDIRECT_URI;
+  });
 });
 
 describe("exchangeCodeForTokens", () => {

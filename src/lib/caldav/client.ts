@@ -1,6 +1,28 @@
 import type { CalDAVAuth } from "@/types/icloud";
+import { CalDAVError } from "@/lib/errors";
+export { CalDAVError };
 
 export type CalDAVMethod = "PROPFIND" | "REPORT" | "PUT" | "DELETE" | "GET";
+
+/**
+ * 클라이언트가 보낸 calendarUrl이 iCloud CalDAV 호스트인지 검증한다.
+ *
+ * 저장된 Apple 자격증명을 Basic Auth로 실어 보내기 때문에, 임의 호스트로의
+ * 요청을 허용하면 자격증명이 공격자 서버로 유출될 수 있다. iCloud의 캘린더
+ * URL은 파티션 호스트(p01-caldav.icloud.com 등)를 포함해 항상 icloud.com
+ * 도메인 하위이므로 호스트네임을 화이트리스트로 제한한다.
+ */
+export function isIcloudCalendarUrl(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase();
+  return host === "icloud.com" || host.endsWith(".icloud.com");
+}
 
 export interface CalDAVRequestOptions {
   body?: string;
@@ -14,17 +36,6 @@ export interface CalDAVResponse {
   status: number;
   headers: Headers;
   body: string;
-}
-
-export class CalDAVError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-    public readonly url: string,
-  ) {
-    super(message);
-    this.name = "CalDAVError";
-  }
 }
 
 /**

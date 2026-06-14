@@ -21,6 +21,7 @@ export interface CreateScheduleInput {
 export interface AddParticipantAvailabilityInput {
   name: string;
   available: TimeSlot[];
+  userId?: string;
 }
 
 export interface CreatedSchedule {
@@ -47,6 +48,7 @@ export interface ScheduleParticipant {
   name: string;
   available: TimeSlot[];
   submittedAt: string;
+  userId?: string | null;
 }
 
 export interface HostSchedule extends PublicSchedule {
@@ -152,17 +154,21 @@ export async function addParticipantAvailability(
 
       const normName = normalizeParticipantName(input.name);
       const existing = await tx.scheduleParticipant.findFirst({
-        where: { scheduleId, name: normName },
+        where: input.userId
+          ? { scheduleId, userId: input.userId }
+          : { scheduleId, name: normName },
       });
 
       if (existing) {
         return tx.scheduleParticipant.update({
           where: { id: existing.id },
           data: {
+            name: normName,
             available: JSON.stringify(
               normalizeAvailability(schedule, input.available),
             ),
             submittedAt: new Date(),
+            userId: input.userId ?? existing.userId,
           },
         });
       }
@@ -175,6 +181,7 @@ export async function addParticipantAvailability(
           available: JSON.stringify(
             normalizeAvailability(schedule, input.available),
           ),
+          userId: input.userId,
         },
       });
     },
@@ -274,6 +281,17 @@ export async function confirmScheduleByCreator(
 
   if (!updated) throw new Error("schedule not found");
   return toHostSchedule(updated);
+}
+
+export async function deleteScheduleByCreator(
+  id: string,
+  creatorId: string,
+): Promise<void> {
+  const schedule = await prisma.schedule.findUnique({ where: { id } });
+  if (!schedule) throw new Error("schedule not found");
+  if (schedule.creatorId !== creatorId) throw new Error("forbidden");
+  // 참여자(ScheduleParticipant)는 Prisma onDelete: Cascade로 함께 삭제됨
+  await prisma.schedule.delete({ where: { id } });
 }
 
 export async function clearSchedules() {
@@ -455,12 +473,14 @@ function toScheduleParticipant(participant: {
   name: string;
   available: string;
   submittedAt: Date;
+  userId?: string | null;
 }): ScheduleParticipant {
   return {
     id: participant.id,
     name: participant.name,
     available: parseTimeSlots(participant.available),
     submittedAt: participant.submittedAt.toISOString(),
+    userId: participant.userId,
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { manualSlotsToFreeEvents } from "../manual";
+import { manualSlotsToFreeEvents, manualAdapter } from "../manual";
 import type { TimeSlot } from "@/types/schedule";
 
 describe("manualSlotsToFreeEvents — 그리드 선택 → free CalendarEvent", () => {
@@ -41,5 +41,19 @@ describe("manualSlotsToFreeEvents — 그리드 선택 → free CalendarEvent", 
     const result = manualSlotsToFreeEvents(slots, { weekStart });
 
     expect(result[0].id).not.toBe(result[1].id);
+  });
+});
+
+describe("manualAdapter — ManualCalendarAdapter class direct usage", () => {
+  test("toCalendarEvents를 직접 호출하여 동일한 환산 동작을 검증한다", () => {
+    const weekStart = new Date(2026, 4, 4, 0, 0, 0, 0);
+    const slots: TimeSlot[] = [{ day: "MON", startHour: 9, endHour: 11 }];
+
+    const result = manualAdapter.toCalendarEvents({ slots, weekStart });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("manual:0:MON-9-11");
+    expect(result[0].title).toBe("가용");
+    expect(result[0].startAt.getHours()).toBe(9);
+    expect(result[0].endAt.getHours()).toBe(11);
   });
 });

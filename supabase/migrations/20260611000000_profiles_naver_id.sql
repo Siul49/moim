@@ -55,3 +55,46 @@ begin
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;
+
+-- ============================================================
+-- ROLLBACK SQL (How to revert these changes):
+-- ============================================================
+-- drop index if exists public.profiles_naver_id_key;
+-- alter table public.profiles drop column if exists naver_id;
+-- 
+-- create or replace function public.handle_new_user()
+-- returns trigger as $$
+-- begin
+--   insert into public.profiles (
+--     id,
+--     email,
+--     nickname,
+--     avatar_url,
+--     phone_number,
+--     is_age_over_14,
+--     terms_agreed_at,
+--     privacy_agreed_at,
+--     marketing_agreed,
+--     event_sms_agreed
+--   )
+--   values (
+--     new.id,
+--     new.email,
+--     coalesce(
+--       new.raw_user_meta_data->>'nickname',
+--       new.raw_user_meta_data->>'full_name',
+--       new.raw_user_meta_data->>'name',
+--       new.email
+--     ),
+--     new.raw_user_meta_data->>'avatar_url',
+--     new.raw_user_meta_data->>'phone_number',
+--     (new.raw_user_meta_data->>'is_age_over_14')::boolean,
+--     (new.raw_user_meta_data->>'terms_agreed_at')::timestamptz,
+--     (new.raw_user_meta_data->>'privacy_agreed_at')::timestamptz,
+--     coalesce((new.raw_user_meta_data->>'marketing_agreed')::boolean, false),
+--     coalesce((new.raw_user_meta_data->>'event_sms_agreed')::boolean, false)
+--   );
+--   return new;
+-- end;
+-- $$ language plpgsql security definer set search_path = public;
+-- ============================================================

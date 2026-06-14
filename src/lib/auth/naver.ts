@@ -1,5 +1,8 @@
 import { fetchWithTimeout } from "./fetch-with-timeout";
 
+export const STATE_COOKIE = "naver_oauth_state";
+export const STATE_MAX_AGE = 600; // 10분
+
 interface NaverTokenResponse {
   access_token: string;
   token_type: string;
@@ -29,12 +32,15 @@ export interface NaverUser {
   name?: string;
 }
 
-export function getNaverAuthUrl(state: string): string {
+export function getNaverAuthUrl(state: string, origin?: string): string {
   if (!state?.trim()) {
     throw new Error("State parameter is required and cannot be empty.");
   }
   const clientId = process.env.NAVER_CLIENT_ID;
-  const redirectUri = process.env.NAVER_REDIRECT_URI;
+  const base =
+    origin || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
+  const redirectUri =
+    process.env.NAVER_REDIRECT_URI || `${base}/api/auth/naver/callback`;
   if (!clientId || !redirectUri) {
     throw new Error(
       "NAVER_CLIENT_ID 또는 NAVER_REDIRECT_URI 환경변수가 설정되지 않았습니다.",
@@ -53,17 +59,21 @@ export function getNaverAuthUrl(state: string): string {
 export async function getNaverToken(
   code: string,
   state: string,
+  origin?: string,
 ): Promise<NaverTokenResponse> {
-  if (!code.trim()) {
+  if (!code?.trim()) {
     throw new Error("Naver authorization code is empty.");
   }
-  if (!state.trim()) {
+  if (!state?.trim()) {
     throw new Error("Naver OAuth state is empty.");
   }
 
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  const redirectUri = process.env.NAVER_REDIRECT_URI;
+  const base =
+    origin || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
+  const redirectUri =
+    process.env.NAVER_REDIRECT_URI || `${base}/api/auth/naver/callback`;
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error("네이버 환경변수가 설정되지 않았습니다.");
   }
@@ -106,6 +116,9 @@ export async function getNaverToken(
 export async function getNaverUser(
   naverAccessToken: string,
 ): Promise<NaverUser> {
+  if (!naverAccessToken?.trim()) {
+    throw new Error("invalid or empty Naver access token");
+  }
   const res = await fetchWithTimeout("https://openapi.naver.com/v1/nid/me", {
     method: "GET",
     headers: {

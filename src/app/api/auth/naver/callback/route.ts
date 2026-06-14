@@ -3,15 +3,14 @@ import {
   extractNaverUserInfo,
   getNaverToken,
   getNaverUser,
+  STATE_COOKIE,
 } from "@/lib/auth/naver";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-
-const STATE_COOKIE = "naver_oauth_state";
 const ADDITIONAL_INFO_REDIRECT = "/signup/additional-info?provider=naver";
-const LOGIN_SUCCESS_REDIRECT = "/schedule/create";
+const LOGIN_SUCCESS_REDIRECT = "/dashboard";
 const LOGIN_FAILURE_REDIRECT = "/login?error=naver_login_failed";
 
 /**
@@ -31,7 +30,7 @@ function redirectWithStateCleanup(origin: string, path: string) {
 /** 네이버 이메일이 없을 때도 동일 사용자로 식별되도록 결정적 placeholder를 만든다. */
 function resolveEmail(naverId: string, email?: string): string {
   if (email && email.trim()) return email.trim().toLowerCase();
-  return `naver_${naverId}@naver.social.local`;
+  return `naver_${naverId}@naver.invalid`;
 }
 
 export async function GET(req: NextRequest) {
@@ -51,7 +50,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const naverTokenData = await getNaverToken(code, state);
+    const naverTokenData = await getNaverToken(code, state, origin);
     const naverUser = await getNaverUser(naverTokenData.access_token);
     const { naverId, email, nickname } = extractNaverUserInfo(naverUser);
 
@@ -125,20 +124,23 @@ export async function GET(req: NextRequest) {
         // 동시 요청 race: 다른 요청이 먼저 생성을 끝낸 기존 사용자다.
         // 신규로 오판해 추가정보 페이지로 보내지 않도록, 실제 프로필 상태를
         // naver_id(없으면 이메일)로 재조회해 profileComplete를 정확히 잡는다.
-        const { data: raced } = await admin
+        const { data: raced, error: racedError } = await admin
           .from("profiles")
           .select("phone_number, terms_agreed_at")
           .eq("naver_id", naverId)
           .maybeSingle();
-        const racedProfile =
-          raced ??
-          (
-            await admin
-              .from("profiles")
-              .select("phone_number, terms_agreed_at")
-              .eq("email", authEmail)
-              .maybeSingle()
-          ).data;
+        if (racedError) throw racedError;
+
+        let racedProfile = raced;
+        if (!racedProfile) {
+          const { data: emailFallback, error: emailFallbackError } = await admin
+            .from("profiles")
+            .select("phone_number, terms_agreed_at")
+            .eq("email", authEmail)
+            .maybeSingle();
+          if (emailFallbackError) throw emailFallbackError;
+          racedProfile = emailFallback;
+        }
         isNewUser = false;
         profileComplete =
           !!racedProfile?.phone_number && !!racedProfile?.terms_agreed_at;

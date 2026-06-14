@@ -5,7 +5,7 @@ export default async function ScheduleParticipantPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ hostToken?: string }>;
+  searchParams: Promise<{ hostToken?: string; participate?: string }>;
 }) {
   const { id } = await params;
   const { hostToken } = await searchParams;

@@ -1,28 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createApiHandler } from "@/lib/api-handler";
+import { forgotPasswordSchema } from "@/features/auth/forgot-password.schema";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  let body: { email?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "요청 형식이 올바르지 않습니다." },
-      { status: 400 },
-    );
-  }
-
-  const { email } = body;
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json(
-      { success: false, message: "올바른 이메일 주소를 입력해 주세요." },
-      { status: 400 },
-    );
-  }
-
-  try {
+export const POST = createApiHandler(
+  {
+    bodySchema: forgotPasswordSchema,
+  },
+  async ({ req, body }) => {
+    const { email } = body;
     const supabase = await createClient();
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -45,7 +33,7 @@ export async function POST(req: NextRequest) {
     const redirectTo = `${origin}/reset-password/complete`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
+      normalizedEmail,
       {
         redirectTo,
       },
@@ -70,11 +58,5 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 },
     );
-  } catch (err) {
-    console.error("[auth.forgot-password] 서버 오류:", err);
-    return NextResponse.json(
-      { success: false, message: "서버 내부 오류가 발생했습니다." },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

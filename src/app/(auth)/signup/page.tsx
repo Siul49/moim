@@ -7,6 +7,7 @@ import { AuthProviderGlyph } from "@/components/moim/auth-social";
 import { TermsModal, TermsKey } from "@/components/moim/TermsModal";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { validatePassword } from "@/features/auth/password.schema";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -50,11 +51,7 @@ export default function SignupPage() {
         ? "닉네임은 2자 이상이어야 합니다."
         : "",
     password:
-      form.password &&
-      (form.password.length < 8 ||
-        !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':",./<>?]).{8,}$/.test(
-          form.password,
-        ))
+      form.password && !validatePassword(form.password)
         ? "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다."
         : "",
     passwordConfirm:
@@ -127,14 +124,7 @@ export default function SignupPage() {
             </p>
             <div className="mt-8 grid gap-3">
               {(() => {
-                let redirectUrl = "";
-                if (typeof window !== "undefined") {
-                  const params = new URLSearchParams(window.location.search);
-                  const next = params.get("redirect") ?? params.get("next");
-                  if (next && (next.startsWith("/") || !next.includes("://"))) {
-                    redirectUrl = next;
-                  }
-                }
+                const redirectUrl = "/dashboard";
                 if (redirectUrl) {
                   return (
                     <Link
@@ -334,17 +324,7 @@ function SocialButton({
 }) {
   const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
     const supabase = createClient();
-    let next = "/schedule/create";
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const nextParam = params.get("redirect") ?? params.get("next");
-      if (
-        nextParam &&
-        (nextParam.startsWith("/") || !nextParam.includes("://"))
-      ) {
-        next = nextParam;
-      }
-    }
+    const next = "/dashboard";
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
