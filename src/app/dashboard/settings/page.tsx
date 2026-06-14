@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Calendar,
   CheckCircle,
@@ -54,14 +54,17 @@ export default function DashboardSettingsPage() {
   const [icloudError, setIcloudError] = useState("");
   const [icloudConnecting, setIcloudConnecting] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function loadProfile() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       setEmail(user.email || "");
 

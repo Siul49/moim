@@ -43,7 +43,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // 보호 대상 경로 리스트
-  const PROTECTED_ROUTES = ["/schedule/create", "/calendar/connect"];
+  const PROTECTED_ROUTES = [
+    "/schedule/create",
+    "/calendar/connect",
+    "/dashboard",
+  ];
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
     request.nextUrl.pathname.startsWith(route),
   );
