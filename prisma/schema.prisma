@@ -70,5 +70,6 @@ model ScheduleParticipant {
   userId      String?
 
   @@index([scheduleId])
+  @@index([userId])
   @@schema("public")
 }

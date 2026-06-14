@@ -154,13 +154,16 @@ export async function addParticipantAvailability(
 
       const normName = normalizeParticipantName(input.name);
       const existing = await tx.scheduleParticipant.findFirst({
-        where: { scheduleId, name: normName },
+        where: input.userId
+          ? { scheduleId, userId: input.userId }
+          : { scheduleId, name: normName },
       });
 
       if (existing) {
         return tx.scheduleParticipant.update({
           where: { id: existing.id },
           data: {
+            name: normName,
             available: JSON.stringify(
               normalizeAvailability(schedule, input.available),
             ),

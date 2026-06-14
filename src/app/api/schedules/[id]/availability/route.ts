@@ -17,12 +17,12 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
 
-    // 세션 가져오기
+    // 세션 가져오기 (getSession 대신 getUser 사용하여 보안 강화)
     const supabase = await createClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id;
 
     const participant = await addParticipantAvailability(id, {
       ...body,
