@@ -29,7 +29,6 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
-import { createClient } from "@/lib/supabase/client";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "MON", label: "월요일" },
@@ -121,40 +120,31 @@ export function CreateScheduleClient() {
     };
   }, [selectedSlots]);
 
-  // Load calendar connections
+  // Load calendar connections (구글/애플 모두 쿠키 기반이므로 status API로 판단)
   useEffect(() => {
-    const supabase = createClient();
     async function checkConnections() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const res = await fetch("/api/calendar/status", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const google = Boolean(data.googleConnected);
+        const icloud = Boolean(data.icloudConnected);
+        setHasGoogle(google);
+        setHasICloud(icloud);
 
-      const { data: googleConn } = await supabase
-        .from("google_connections")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      const { data: icloudConn } = await supabase
-        .from("icloud_connections")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      setHasGoogle(!!googleConn);
-      setHasICloud(!!icloudConn);
-
-      // If calendar is connected, load some realistic mock busy slots
-      if (googleConn || icloudConn) {
-        setBusySlots([
-          "MON-10",
-          "MON-11",
-          "WED-14",
-          "WED-15",
-          "FRI-16",
-          "FRI-17",
-        ]);
+        // If calendar is connected, load some realistic mock busy slots
+        if (google || icloud) {
+          setBusySlots([
+            "MON-10",
+            "MON-11",
+            "WED-14",
+            "WED-15",
+            "FRI-16",
+            "FRI-17",
+          ]);
+        }
+      } catch {
+        // 상태 조회 실패 시 미연동 상태로 둔다
       }
     }
     checkConnections();
@@ -482,6 +472,7 @@ export function CreateScheduleClient() {
                   type="datetime-local"
                   value={responseDeadline}
                   onChange={(event) => setResponseDeadline(event.target.value)}
+                  step={600}
                   className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
                   required
                 />
@@ -811,7 +802,7 @@ export function CreateScheduleClient() {
                   <div className="mt-4">
                     <Link
                       href="/signup?redirect=/dashboard"
-                      className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-4.5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
+                      className="inline-flex h-9 items-center justify-center rounded-xl bg-brand-purple px-8 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline"
                     >
                       3초 만에 모임 저장하고 시작하기
                     </Link>

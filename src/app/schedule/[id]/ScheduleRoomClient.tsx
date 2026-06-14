@@ -64,9 +64,11 @@ const DAY_LABELS: Record<DayCode, string> = {
 export function ScheduleRoomClient({
   scheduleId,
   hostToken,
+  forceParticipant = false,
 }: {
   scheduleId: string;
   hostToken: string;
+  forceParticipant?: boolean;
 }) {
   const [schedule, setSchedule] = useState<
     PublicSchedule | HostSchedule | null
@@ -308,7 +310,10 @@ export function ScheduleRoomClient({
     return false;
   }, [schedule, hostToken, currentUser, serverSaysHost]);
 
+  // forceParticipant(?participate=1)로 진입하면 호스트여도 결과 화면 대신
+  // 본인 가능시간 입력 폼을 보여준다. ("일정 등록하기" 진입 경로)
   const shouldShowResultView =
+    !forceParticipant &&
     schedule &&
     "participants" in schedule &&
     (isHostView || hasSubmittedAvailability);
