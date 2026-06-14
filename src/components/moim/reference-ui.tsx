@@ -69,7 +69,7 @@ const NAV_ITEMS = [
   { href: "/", label: "홈으로 가기", icon: Home },
   { href: "/calendar/connect", label: "캘린더 등록하기", icon: CalendarDays },
   { href: "/schedule/create", label: "모임 만들기", icon: Users },
-  { href: "#", label: "설정", icon: Settings },
+  { href: "/dashboard/settings", label: "설정", icon: Settings },
 ];
 
 export function MoimTopBar({
