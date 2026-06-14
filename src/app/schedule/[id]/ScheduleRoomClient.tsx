@@ -1395,19 +1395,129 @@ function HostResultPanel({
           </button>
         ) : null}
 
-        <section className="rounded-[2rem] border border-brand-border-muted bg-brand-bg-light p-6">
-          <div className="mb-4 flex items-center gap-2 text-lg font-extrabold text-brand-text-primary">
-            <CalendarClock className="h-5 w-5 text-brand-purple" />
-            다음 단계
-          </div>
-          <p className="text-xs font-semibold leading-relaxed text-brand-text-muted">
-            시간이 확정되면 참여자에게 공유할 일정 카드와 장소 안내 화면을
-            이어서 확인할 수 있습니다.
-          </p>
-        </section>
+        {schedule.status === "confirmed" && schedule.confirmedSlot ? (
+          <section className="rounded-[2rem] border border-brand-border-muted bg-brand-bg-light p-6">
+            <div className="mb-2 flex items-center gap-2 text-lg font-extrabold text-brand-text-primary">
+              <CalendarClock className="h-5 w-5 text-brand-purple" />
+              캘린더에 추가
+            </div>
+            <p className="mb-4 text-xs font-semibold leading-relaxed text-brand-text-muted">
+              확정된 일정을 내 캘린더에 추가하세요.
+            </p>
+            <div className="grid gap-2">
+              <a
+                href={googleCalendarUrl(schedule.title, schedule.confirmedSlot)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-brand-border-muted bg-white text-sm font-bold text-brand-text-primary hover:border-brand-purple transition-all no-underline shadow-sm"
+              >
+                Google 캘린더에 추가
+              </a>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadScheduleIcs(schedule.title, schedule.confirmedSlot!)
+                }
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-text-primary text-sm font-bold text-white hover:opacity-90 transition-all shadow-sm"
+              >
+                Apple 캘린더에 추가
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-[2rem] border border-brand-border-muted bg-brand-bg-light p-6">
+            <div className="mb-4 flex items-center gap-2 text-lg font-extrabold text-brand-text-primary">
+              <CalendarClock className="h-5 w-5 text-brand-purple" />
+              다음 단계
+            </div>
+            <p className="text-xs font-semibold leading-relaxed text-brand-text-muted">
+              시간이 확정되면 참여자에게 공유할 일정 카드와 장소 안내 화면을
+              이어서 확인할 수 있습니다.
+            </p>
+          </section>
+        )}
       </aside>
     </div>
   );
+}
+
+const DAY_CODE_TO_JS_DAY: Record<DayCode, number> = {
+  SUN: 0,
+  MON: 1,
+  TUE: 2,
+  WED: 3,
+  THU: 4,
+  FRI: 5,
+  SAT: 6,
+};
+
+// 확정 슬롯은 요일 기반({day,startHour,endHour})이므로,
+// 다가오는 해당 요일의 실제 날짜로 환산해 캘린더 일정 start/end를 만든다.
+function nextOccurrence(slot: TimeSlot): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(slot.startHour, 0, 0, 0);
+  let diff = (DAY_CODE_TO_JS_DAY[slot.day] - now.getDay() + 7) % 7;
+  if (diff === 0 && start.getTime() <= now.getTime()) {
+    diff = 7; // 오늘 해당 요일이지만 시작 시간이 이미 지났으면 다음 주
+  }
+  start.setDate(now.getDate() + diff);
+  const end = new Date(start);
+  end.setHours(slot.endHour, 0, 0, 0);
+  return { start, end };
+}
+
+function formatCalendarStamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
+    `T${pad(date.getHours())}${pad(date.getMinutes())}00`
+  );
+}
+
+function googleCalendarUrl(title: string, slot: TimeSlot): string {
+  const { start, end } = nextOccurrence(slot);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatCalendarStamp(start)}/${formatCalendarStamp(end)}`,
+    details: "MOIM에서 확정된 모임 일정입니다.",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function downloadScheduleIcs(title: string, slot: TimeSlot) {
+  const { start, end } = nextOccurrence(slot);
+  const escapeText = (value: string) =>
+    value
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//MOIM//Schedule//KO",
+    "BEGIN:VEVENT",
+    `UID:${Date.now()}@moim`,
+    `DTSTAMP:${formatCalendarStamp(new Date())}`,
+    `DTSTART:${formatCalendarStamp(start)}`,
+    `DTEND:${formatCalendarStamp(end)}`,
+    `SUMMARY:${escapeText(title)}`,
+    "DESCRIPTION:MOIM에서 확정된 모임 일정입니다.",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${title || "moim"}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function formatSlot(slot: TimeSlot): string {
