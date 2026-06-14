@@ -7,8 +7,19 @@ import {
   SchedulerPreview,
 } from "@/components/moim/reference-ui";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <MoimShell className="bg-gradient-to-b from-white via-white to-brand-bg-muted overflow-x-hidden">
       <MoimTopBar />
