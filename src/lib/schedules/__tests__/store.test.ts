@@ -6,8 +6,10 @@ import {
   confirmSchedule,
   createSchedule,
   deleteScheduleByCreator,
+  getScheduleParticipantForUser,
   getScheduleForHost,
   getSchedulePublic,
+  getScheduleResult,
 } from "../store";
 
 describe("schedule store", () => {
@@ -87,6 +89,63 @@ describe("schedule store", () => {
       { day: "MON", startHour: 12, endHour: 14 },
     ]);
     expect(hostSchedule).not.toHaveProperty("hostToken");
+  });
+
+  test("returns read-only result data without requiring a host token", async () => {
+    const created = await createSchedule({
+      title: "참여자 결과 확인",
+      durationMinutes: 60,
+      candidateDays: ["MON"],
+      candidateStartHour: 9,
+      candidateEndHour: 18,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "민지",
+      available: [{ day: "MON", startHour: 10, endHour: 14 }],
+    });
+    await addParticipantAvailability(created.id, {
+      name: "준호",
+      available: [{ day: "MON", startHour: 12, endHour: 16 }],
+    });
+
+    const result = await getScheduleResult(created.id);
+
+    expect(result?.participants.map((p) => p.name)).toEqual(["민지", "준호"]);
+    expect(result?.commonSlots).toEqual([
+      { day: "MON", startHour: 12, endHour: 14 },
+    ]);
+    expect(result).not.toHaveProperty("hostToken");
+  });
+
+  test("finds a submitted participant by schedule and user id", async () => {
+    const created = await createSchedule({
+      title: "로그인 참여자 조회",
+      durationMinutes: 60,
+      candidateDays: ["TUE"],
+      candidateStartHour: 10,
+      candidateEndHour: 15,
+    });
+
+    await addParticipantAvailability(created.id, {
+      name: "수아",
+      userId: "user-1",
+      available: [{ day: "TUE", startHour: 11, endHour: 13 }],
+    });
+
+    const participant = await getScheduleParticipantForUser(
+      created.id,
+      "user-1",
+    );
+
+    expect(participant?.name).toBe("수아");
+    expect(participant?.available).toEqual([
+      { day: "TUE", startHour: 11, endHour: 13 },
+    ]);
+    expect(
+      await getScheduleParticipantForUser(created.id, "other-user"),
+    ).toBeNull();
+    expect(await getScheduleParticipantForUser(created.id, "")).toBeNull();
   });
 
   test("rejects participant slots outside the schedule candidate window", async () => {

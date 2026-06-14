@@ -69,7 +69,7 @@ const NAV_ITEMS = [
   { href: "/", label: "홈으로 가기", icon: Home },
   { href: "/calendar/connect", label: "캘린더 등록하기", icon: CalendarDays },
   { href: "/schedule/create", label: "모임 만들기", icon: Users },
-  { href: "/login", label: "설정", icon: Settings },
+  { href: "#", label: "설정", icon: Settings },
 ];
 
 export function MoimTopBar({
@@ -154,6 +154,9 @@ export function MoimTopBar({
                       ? "text-brand-purple"
                       : "text-brand-text-secondary hover:text-brand-purple",
                   )}
+                  onClick={(e) => {
+                    if (item.href === "#") e.preventDefault();
+                  }}
                 >
                   <item.icon className="h-6 w-6" />
                   <span className="pointer-events-none absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2.5 py-1 text-[11px] font-bold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
@@ -243,7 +246,13 @@ export function MoimTopBar({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setIsOpen(false)}
+                onClick={(e) => {
+                  if (item.href === "#") {
+                    e.preventDefault();
+                    return;
+                  }
+                  setIsOpen(false);
+                }}
                 className={cn(
                   "flex items-center gap-4 rounded-xl p-3 font-semibold transition-colors hover:bg-brand-bg-muted",
                   item.href === activeHref
