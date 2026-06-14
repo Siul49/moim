@@ -430,7 +430,7 @@ export function SchedulerPreview({
               모두 보기
             </Link>
           </div>
-          <div className="grid gap-4 p-6">
+          <div className="flex flex-col gap-4 p-6 w-full">
             {schedules.length === 0 ? (
               <div className="text-center py-8 text-brand-text-muted text-sm">
                 생성된 모임이 없습니다.
