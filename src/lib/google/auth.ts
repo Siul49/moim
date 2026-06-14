@@ -16,6 +16,14 @@ const SCOPES = [
 
 const TOKEN_COOKIE_NAME = "google_tokens";
 
+/**
+ * 인증 시작 시점의 origin을 저장하는 쿠키.
+ * 콜백에서 토큰 교환 시 동일한 redirect_uri를 재사용해
+ * www↔apex 등 origin 드리프트로 인한 invalid_grant를 방지한다.
+ */
+export const GOOGLE_OAUTH_ORIGIN_COOKIE = "google_oauth_origin";
+export const GOOGLE_OAUTH_ORIGIN_MAX_AGE = 600; // 10분
+
 function getClientId(): string {
   const id = process.env.GOOGLE_CALENDAR_CLIENT_ID;
   if (!id)

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { maskEmail } from "@/lib/crypto";
 import { queryEvents } from "@/lib/caldav/query";
 import { parseIcsToEvents } from "@/lib/ics/parser";
-import { CalDAVError } from "@/lib/caldav/client";
+import { CalDAVError, isIcloudCalendarUrl } from "@/lib/caldav/client";
 import { getConnectionAuth } from "@/lib/caldav/connection-cookie";
 import { createApiHandler } from "@/lib/api-handler";
 
@@ -14,7 +14,10 @@ const QuerySchema = z
     calendarUrl: z
       .string()
       .url("calendarUrl은 올바른 URL 형식이어야 합니다.")
-      .startsWith("https://", "calendarUrl은 https URL이어야 합니다."),
+      .startsWith("https://", "calendarUrl은 https URL이어야 합니다.")
+      .refine(isIcloudCalendarUrl, {
+        message: "허용되지 않은 iCloud 캘린더 URL입니다.",
+      }),
     startDate: z
       .string()
       .datetime({ message: "startDate는 ISO 8601 형식이어야 합니다." }),
