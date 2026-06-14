@@ -148,6 +148,8 @@ export async function getScheduleParticipantForUser(
   scheduleId: string,
   userId: string,
 ): Promise<ScheduleParticipant | null> {
+  if (!userId) return null;
+
   const participant = await prisma.scheduleParticipant.findFirst({
     where: { scheduleId, userId },
   });

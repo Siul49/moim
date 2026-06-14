@@ -257,10 +257,14 @@ export function ScheduleRoomClient({
         setSchedule(result.schedule);
         setServerSaysHost(Boolean(result.isHost));
         const savedSubmittedName = readSubmittedName(scheduleId);
+        const serverHasSubmitted = Boolean(result.hasSubmittedAvailability);
+        if (result.isAuthenticated && !serverHasSubmitted) {
+          forgetSubmittedName(scheduleId);
+        }
         const shouldShowParticipantResult =
           !result.isHost &&
-          (Boolean(result.hasSubmittedAvailability) ||
-            Boolean(savedSubmittedName));
+          (serverHasSubmitted ||
+            (!result.isAuthenticated && Boolean(savedSubmittedName)));
         setHasSubmittedAvailability(shouldShowParticipantResult);
         if (shouldShowParticipantResult) {
           setSubmitted(true);
@@ -1422,6 +1426,14 @@ function rememberSubmittedName(scheduleId: string, participantName: string) {
       submittedStorageKey(scheduleId),
       participantName,
     );
+  } catch {
+    // localStorage can be unavailable in private or restricted browser modes.
+  }
+}
+
+function forgetSubmittedName(scheduleId: string) {
+  try {
+    window.localStorage.removeItem(submittedStorageKey(scheduleId));
   } catch {
     // localStorage can be unavailable in private or restricted browser modes.
   }

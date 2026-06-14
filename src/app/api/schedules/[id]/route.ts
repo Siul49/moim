@@ -15,9 +15,24 @@ import {
 } from "@/lib/schedules/host-cookie";
 import { createApiHandler } from "@/lib/api-handler";
 import { confirmScheduleSchema } from "@/features/schedules/schedule.schema";
+import type { Session } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+async function getReadableScheduleResult(id: string, session: Session | null) {
+  const participant = session
+    ? await getScheduleParticipantForUser(id, session.userId)
+    : null;
+  const schedule = await getScheduleResult(id);
+
+  return {
+    schedule,
+    hasSubmittedAvailability: Boolean(participant),
+    participantName: participant?.name ?? null,
+    isAuthenticated: Boolean(session),
+  };
+}
 
 export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
   { loadSession: true },
@@ -66,10 +81,8 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
       }
 
       // 쿠키에 담긴 토큰만 잘못된 경우: 쿠키를 소멸시키고 집계 결과(읽기전용)로 이동
-      const participant = session
-        ? await getScheduleParticipantForUser(id, session.userId)
-        : null;
-      const schedule = await getScheduleResult(id);
+      const result = await getReadableScheduleResult(id, session);
+      const { schedule } = result;
       if (!schedule) {
         return NextResponse.json(
           { error: "schedule not found" },
@@ -79,8 +92,9 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
       const response = NextResponse.json({
         schedule,
         isHost: false,
-        hasSubmittedAvailability: Boolean(participant),
-        participantName: participant?.name ?? null,
+        hasSubmittedAvailability: result.hasSubmittedAvailability,
+        participantName: result.participantName,
+        isAuthenticated: result.isAuthenticated,
       });
       response.cookies.set(getHostTokenCookieName(id), "", {
         path: "/",
@@ -89,10 +103,8 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
       return response;
     }
 
-    const participant = session
-      ? await getScheduleParticipantForUser(id, session.userId)
-      : null;
-    const schedule = await getScheduleResult(id);
+    const result = await getReadableScheduleResult(id, session);
+    const { schedule } = result;
     if (!schedule) {
       return NextResponse.json(
         { error: "schedule not found" },
@@ -103,8 +115,9 @@ export const GET = createApiHandler<z.ZodTypeAny, { id: string }>(
     return NextResponse.json({
       schedule,
       isHost: false,
-      hasSubmittedAvailability: Boolean(participant),
-      participantName: participant?.name ?? null,
+      hasSubmittedAvailability: result.hasSubmittedAvailability,
+      participantName: result.participantName,
+      isAuthenticated: result.isAuthenticated,
     });
   },
 );

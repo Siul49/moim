@@ -145,6 +145,7 @@ describe("schedule store", () => {
     expect(
       await getScheduleParticipantForUser(created.id, "other-user"),
     ).toBeNull();
+    expect(await getScheduleParticipantForUser(created.id, "")).toBeNull();
   });
 
   test("rejects participant slots outside the schedule candidate window", async () => {
