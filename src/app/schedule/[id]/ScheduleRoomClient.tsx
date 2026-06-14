@@ -84,6 +84,9 @@ export function ScheduleRoomClient({
   const [submittedName, setSubmittedName] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [serverSaysHost, setServerSaysHost] = useState(false);
+  const [hasSubmittedAvailability, setHasSubmittedAvailability] =
+    useState(false);
 
   // 드래그 상태 관리
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
@@ -252,6 +255,21 @@ export function ScheduleRoomClient({
         if (!response.ok)
           throw new Error(result.error ?? "모임을 찾을 수 없습니다.");
         setSchedule(result.schedule);
+        setServerSaysHost(Boolean(result.isHost));
+        const savedSubmittedName = readSubmittedName(scheduleId);
+        const serverHasSubmitted = Boolean(result.hasSubmittedAvailability);
+        if (result.isAuthenticated && !serverHasSubmitted) {
+          forgetSubmittedName(scheduleId);
+        }
+        const shouldShowParticipantResult =
+          !result.isHost &&
+          (serverHasSubmitted ||
+            (!result.isAuthenticated && Boolean(savedSubmittedName)));
+        setHasSubmittedAvailability(shouldShowParticipantResult);
+        if (shouldShowParticipantResult) {
+          setSubmitted(true);
+          setSubmittedName(result.participantName ?? savedSubmittedName);
+        }
       })
       .catch((caught) => {
         setError(
@@ -282,11 +300,17 @@ export function ScheduleRoomClient({
   }, [schedule]);
 
   const isHostView = useMemo(() => {
+    if (serverSaysHost) return true;
     if (!schedule || !("participants" in schedule)) return false;
     if (hostToken) return true;
     if (currentUser && schedule.creatorId === currentUser.id) return true;
     return false;
-  }, [schedule, hostToken, currentUser]);
+  }, [schedule, hostToken, currentUser, serverSaysHost]);
+
+  const shouldShowResultView =
+    schedule &&
+    "participants" in schedule &&
+    (isHostView || hasSubmittedAvailability);
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     if (event) event.preventDefault();
@@ -319,6 +343,8 @@ export function ScheduleRoomClient({
       setStatus("가능 시간이 제출됐습니다");
       setSubmittedName(name);
       setSubmitted(true);
+      setHasSubmittedAvailability(true);
+      rememberSubmittedName(schedule.id, name);
       setName("");
       setSelected([]);
     } catch (caught) {
@@ -467,15 +493,16 @@ export function ScheduleRoomClient({
         </section>
       ) : null}
 
-      {schedule && isHostView ? (
+      {shouldShowResultView ? (
         <HostView
           schedule={schedule as HostSchedule}
           hostToken={hostToken}
           onScheduleUpdate={setSchedule}
+          canManage={isHostView}
         />
       ) : null}
 
-      {schedule && !isHostView ? (
+      {schedule && !shouldShowResultView ? (
         <section className="mx-auto grid max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[0.9fr_1.1fr]">
           <aside className="rounded-[2.5rem] border border-brand-border-muted bg-gradient-to-br from-brand-bg-light via-brand-bg-muted to-white p-8 shadow-premium relative overflow-hidden">
             <div className="absolute top-0 right-0 h-40 w-40 bg-brand-purple-ring/30 rounded-full blur-3xl pointer-events-none" />
@@ -1010,10 +1037,12 @@ function HostView({
   schedule,
   hostToken,
   onScheduleUpdate,
+  canManage,
 }: {
   schedule: HostSchedule;
   hostToken: string;
   onScheduleUpdate: (schedule: HostSchedule) => void;
+  canManage: boolean;
 }) {
   return (
     <section className="mx-auto max-w-6xl px-6 pb-28 pt-12">
@@ -1027,7 +1056,9 @@ function HostView({
           </h1>
           <p className="mt-4 text-lg font-medium text-brand-text-secondary">
             {schedule.participantCount}명이 응답했습니다. 공통 가능 시간을
-            확인하고 최종 일정을 확정하세요.
+            {canManage
+              ? " 확인하고 최종 일정을 확정하세요."
+              : " 확인할 수 있습니다."}
           </p>
         </div>
         <div className="rounded-xl border border-brand-border-muted bg-brand-bg-light px-4 py-2 text-sm font-bold text-brand-purple h-fit">
@@ -1041,6 +1072,7 @@ function HostView({
         schedule={schedule}
         hostToken={hostToken}
         onScheduleUpdate={onScheduleUpdate}
+        canManage={canManage}
       />
     </section>
   );
@@ -1050,10 +1082,12 @@ function HostResultPanel({
   schedule,
   hostToken,
   onScheduleUpdate,
+  canManage,
 }: {
   schedule: HostSchedule;
   hostToken: string;
   onScheduleUpdate: (schedule: HostSchedule) => void;
+  canManage: boolean;
 }) {
   const [confirmingKey, setConfirmingKey] = useState("");
   const [confirmError, setConfirmError] = useState("");
@@ -1251,17 +1285,23 @@ function HostResultPanel({
                           {schedule.participants.length}명 기준 전원 가능
                         </p>
                       </div>
-                      <PurpleButton
-                        type="button"
-                        className="h-11 px-5 text-sm font-bold shadow-sm"
-                        disabled={
-                          schedule.status === "confirmed" ||
-                          confirmingKey === key
-                        }
-                        onClick={() => confirmSlot(slot)}
-                      >
-                        {confirmingKey === key ? "확정 중" : "이 시간 확정"}
-                      </PurpleButton>
+                      {canManage ? (
+                        <PurpleButton
+                          type="button"
+                          className="h-11 px-5 text-sm font-bold shadow-sm"
+                          disabled={
+                            schedule.status === "confirmed" ||
+                            confirmingKey === key
+                          }
+                          onClick={() => confirmSlot(slot)}
+                        >
+                          {confirmingKey === key ? "확정 중" : "이 시간 확정"}
+                        </PurpleButton>
+                      ) : (
+                        <span className="inline-flex h-11 items-center justify-center rounded-xl border border-brand-border-muted bg-white px-5 text-sm font-bold text-brand-purple shadow-sm">
+                          추천 시간
+                        </span>
+                      )}
                     </li>
                   );
                 })}
@@ -1320,16 +1360,20 @@ function HostResultPanel({
           </ul>
         </section>
 
-        <button
-          type="button"
-          onClick={() =>
-            alert("미응답 멤버들에게 카카오톡 리마인더를 전송했습니다! (데모)")
-          }
-          className="inline-flex h-14 items-center justify-center gap-2 rounded-[1.25rem] bg-[#fee500] text-base font-extrabold text-[#191919] hover:bg-[#ebd200] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm cursor-pointer"
-        >
-          <MessageCircle className="h-5 w-5" />
-          미응답자에게 카톡 알림 보내기
-        </button>
+        {canManage ? (
+          <button
+            type="button"
+            onClick={() =>
+              alert(
+                "미응답 멤버들에게 카카오톡 리마인더를 전송했습니다! (데모)",
+              )
+            }
+            className="inline-flex h-14 items-center justify-center gap-2 rounded-[1.25rem] bg-[#fee500] text-base font-extrabold text-[#191919] hover:bg-[#ebd200] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm cursor-pointer"
+          >
+            <MessageCircle className="h-5 w-5" />
+            미응답자에게 카톡 알림 보내기
+          </button>
+        ) : null}
 
         <section className="rounded-[2rem] border border-brand-border-muted bg-brand-bg-light p-6">
           <div className="mb-4 flex items-center gap-2 text-lg font-extrabold text-brand-text-primary">
@@ -1362,4 +1406,35 @@ function containsSlot(container: TimeSlot, target: TimeSlot): boolean {
     container.startHour <= target.startHour &&
     container.endHour >= target.endHour
   );
+}
+
+function submittedStorageKey(scheduleId: string): string {
+  return `moim_submitted_${scheduleId}`;
+}
+
+function readSubmittedName(scheduleId: string): string {
+  try {
+    return window.localStorage.getItem(submittedStorageKey(scheduleId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberSubmittedName(scheduleId: string, participantName: string) {
+  try {
+    window.localStorage.setItem(
+      submittedStorageKey(scheduleId),
+      participantName,
+    );
+  } catch {
+    // localStorage can be unavailable in private or restricted browser modes.
+  }
+}
+
+function forgetSubmittedName(scheduleId: string) {
+  try {
+    window.localStorage.removeItem(submittedStorageKey(scheduleId));
+  } catch {
+    // localStorage can be unavailable in private or restricted browser modes.
+  }
 }
