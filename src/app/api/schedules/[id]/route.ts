@@ -150,15 +150,10 @@ export const DELETE = createApiHandler<z.ZodTypeAny, { id: string }>(
   { requireAuth: true },
   async ({ session, params }) => {
     const { id } = params;
-    if (!session) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 },
-      );
-    }
 
     try {
-      await deleteScheduleByCreator(id, session.userId);
+      // requireAuth: true이므로 이 지점에서 session은 항상 존재한다.
+      await deleteScheduleByCreator(id, session!.userId);
       return NextResponse.json({ success: true });
     } catch (error) {
       const message =
