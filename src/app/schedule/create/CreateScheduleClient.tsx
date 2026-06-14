@@ -29,6 +29,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
+import { TIME_OPTIONS } from "@/lib/scheduling/time-slot";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "MON", label: "월요일" },
@@ -52,15 +53,6 @@ const DAY_SHORT_LABELS: Record<DayCode, string> = {
 
 // 8:00 to 22:00 (14 hours range)
 const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
-
-// 10-minute interval options (00:00 to 23:50)
-const TIME_OPTIONS = Array.from({ length: 24 * 6 }).map((_, i) => {
-  const hours = Math.floor(i / 6)
-    .toString()
-    .padStart(2, "0");
-  const minutes = ((i % 6) * 10).toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
-});
 
 export function CreateScheduleClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -485,12 +477,21 @@ export function CreateScheduleClient() {
                     }
                     onChange={(event) => {
                       const date = event.target.value;
+                      // 10분 단위 옵션(TIME_OPTIONS) 중 하루의 가장 마지막 시간인 23:50을 기본값으로 사용
                       const time = responseDeadline.includes("T")
                         ? responseDeadline.split("T")[1]
                         : "23:50";
-                      setResponseDeadline(date ? `${date}T${time}` : "");
+                      // 날짜가 비워지면 시간 정보도 리셋하거나 T{time} 형태로 유지 (여기서는 유지)
+                      setResponseDeadline(
+                        date ? `${date}T${time}` : time ? `T${time}` : "",
+                      );
                     }}
-                    className="flex-1 h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    className={cn(
+                      "flex-1 h-12 rounded-xl border px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary",
+                      responseDeadline.startsWith("T")
+                        ? "border-red-500 bg-red-50"
+                        : "border-brand-border-gray",
+                    )}
                     required
                   />
                   <select
@@ -501,10 +502,13 @@ export function CreateScheduleClient() {
                     }
                     onChange={(event) => {
                       const time = event.target.value;
+                      // 날짜가 없으면 빈 문자열 유지하여 사용자가 날짜를 명시적으로 선택하게 유도
                       const date = responseDeadline
                         ? responseDeadline.split("T")[0]
-                        : new Date().toISOString().split("T")[0];
-                      setResponseDeadline(`${date}T${time}`);
+                        : "";
+                      setResponseDeadline(
+                        date ? `${date}T${time}` : `T${time}`,
+                      );
                     }}
                     className="w-[120px] h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary bg-white"
                     required

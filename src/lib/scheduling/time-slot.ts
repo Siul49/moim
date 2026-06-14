@@ -72,3 +72,12 @@ export function mergeOverlappingDateSlots(
 
   return result;
 }
+
+// 10-minute interval options (00:00 to 23:50)
+export const TIME_OPTIONS = Array.from({ length: 24 * 6 }).map((_, i) => {
+  const hours = Math.floor(i / 6)
+    .toString()
+    .padStart(2, "0");
+  const minutes = ((i % 6) * 10).toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+});
