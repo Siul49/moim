@@ -53,6 +53,15 @@ const DAY_SHORT_LABELS: Record<DayCode, string> = {
 // 8:00 to 22:00 (14 hours range)
 const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
 
+// 10-minute interval options (00:00 to 23:50)
+const TIME_OPTIONS = Array.from({ length: 24 * 6 }).map((_, i) => {
+  const hours = Math.floor(i / 6)
+    .toString()
+    .padStart(2, "0");
+  const minutes = ((i % 6) * 10).toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+});
+
 export function CreateScheduleClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [title, setTitle] = useState("");
@@ -466,20 +475,54 @@ export function CreateScheduleClient() {
                 </label>
               </div>
 
-              <label className="grid gap-2 text-sm font-bold text-brand-text-primary">
+              <div className="grid gap-2 text-sm font-bold text-brand-text-primary">
                 응답 마감일
-                <input
-                  type="datetime-local"
-                  value={responseDeadline}
-                  onChange={(event) => setResponseDeadline(event.target.value)}
-                  step={600}
-                  className="h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
-                  required
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={
+                      responseDeadline ? responseDeadline.split("T")[0] : ""
+                    }
+                    onChange={(event) => {
+                      const date = event.target.value;
+                      const time = responseDeadline.includes("T")
+                        ? responseDeadline.split("T")[1]
+                        : "23:50";
+                      setResponseDeadline(date ? `${date}T${time}` : "");
+                    }}
+                    className="flex-1 h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary"
+                    required
+                  />
+                  <select
+                    value={
+                      responseDeadline.includes("T")
+                        ? responseDeadline.split("T")[1]
+                        : ""
+                    }
+                    onChange={(event) => {
+                      const time = event.target.value;
+                      const date = responseDeadline
+                        ? responseDeadline.split("T")[0]
+                        : new Date().toISOString().split("T")[0];
+                      setResponseDeadline(`${date}T${time}`);
+                    }}
+                    className="w-[120px] h-12 rounded-xl border border-brand-border-gray px-4 text-base font-normal outline-none focus:border-brand-purple-light focus:ring-2 focus:ring-brand-purple-ring transition-all text-brand-text-primary bg-white"
+                    required
+                  >
+                    <option value="" disabled>
+                      시간 선택
+                    </option>
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <span className="text-sm font-normal text-brand-text-muted">
                   이 날짜 이후로는 응답을 받을 수 없습니다.
                 </span>
-              </label>
+              </div>
 
               <div className="pt-4 flex justify-end">
                 <PurpleButton
