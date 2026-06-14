@@ -3,6 +3,7 @@ import { CalendarDays, Clock, ExternalLink, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { DayCode } from "@/types/schedule";
+import { DeleteMeetingButton } from "./DeleteMeetingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -149,6 +150,7 @@ export default async function DashboardMeetingsPage() {
                     방 진입
                     <ExternalLink className="h-3.5 w-3.5 text-brand-text-muted" />
                   </Link>
+                  <DeleteMeetingButton scheduleId={sched.id} />
                 </div>
               </div>
             );

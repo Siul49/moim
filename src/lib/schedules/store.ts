@@ -283,6 +283,17 @@ export async function confirmScheduleByCreator(
   return toHostSchedule(updated);
 }
 
+export async function deleteScheduleByCreator(
+  id: string,
+  creatorId: string,
+): Promise<void> {
+  const schedule = await prisma.schedule.findUnique({ where: { id } });
+  if (!schedule) throw new Error("schedule not found");
+  if (schedule.creatorId !== creatorId) throw new Error("forbidden");
+  // 참여자(ScheduleParticipant)는 Prisma onDelete: Cascade로 함께 삭제됨
+  await prisma.schedule.delete({ where: { id } });
+}
+
 export async function clearSchedules() {
   await prisma.$transaction([
     prisma.scheduleParticipant.deleteMany(),
