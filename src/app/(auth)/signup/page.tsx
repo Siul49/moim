@@ -124,14 +124,7 @@ export default function SignupPage() {
             </p>
             <div className="mt-8 grid gap-3">
               {(() => {
-                let redirectUrl = "";
-                if (typeof window !== "undefined") {
-                  const params = new URLSearchParams(window.location.search);
-                  const next = params.get("redirect") ?? params.get("next");
-                  if (next && (next.startsWith("/") || !next.includes("://"))) {
-                    redirectUrl = next;
-                  }
-                }
+                const redirectUrl = "/dashboard";
                 if (redirectUrl) {
                   return (
                     <Link
@@ -331,17 +324,7 @@ function SocialButton({
 }) {
   const handleOAuthLogin = async (provider: "google" | "kakao" | "apple") => {
     const supabase = createClient();
-    let next = "/dashboard";
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const nextParam = params.get("redirect") ?? params.get("next");
-      if (
-        nextParam &&
-        (nextParam.startsWith("/") || !nextParam.includes("://"))
-      ) {
-        next = nextParam;
-      }
-    }
+    const next = "/dashboard";
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
