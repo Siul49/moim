@@ -78,7 +78,8 @@ test("host can create a schedule and receive safe participant and host links", a
   await page.getByRole("button", { name: "로그인" }).click();
 
   // 3. 스케줄 생성
-  await page.waitForURL("**/schedule/create", { timeout: 60000 });
+  await page.waitForURL("**/dashboard", { timeout: 60000 });
+  await page.goto("/schedule/create");
 
   const titleInput = page.getByLabel("모임 제목");
   await titleInput.waitFor({ state: "visible", timeout: 15000 });
