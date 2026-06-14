@@ -559,7 +559,10 @@ export function ScheduleRoomClient({
           {schedule.status === "confirmed" && schedule.confirmedSlot ? (
             <ConfirmedGuestPanel slot={schedule.confirmedSlot} />
           ) : submitted ? (
-            <SubmissionDonePanel name={submittedName} />
+            <SubmissionDonePanel
+              name={submittedName}
+              scheduleId={schedule.id}
+            />
           ) : (
             <form
               onSubmit={(e) => e.preventDefault()}
@@ -951,7 +954,13 @@ function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
   );
 }
 
-function SubmissionDonePanel({ name }: { name: string }) {
+function SubmissionDonePanel({
+  name,
+  scheduleId,
+}: {
+  name: string;
+  scheduleId: string;
+}) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -992,12 +1001,19 @@ function SubmissionDonePanel({ name }: { name: string }) {
                 현재 생성 또는 참여 완료된 내 모든 모임의 현황을 한눈에 확인할
                 수 있습니다.
               </p>
-              <div className="mt-5">
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-brand-purple px-5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-brand-purple px-5 text-xs font-bold text-white hover:bg-brand-purple-hover transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
                 >
                   마이 대시보드로 이동
+                </Link>
+                <Link
+                  href={`/schedule/${scheduleId}`}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-purple-light bg-white px-5 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
+                >
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  결과 화면 열기
                 </Link>
               </div>
             </div>
