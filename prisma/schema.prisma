@@ -67,6 +67,7 @@ model ScheduleParticipant {
   name        String
   available   String
   submittedAt DateTime @default(now())
+  userId      String?
 
   @@index([scheduleId])
   @@schema("public")

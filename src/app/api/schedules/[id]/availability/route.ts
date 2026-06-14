@@ -4,6 +4,8 @@ import {
   getSchedulePublic,
 } from "@/lib/schedules/store";
 
+import { createClient } from "@/lib/supabase/server";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -13,10 +15,19 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const participant = await addParticipantAvailability(
-      id,
-      await request.json(),
-    );
+    const body = await request.json();
+
+    // 세션 가져오기
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    const participant = await addParticipantAvailability(id, {
+      ...body,
+      userId,
+    });
     return NextResponse.json(
       {
         participant,

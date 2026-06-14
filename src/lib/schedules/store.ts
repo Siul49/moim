@@ -21,6 +21,7 @@ export interface CreateScheduleInput {
 export interface AddParticipantAvailabilityInput {
   name: string;
   available: TimeSlot[];
+  userId?: string;
 }
 
 export interface CreatedSchedule {
@@ -47,6 +48,7 @@ export interface ScheduleParticipant {
   name: string;
   available: TimeSlot[];
   submittedAt: string;
+  userId?: string | null;
 }
 
 export interface HostSchedule extends PublicSchedule {
@@ -163,6 +165,7 @@ export async function addParticipantAvailability(
               normalizeAvailability(schedule, input.available),
             ),
             submittedAt: new Date(),
+            userId: input.userId ?? existing.userId,
           },
         });
       }
@@ -175,6 +178,7 @@ export async function addParticipantAvailability(
           available: JSON.stringify(
             normalizeAvailability(schedule, input.available),
           ),
+          userId: input.userId,
         },
       });
     },
@@ -455,12 +459,14 @@ function toScheduleParticipant(participant: {
   name: string;
   available: string;
   submittedAt: Date;
+  userId?: string | null;
 }): ScheduleParticipant {
   return {
     id: participant.id,
     name: participant.name,
     available: parseTimeSlots(participant.available),
     submittedAt: participant.submittedAt.toISOString(),
+    userId: participant.userId,
   };
 }
 

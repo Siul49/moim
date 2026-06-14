@@ -13,7 +13,12 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const recentSchedules = await prisma.schedule.findMany({
-    where: { creatorId: user.id },
+    where: {
+      OR: [
+        { creatorId: user.id },
+        { participants: { some: { userId: user.id } } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
   });
 

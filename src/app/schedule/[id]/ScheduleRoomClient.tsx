@@ -42,6 +42,7 @@ interface HostParticipant {
   name: string;
   available: TimeSlot[];
   submittedAt: string;
+  userId?: string | null;
 }
 
 interface HostSchedule extends PublicSchedule {
@@ -62,11 +63,9 @@ const DAY_LABELS: Record<DayCode, string> = {
 export function ScheduleRoomClient({
   scheduleId,
   hostToken,
-  forceParticipant = false,
 }: {
   scheduleId: string;
   hostToken: string;
-  forceParticipant?: boolean;
 }) {
   const [schedule, setSchedule] = useState<
     PublicSchedule | HostSchedule | null
@@ -285,12 +284,9 @@ export function ScheduleRoomClient({
   const isHostView = useMemo(() => {
     if (!schedule || !("participants" in schedule)) return false;
     if (hostToken) return true;
-    // 호스트가 "일정 등록하기"로 진입한 경우(?participate=1)에는
-    // 생성자여도 결과 화면이 아닌 참여(가능 시간 입력) 폼을 보여준다.
-    if (forceParticipant) return false;
     if (currentUser && schedule.creatorId === currentUser.id) return true;
     return false;
-  }, [schedule, hostToken, currentUser, forceParticipant]);
+  }, [schedule, hostToken, currentUser]);
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     if (event) event.preventDefault();
