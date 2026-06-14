@@ -29,6 +29,42 @@ export type ScheduleItem = {
   candidateEndHour: number;
 };
 
+const CONFIRMED_DAY_LABELS: Record<string, string> = {
+  MON: "월요일",
+  TUE: "화요일",
+  WED: "수요일",
+  THU: "목요일",
+  FRI: "금요일",
+  SAT: "토요일",
+  SUN: "일요일",
+};
+
+// confirmedSlot은 {day, startHour, endHour} 형태의 요일 기반 슬롯 JSON 문자열이다.
+// new Date()로는 파싱되지 않으므로(Invalid Date) 슬롯을 파싱해 사람이 읽을 수 있는
+// "수요일 14:00-15:00" 형식으로 변환한다. 파싱 실패 시 null을 반환한다.
+function formatConfirmedSlot(raw: string): string | null {
+  try {
+    const slot = JSON.parse(raw) as {
+      day?: string;
+      startHour?: number;
+      endHour?: number;
+    };
+    if (
+      !slot ||
+      typeof slot.day !== "string" ||
+      typeof slot.startHour !== "number" ||
+      typeof slot.endHour !== "number"
+    ) {
+      return null;
+    }
+    const dayLabel = CONFIRMED_DAY_LABELS[slot.day] ?? slot.day;
+    const pad = (hour: number) => String(hour).padStart(2, "0");
+    return `${dayLabel} ${pad(slot.startHour)}:00-${pad(slot.endHour)}:00`;
+  } catch {
+    return null;
+  }
+}
+
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: Home },
   { href: "/calendar/connect", label: "캘린더", icon: CalendarDays },
@@ -400,10 +436,13 @@ export function SchedulerPreview({
               schedules.slice(0, 3).map((sched, index) => {
                 const icon = sched.title.substring(0, 2).toUpperCase();
                 const isConfirmed = sched.status === "confirmed";
-                const meta =
+                const confirmedLabel =
                   isConfirmed && sched.confirmedSlot
-                    ? `확정일: ${new Date(sched.confirmedSlot).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                    : `생성일: ${new Date(sched.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} · 조율 중`;
+                    ? formatConfirmedSlot(sched.confirmedSlot)
+                    : null;
+                const meta = confirmedLabel
+                  ? `확정: ${confirmedLabel}`
+                  : `생성일: ${new Date(sched.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} · 조율 중`;
 
                 return (
                   <Link
