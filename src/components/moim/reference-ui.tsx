@@ -418,7 +418,7 @@ export function SchedulerPreview({
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
         <CalendarBoard days={activeDays} schedules={schedules} />
         <div className="min-w-0 flex flex-col overflow-hidden rounded-[1.75rem] border border-brand-border-muted bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-brand-border-muted p-6">
