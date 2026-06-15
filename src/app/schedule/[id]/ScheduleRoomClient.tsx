@@ -13,6 +13,7 @@ import {
   Users,
   X,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import {
   EmptyAvatar,
@@ -1116,6 +1117,31 @@ function HostResultPanel({
 }) {
   const [confirmingKey, setConfirmingKey] = useState("");
   const [confirmError, setConfirmError] = useState("");
+  const [insight, setInsight] = useState<string | null>(null);
+
+  // 추천 시간이 있을 때 Gemini 한 줄 해설을 불러온다.
+  // 참여자가 추가/변경되어 추천 시간이 달라지면 다시 요청한다.
+  const commonSlotsCount = schedule.commonSlots.length;
+  useEffect(() => {
+    if (commonSlotsCount === 0) {
+      setInsight(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/schedules/${schedule.id}/insight`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.insight === "string") {
+          setInsight(data.insight);
+        }
+      })
+      .catch(() => {
+        // 해설은 부가 기능이므로 실패해도 결과 화면은 그대로 둔다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [schedule.id, commonSlotsCount]);
 
   const heatmapRows = useMemo(() => {
     const r = [];
@@ -1290,6 +1316,20 @@ function HostResultPanel({
             <h3 className="text-lg font-extrabold text-brand-text-primary">
               추천 시간
             </h3>
+            {insight ? (
+              <div
+                data-testid="ai-insight"
+                className="rounded-[1.5rem] border border-brand-border-muted bg-gradient-to-br from-brand-bg-light to-white p-5 shadow-sm"
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Gemini AI
+                </span>
+                <p className="mt-3 text-sm font-bold leading-relaxed text-brand-text-primary sm:text-base">
+                  {insight}
+                </p>
+              </div>
+            ) : null}
             {schedule.commonSlots.length > 0 ? (
               <ul className="grid gap-3">
                 {schedule.commonSlots.map((slot, index) => {
