@@ -13,6 +13,7 @@ import {
   Users,
   X,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import {
   EmptyAvatar,
@@ -1116,6 +1117,44 @@ function HostResultPanel({
 }) {
   const [confirmingKey, setConfirmingKey] = useState("");
   const [confirmError, setConfirmError] = useState("");
+  const [insight, setInsight] = useState<string | null>(null);
+
+  // 추천 시간이 있을 때 Gemini 한 줄 해설을 불러온다.
+  // 추천 슬롯의 "내용"이 바뀌면(개수가 같아도 1순위가 달라지면) 다시 요청한다.
+  const insightKey = useMemo(
+    () =>
+      schedule.commonSlots
+        .slice(0, 3)
+        .map((s) => `${s.day}-${s.startHour}-${s.endHour}`)
+        .join("|"),
+    [schedule.commonSlots],
+  );
+  useEffect(() => {
+    if (!insightKey) {
+      setInsight(null);
+      return;
+    }
+    const controller = new AbortController();
+    // 추천이 바뀌면 이전 해설을 먼저 비워 stale 노출을 막는다.
+    setInsight(null);
+    fetch(`/api/schedules/${schedule.id}/insight`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const data = await res.json();
+        return typeof data.insight === "string" ? data.insight : null;
+      })
+      .then((nextInsight) => setInsight(nextInsight))
+      .catch(() => {
+        // 해설은 부가 기능이므로 실패 시 노출하지 않는다(abort 포함).
+        setInsight(null);
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [schedule.id, insightKey]);
 
   const heatmapRows = useMemo(() => {
     const r = [];
@@ -1290,6 +1329,20 @@ function HostResultPanel({
             <h3 className="text-lg font-extrabold text-brand-text-primary">
               추천 시간
             </h3>
+            {insight ? (
+              <div
+                data-testid="ai-insight"
+                className="rounded-[1.5rem] border border-brand-border-muted bg-gradient-to-br from-brand-bg-light to-white p-5 shadow-sm"
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Gemini AI
+                </span>
+                <p className="mt-3 text-sm font-bold leading-relaxed text-brand-text-primary sm:text-base">
+                  {insight}
+                </p>
+              </div>
+            ) : null}
             {schedule.commonSlots.length > 0 ? (
               <ul className="grid gap-3">
                 {schedule.commonSlots.map((slot, index) => {
