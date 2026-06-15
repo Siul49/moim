@@ -92,25 +92,34 @@ interface GeminiResponse {
   }>;
 }
 
+/** 외부 의존성 주입용(테스트에서 fetch/키/모델을 대체). 기본값은 현재 동작 유지. */
+export interface InsightDeps {
+  fetcher?: typeof fetch;
+  apiKey?: string;
+  model?: string;
+}
+
 /**
  * 추천 일정에 대한 한 줄 AI 해설을 생성한다.
  * 키 미설정·호출 실패 시 null을 반환한다(throw하지 않음).
  */
 export async function generateScheduleInsight(
   input: ScheduleInsightInput,
+  deps: InsightDeps = {},
 ): Promise<string | null> {
   // 대시보드에 붙여넣을 때 끝에 개행/공백이 섞이면 인증이 깨지므로 다듬는다.
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = (deps.apiKey ?? process.env.GEMINI_API_KEY)?.trim();
   if (!apiKey || input.recommendedSlots.length === 0) {
     return null;
   }
 
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const model = (deps.model ?? process.env.GEMINI_MODEL ?? DEFAULT_MODEL).trim();
+  const fetcher = deps.fetcher ?? fetch;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(
+    const response = await fetcher(
       `${GEMINI_ENDPOINT}/${model}:generateContent`,
       {
         method: "POST",
@@ -133,10 +142,8 @@ export async function generateScheduleInsight(
     );
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.error(
-        `[gemini] insight 요청 실패 (${response.status}): ${detail.slice(0, 300)}`,
-      );
+      // 응답 본문에는 프롬프트(참여자명·가용시간)가 되비쳐 올 수 있어 상태코드만 남긴다.
+      console.error(`[gemini] insight 요청 실패 (${response.status})`);
       return null;
     }
 

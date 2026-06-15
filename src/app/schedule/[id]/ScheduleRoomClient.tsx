@@ -1120,28 +1120,41 @@ function HostResultPanel({
   const [insight, setInsight] = useState<string | null>(null);
 
   // 추천 시간이 있을 때 Gemini 한 줄 해설을 불러온다.
-  // 참여자가 추가/변경되어 추천 시간이 달라지면 다시 요청한다.
-  const commonSlotsCount = schedule.commonSlots.length;
+  // 추천 슬롯의 "내용"이 바뀌면(개수가 같아도 1순위가 달라지면) 다시 요청한다.
+  const insightKey = useMemo(
+    () =>
+      schedule.commonSlots
+        .slice(0, 3)
+        .map((s) => `${s.day}-${s.startHour}-${s.endHour}`)
+        .join("|"),
+    [schedule.commonSlots],
+  );
   useEffect(() => {
-    if (commonSlotsCount === 0) {
+    if (!insightKey) {
       setInsight(null);
       return;
     }
-    let cancelled = false;
-    fetch(`/api/schedules/${schedule.id}/insight`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data && typeof data.insight === "string") {
-          setInsight(data.insight);
-        }
+    const controller = new AbortController();
+    // 추천이 바뀌면 이전 해설을 먼저 비워 stale 노출을 막는다.
+    setInsight(null);
+    fetch(`/api/schedules/${schedule.id}/insight`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const data = await res.json();
+        return typeof data.insight === "string" ? data.insight : null;
       })
+      .then((nextInsight) => setInsight(nextInsight))
       .catch(() => {
-        // 해설은 부가 기능이므로 실패해도 결과 화면은 그대로 둔다.
+        // 해설은 부가 기능이므로 실패 시 노출하지 않는다(abort 포함).
+        setInsight(null);
       });
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [schedule.id, commonSlotsCount]);
+  }, [schedule.id, insightKey]);
 
   const heatmapRows = useMemo(() => {
     const r = [];
