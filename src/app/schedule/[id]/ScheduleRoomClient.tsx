@@ -51,7 +51,7 @@ interface HostSchedule extends PublicSchedule {
   commonSlots: TimeSlot[];
 }
 
-const DAY_LABELS: Record<DayCode, string> = {
+const DAY_LABELS: Record<string, string> = {
   MON: "월요일",
   TUE: "화요일",
   WED: "수요일",
@@ -60,6 +60,26 @@ const DAY_LABELS: Record<DayCode, string> = {
   SAT: "토요일",
   SUN: "일요일",
 };
+
+const DAY_CODE_TO_JS_DAY: Record<string, number> = {
+  SUN: 0,
+  MON: 1,
+  TUE: 2,
+  WED: 3,
+  THU: 4,
+  FRI: 5,
+  SAT: 6,
+};
+
+function formatDayWithDate(dayCode: string): string {
+  const now = new Date();
+  const diff = (DAY_CODE_TO_JS_DAY[dayCode] - now.getDay() + 7) % 7;
+  const target = new Date(now);
+  target.setDate(now.getDate() + diff);
+  const m = target.getMonth() + 1;
+  const d = target.getDate();
+  return `${DAY_LABELS[dayCode] ?? dayCode} ${m}/${d}`;
+}
 
 export function ScheduleRoomClient({
   scheduleId,
@@ -295,7 +315,7 @@ export function ScheduleRoomClient({
         slots.push({
           key: `${day}-${hour}`,
           slot: { day, startHour: hour, endHour: hour + 1 },
-          label: `${DAY_LABELS[day]} ${formatHour(hour)}-${formatHour(hour + 1)}`,
+          label: `${formatDayWithDate(day)} ${formatHour(hour)}-${formatHour(hour + 1)}`,
         });
       }
     }
@@ -405,7 +425,7 @@ export function ScheduleRoomClient({
       );
       return;
     }
-    if (!isImage && file.size > 100 * 1024) {
+    if (!isIcs && file.size > 100 * 1024) {
       setImportMessage("ICS 파일 크기는 100KB 이하여야 합니다.");
       return;
     }
@@ -652,7 +672,7 @@ export function ScheduleRoomClient({
                         key={day}
                         className="flex h-8 items-center justify-center pb-2 text-center text-sm font-bold text-brand-purple"
                       >
-                        {DAY_LABELS[day]}
+                        {formatDayWithDate(day)}
                       </div>
                     ))}
 
@@ -1130,7 +1150,7 @@ function HostResultPanel({
   }, [schedule.candidateStartHour, schedule.candidateEndHour]);
 
   const heatmapDays = useMemo(() => {
-    return schedule.candidateDays.map((d) => DAY_LABELS[d] || d);
+    return schedule.candidateDays.map((d) => formatDayWithDate(d));
   }, [schedule.candidateDays]);
 
   const heatmapColors = useMemo(() => {
@@ -1445,16 +1465,6 @@ function HostResultPanel({
     </div>
   );
 }
-
-const DAY_CODE_TO_JS_DAY: Record<DayCode, number> = {
-  SUN: 0,
-  MON: 1,
-  TUE: 2,
-  WED: 3,
-  THU: 4,
-  FRI: 5,
-  SAT: 6,
-};
 
 // 확정 슬롯은 요일 기반({day,startHour,endHour})이므로,
 // 다가오는 해당 요일의 실제 날짜로 환산해 캘린더 일정 start/end를 만든다.
