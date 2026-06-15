@@ -91,6 +91,10 @@ export function ScheduleRoomClient({
   const [serverSaysHost, setServerSaysHost] = useState(false);
   const [hasSubmittedAvailability, setHasSubmittedAvailability] =
     useState(false);
+  // 제출 완료 화면에서 "결과 화면 열기"를 누르면 forceParticipant 진입(?participate=1)
+  // 이어도 결과(일정 조율 현황) 뷰로 전환한다. URL 네비게이션에 의존하지 않고
+  // 클라이언트 상태로 확실히 전환하기 위한 플래그.
+  const [forceResultView, setForceResultView] = useState(false);
 
   // 드래그 상태 관리
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
@@ -314,10 +318,10 @@ export function ScheduleRoomClient({
   // forceParticipant(?participate=1)로 진입하면 호스트여도 결과 화면 대신
   // 본인 가능시간 입력 폼을 보여준다. ("일정 등록하기" 진입 경로)
   const shouldShowResultView =
-    !forceParticipant &&
     schedule &&
     "participants" in schedule &&
-    (isHostView || hasSubmittedAvailability);
+    (forceResultView ||
+      (!forceParticipant && (isHostView || hasSubmittedAvailability)));
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     if (event) event.preventDefault();
@@ -571,7 +575,12 @@ export function ScheduleRoomClient({
           ) : submitted ? (
             <SubmissionDonePanel
               name={submittedName}
-              scheduleId={schedule.id}
+              onOpenResult={() => {
+                setForceResultView(true);
+                if (typeof window !== "undefined") {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
             />
           ) : (
             <form
@@ -966,10 +975,10 @@ function ConfirmedGuestPanel({ slot }: { slot: TimeSlot }) {
 
 function SubmissionDonePanel({
   name,
-  scheduleId,
+  onOpenResult,
 }: {
   name: string;
-  scheduleId: string;
+  onOpenResult: () => void;
 }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -1018,13 +1027,14 @@ function SubmissionDonePanel({
                 >
                   마이 대시보드로 이동
                 </Link>
-                <Link
-                  href={`/schedule/${scheduleId}`}
+                <button
+                  type="button"
+                  onClick={onOpenResult}
                   className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-purple-light bg-white px-5 text-xs font-bold text-brand-purple hover:bg-brand-bg-light transition-all hover:scale-[1.02] shadow-sm no-underline active:scale-95"
                 >
                   <CalendarClock className="h-3.5 w-3.5" />
                   결과 화면 열기
-                </Link>
+                </button>
               </div>
             </div>
           </div>
