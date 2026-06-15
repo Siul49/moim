@@ -99,7 +99,8 @@ interface GeminiResponse {
 export async function generateScheduleInsight(
   input: ScheduleInsightInput,
 ): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // 대시보드에 붙여넣을 때 끝에 개행/공백이 섞이면 인증이 깨지므로 다듬는다.
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey || input.recommendedSlots.length === 0) {
     return null;
   }
@@ -121,7 +122,10 @@ export async function generateScheduleInsight(
           contents: [{ parts: [{ text: buildPrompt(input) }] }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 120,
+            maxOutputTokens: 256,
+            // gemini-2.5+ 계열은 thinking에 출력 토큰을 소비해 한 줄 해설이 잘린다.
+            // 단순 요약이라 추론이 불필요하므로 thinking을 꺼 문장이 온전히 나오게 한다.
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
         signal: controller.signal,
