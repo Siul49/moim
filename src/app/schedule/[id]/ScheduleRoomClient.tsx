@@ -64,6 +64,30 @@ const DAY_LABELS: Record<DayCode, string> = {
   SUN: "일요일",
 };
 
+const DAY_CODE_TO_JS_DAY: Record<DayCode, number> = {
+  SUN: 0,
+  MON: 1,
+  TUE: 2,
+  WED: 3,
+  THU: 4,
+  FRI: 5,
+  SAT: 6,
+};
+
+/** 요일 코드에 가장 가까운 날짜를 붙여 표시 (예: "월요일 7/14") */
+function formatDayWithDate(dayCode: DayCode): string {
+  const jsDay = DAY_CODE_TO_JS_DAY[dayCode];
+  const label = DAY_LABELS[dayCode] ?? dayCode;
+  if (jsDay === undefined) {
+    return label;
+  }
+  const now = new Date();
+  const diff = (jsDay - now.getDay() + 7) % 7;
+  const target = new Date(now);
+  target.setDate(now.getDate() + diff);
+  return `${label} ${target.getMonth() + 1}/${target.getDate()}`;
+}
+
 export function ScheduleRoomClient({
   scheduleId,
   hostToken,
@@ -378,7 +402,7 @@ export function ScheduleRoomClient({
         slots.push({
           key: `${day}-${hour}`,
           slot: { day, startHour: hour, endHour: hour + 1 },
-          label: `${DAY_LABELS[day]} ${formatHour(hour)}-${formatHour(hour + 1)}`,
+          label: `${formatDayWithDate(day)} ${formatHour(hour)}-${formatHour(hour + 1)}`,
         });
       }
     }
@@ -488,7 +512,7 @@ export function ScheduleRoomClient({
       );
       return;
     }
-    if (!isImage && file.size > 100 * 1024) {
+    if (isIcs && file.size > 100 * 1024) {
       setImportMessage("ICS 파일 크기는 100KB 이하여야 합니다.");
       return;
     }
@@ -741,7 +765,7 @@ export function ScheduleRoomClient({
                         key={day}
                         className="flex h-8 items-center justify-center pb-2 text-center text-sm font-bold text-brand-purple"
                       >
-                        {DAY_LABELS[day]}
+                        {formatDayWithDate(day)}
                       </div>
                     ))}
 
@@ -1258,7 +1282,7 @@ function HostResultPanel({
   }, [schedule.candidateStartHour, schedule.candidateEndHour]);
 
   const heatmapDays = useMemo(() => {
-    return schedule.candidateDays.map((d) => DAY_LABELS[d] || d);
+    return schedule.candidateDays.map((d) => formatDayWithDate(d));
   }, [schedule.candidateDays]);
 
   const heatmapColors = useMemo(() => {
@@ -1588,23 +1612,17 @@ function HostResultPanel({
   );
 }
 
-const DAY_CODE_TO_JS_DAY: Record<DayCode, number> = {
-  SUN: 0,
-  MON: 1,
-  TUE: 2,
-  WED: 3,
-  THU: 4,
-  FRI: 5,
-  SAT: 6,
-};
-
 // 확정 슬롯은 요일 기반({day,startHour,endHour})이므로,
 // 다가오는 해당 요일의 실제 날짜로 환산해 캘린더 일정 start/end를 만든다.
 function nextOccurrence(slot: TimeSlot): { start: Date; end: Date } {
   const now = new Date();
   const start = new Date(now);
   start.setHours(slot.startHour, 0, 0, 0);
-  let diff = (DAY_CODE_TO_JS_DAY[slot.day] - now.getDay() + 7) % 7;
+  const jsDay = DAY_CODE_TO_JS_DAY[slot.day];
+  if (jsDay === undefined) {
+    throw new Error(`Invalid day code: ${slot.day}`);
+  }
+  let diff = (jsDay - now.getDay() + 7) % 7;
   if (diff === 0 && start.getTime() <= now.getTime()) {
     diff = 7; // 오늘 해당 요일이지만 시작 시간이 이미 지났으면 다음 주
   }
