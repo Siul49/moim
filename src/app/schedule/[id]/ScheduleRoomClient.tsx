@@ -25,6 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode, TimeSlot } from "@/types/schedule";
+import type { CalendarEvent } from "@/types/calendar-event";
+import { eventsToBusySlotKeys } from "@/lib/scheduling/calendar-busy";
 
 interface PublicSchedule {
   id: string;
@@ -95,6 +97,10 @@ export function ScheduleRoomClient({
   // 이어도 결과(일정 조율 현황) 뷰로 전환한다. URL 네비게이션에 의존하지 않고
   // 클라이언트 상태로 확실히 전환하기 위한 플래그.
   const [forceResultView, setForceResultView] = useState(false);
+
+  // 연동된 캘린더(Google/iCloud) 기반 바쁜 시간 자동 반영 상태
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarApplied, setCalendarApplied] = useState(false);
 
   // 드래그 상태 관리
   const [dragAction, setDragAction] = useState<"select" | "deselect" | null>(
@@ -251,6 +257,78 @@ export function ScheduleRoomClient({
       }
     }
   }, [schedule, currentUser, submitted, selected.length]);
+
+  // 연동된 캘린더(Google/iCloud)의 실제 이벤트를 조회해, 후보 격자에서 바쁜
+  // 시간을 제외한 가용 시간대를 자동 선택한다. 로그인 + 미제출 상태에서 한 번만
+  // 수행하며, 사용자가 이미 직접 선택한 칸이 있으면 덮어쓰지 않는다.
+  useEffect(() => {
+    if (!schedule || !isLoggedIn || submitted || calendarApplied) return;
+
+    const controller = new AbortController();
+    const start = startOfToday();
+    const end = addDays(start, 28);
+    const query = new URLSearchParams({
+      start: start.toISOString(),
+      end: end.toISOString(),
+    });
+
+    fetch(`/api/calendar/events?${query}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const connected =
+          Boolean(data.googleConnected) || Boolean(data.icloudConnected);
+        setCalendarConnected(connected);
+        setCalendarApplied(true);
+        if (!connected) return;
+
+        const events: CalendarEvent[] = (data.events ?? []).map(
+          (e: {
+            id: string;
+            title: string;
+            startAt: string;
+            endAt: string;
+            isAllDay: boolean;
+            source: CalendarEvent["source"];
+          }) => ({
+            ...e,
+            startAt: new Date(e.startAt),
+            endAt: new Date(e.endAt),
+          }),
+        );
+
+        const busy = new Set(
+          eventsToBusySlotKeys(events, {
+            startHour: schedule.candidateStartHour,
+            endHour: schedule.candidateEndHour,
+            days: schedule.candidateDays,
+          }),
+        );
+
+        // 후보 격자 전체에서 바쁜 칸을 제외한 가용 칸을 자동 선택한다.
+        const freeKeys: string[] = [];
+        for (const day of schedule.candidateDays) {
+          for (
+            let h = schedule.candidateStartHour;
+            h < schedule.candidateEndHour;
+            h++
+          ) {
+            const key = `${day}-${h}`;
+            if (!busy.has(key)) freeKeys.push(key);
+          }
+        }
+        // 사용자가 아직 아무 칸도 선택하지 않은 경우에만 자동 채운다.
+        setSelected((prev) => (prev.length === 0 ? freeKeys : prev));
+      })
+      .catch(() => {
+        // 부가 기능이므로 실패해도 폼은 그대로 둔다(abort 포함)
+      });
+
+    return () => controller.abort();
+  }, [schedule, isLoggedIn, submitted, calendarApplied]);
 
   useEffect(() => {
     const query = hostToken
@@ -596,17 +674,18 @@ export function ScheduleRoomClient({
                 </h2>
               </div>
 
-              {isLoggedIn && (
+              {calendarConnected && (
                 <div className="rounded-2xl bg-gradient-to-r from-brand-purple-ring/50 to-brand-bg-light p-4 border border-brand-purple-light/20 flex items-center justify-between gap-4 animate-fadeIn">
                   <div className="flex items-center gap-2.5">
                     <span className="text-lg">🗓️</span>
                     <div>
                       <p className="text-xs font-extrabold text-brand-purple">
-                        내 구글 캘린더 일정이 감지되었습니다!
+                        연동된 캘린더 일정을 반영했습니다!
                       </p>
                       <p className="text-[10px] font-semibold text-brand-text-muted mt-0.5">
-                        연동된 일정을 바탕으로 이미 바쁜 시간대를 제외하고 가용
-                        시간대만 표시하도록 준비했습니다.
+                        후보 기간의 일정을 조회해 바쁜 시간대를 제외하고 가용
+                        시간대를 자동으로 선택했습니다. 필요하면 직접 조정할 수
+                        있어요.
                       </p>
                     </div>
                   </div>
@@ -1596,6 +1675,20 @@ function formatSlot(slot: TimeSlot): string {
 
 function formatHour(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
+}
+
+/** 오늘 0시(로컬) */
+function startOfToday(): Date {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+}
+
+/** date에 days일 더한 새 Date */
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
 function containsSlot(container: TimeSlot, target: TimeSlot): boolean {

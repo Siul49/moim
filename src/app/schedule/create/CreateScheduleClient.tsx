@@ -30,6 +30,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DayCode } from "@/types/schedule";
 import { TIME_OPTIONS } from "@/lib/scheduling/time-slot";
+import { eventsToBusySlotKeys } from "@/lib/scheduling/calendar-busy";
+import type { CalendarEvent } from "@/types/calendar-event";
 
 const DAY_OPTIONS: { value: DayCode; label: string }[] = [
   { value: "MON", label: "월요일" },
@@ -53,6 +55,20 @@ const DAY_SHORT_LABELS: Record<DayCode, string> = {
 
 // 8:00 to 22:00 (14 hours range)
 const HOURS = Array.from({ length: 14 }, (_, index) => index + 8);
+
+/** 오늘 0시(로컬) */
+function startOfToday(): Date {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+}
+
+/** date에 days일 더한 새 Date */
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
 
 export function CreateScheduleClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -121,35 +137,65 @@ export function CreateScheduleClient() {
     };
   }, [selectedSlots]);
 
-  // Load calendar connections (구글/애플 모두 쿠키 기반이므로 status API로 판단)
+  // 연동된 캘린더(Google/iCloud)의 실제 이벤트를 후보 기간에서 조회해
+  // 바쁜 시간(busySlots)으로 반영한다. 후보 기간이 바뀌면 다시 조회한다.
   useEffect(() => {
-    async function checkConnections() {
+    const controller = new AbortController();
+
+    async function loadBusyFromCalendar() {
+      // 후보 기간이 지정돼 있으면 그 범위를, 아니면 오늘부터 4주를 조회한다.
+      const start = candidateStartDate
+        ? new Date(`${candidateStartDate}T00:00:00`)
+        : startOfToday();
+      const end = candidateEndDate
+        ? new Date(`${candidateEndDate}T23:59:59`)
+        : addDays(start, 28);
+
+      const query = new URLSearchParams({
+        start: start.toISOString(),
+        end: end.toISOString(),
+      });
+
       try {
-        const res = await fetch("/api/calendar/status", { cache: "no-store" });
+        const res = await fetch(`/api/calendar/events?${query}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         if (!res.ok) return;
         const data = await res.json();
-        const google = Boolean(data.googleConnected);
-        const icloud = Boolean(data.icloudConnected);
-        setHasGoogle(google);
-        setHasICloud(icloud);
 
-        // If calendar is connected, load some realistic mock busy slots
-        if (google || icloud) {
-          setBusySlots([
-            "MON-10",
-            "MON-11",
-            "WED-14",
-            "WED-15",
-            "FRI-16",
-            "FRI-17",
-          ]);
-        }
+        setHasGoogle(Boolean(data.googleConnected));
+        setHasICloud(Boolean(data.icloudConnected));
+
+        const events: CalendarEvent[] = (data.events ?? []).map(
+          (e: {
+            id: string;
+            title: string;
+            startAt: string;
+            endAt: string;
+            isAllDay: boolean;
+            source: CalendarEvent["source"];
+          }) => ({
+            ...e,
+            startAt: new Date(e.startAt),
+            endAt: new Date(e.endAt),
+          }),
+        );
+
+        // 그리드는 8시~22시(HOURS) 모든 요일을 다루므로 같은 윈도우로 변환한다.
+        const busy = eventsToBusySlotKeys(events, {
+          startHour: HOURS[0],
+          endHour: HOURS[HOURS.length - 1] + 1,
+        });
+        setBusySlots(busy);
       } catch {
-        // 상태 조회 실패 시 미연동 상태로 둔다
+        // 조회 실패 시 미연동 상태로 둔다(abort 포함)
       }
     }
-    checkConnections();
-  }, []);
+
+    loadBusyFromCalendar();
+    return () => controller.abort();
+  }, [candidateStartDate, candidateEndDate]);
 
   // Filter out busy slots if user decides to block them
   useEffect(() => {
